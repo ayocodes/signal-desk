@@ -1,0 +1,677 @@
+<!-- Feature reference only (what the app does), not the visual style. Styles come from docs/DESIGN.md. LinkedIn steps shown here are removed in the real build. -->
+<title>Signal Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: operator console with two tabs. Workspace = lead queue left, steering panel right. Ops (admin only) = outcomes, deliverability, engine, audit. */
+:root{
+  --bg:#f3f5f4; --panel:#ffffff; --sunk:#e9eeec; --line:#d6dedb;
+  --fg:#16211e; --muted:#5b6b66; --accent:#0d6b5e; --accent-soft:#d7ece7; --on-accent:#ffffff;
+  --signal:#b25d00; --signal-soft:#f7e6cf;
+  --good:#1e7a3c; --good-soft:#dcefe1; --warn:#9a6a00; --warn-soft:#f6ebc8; --bad:#b3261e; --bad-soft:#f7dcd9;
+  --f-display:"Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101614; --panel:#17201d; --sunk:#1d2925; --line:#2b3934;
+  --fg:#e3ebe8; --muted:#93a6a0; --accent:#4fc1ad; --accent-soft:#183a34; --on-accent:#0b1412;
+  --signal:#f0a54a; --signal-soft:#3a2a14;
+  --good:#6fcf8b; --good-soft:#173322; --warn:#e8c25a; --warn-soft:#352c12; --bad:#f08a80; --bad-soft:#3d1c19;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101614; --panel:#17201d; --sunk:#1d2925; --line:#2b3934;
+  --fg:#e3ebe8; --muted:#93a6a0; --accent:#4fc1ad; --accent-soft:#183a34; --on-accent:#0b1412;
+  --signal:#f0a54a; --signal-soft:#3a2a14;
+  --good:#6fcf8b; --good-soft:#173322; --warn:#e8c25a; --warn-soft:#352c12; --bad:#f08a80; --bad-soft:#3d1c19;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:grid;gap:14px}
+.view{display:grid;gap:14px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+h2{font-size:15px;font-weight:700}
+.label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand h1{font-size:21px;font-weight:700;letter-spacing:-.01em}
+.sample{font-size:11.5px;color:var(--muted)}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;color:var(--muted);font:500 13px var(--f-body);padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"],.seg button[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+
+.sub{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)}
+.sub b{color:var(--fg);font-family:var(--f-mono);font-weight:500}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;min-width:0}
+.ph{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.pb{padding:14px}
+
+.work{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:14px;align-items:start}
+.work > .panel:first-child{position:sticky;top:12px}
+.qtabs{display:flex;gap:4px}
+.qtab{border:0;background:none;color:var(--muted);font:500 12.5px var(--f-body);padding:4px 8px;border-radius:6px;cursor:pointer}
+.qtab[aria-selected="true"]{background:var(--sunk);color:var(--fg)}
+.qtab .n{font-family:var(--f-mono);margin-left:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:999px;padding:2px 10px;font:500 12px var(--f-body);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--signal);color:var(--signal);background:var(--signal-soft)}
+
+.queue{list-style:none;margin:0;padding:0}
+.lead{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 14px;border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;cursor:pointer;width:100%;text-align:left;background:none}
+.lead:hover{background:var(--sunk)}
+.lead[aria-current="true"]{background:var(--accent-soft);border-left-color:var(--accent)}
+.score{font-family:var(--f-mono);font-size:16px;font-weight:500;text-align:center;border-radius:6px;padding:4px 0}
+.score.hi{background:var(--good-soft);color:var(--good)} .score.md{background:var(--warn-soft);color:var(--warn)} .score.lo{background:var(--sunk);color:var(--muted)}
+.who{min-width:0;display:grid;gap:1px}
+.co{font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.meta,.sig{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{color:var(--muted)} .sig{color:var(--signal)}
+.age{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right}
+.age.fresh{color:var(--good)}
+.empty{padding:22px 14px;color:var(--muted);font-size:13px;text-align:center}
+
+details.filtered{border-top:1px solid var(--line)}
+details.filtered summary{padding:10px 14px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+details.filtered ul{list-style:none;margin:0;padding:0 14px 12px;display:grid;gap:6px}
+details.filtered li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:12.5px;align-items:baseline}
+details.filtered .r{color:var(--muted)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.neutral{background:var(--sunk);color:var(--muted)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
+
+.detail{display:grid;gap:18px}
+.dh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:start}
+.dh h3{font-size:19px}
+.facts{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--muted);margin-top:2px}
+.sec{display:grid;gap:8px}
+.sigcards{display:grid;gap:8px}
+.sigcard{border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:4px}
+.sigtop{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.sn{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.stype{font-size:11px;font-weight:600;color:var(--signal);text-transform:uppercase;letter-spacing:.04em}
+.stxt0{font-weight:500;flex:1 1 200px;min-width:0}
+.src{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
+.ex{margin:0;font-size:13px;color:var(--muted);border-left:2px solid var(--line);padding-left:10px;font-style:italic}
+.math{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px}
+.math .part{background:var(--sunk);border-radius:5px;padding:2px 8px}
+.math .part b{font-family:var(--f-mono);font-weight:500;color:var(--accent)}
+.math .eq{font-family:var(--f-mono);color:var(--muted)}
+.math .tot{font-family:var(--f-mono);font-weight:500;font-size:13px}
+.buyer{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+
+.alert{border-radius:8px;padding:10px 12px;font-size:13px;display:grid;gap:4px}
+.alert.bad{background:var(--bad-soft);border-left:3px solid var(--bad)}
+.alert.good{background:var(--good-soft);border-left:3px solid var(--good)}
+.alert.warn{background:var(--warn-soft);border-left:3px solid var(--warn)}
+.alert .label{color:inherit;opacity:.85}
+.alert .mono{font-size:12.5px}
+.strike{text-decoration:line-through;opacity:.7}
+
+.angles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.angle{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 10px;text-align:left;cursor:pointer;display:grid;gap:1px}
+.angle b{font-size:13px;font-weight:600}
+.angle span{font-size:11.5px;color:var(--muted)}
+.angle[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.angle.flag{border-style:dashed}
+.angle.flag b{color:var(--bad)}
+.angle.flag[aria-pressed="true"]{border-color:var(--bad);background:var(--bad-soft)}
+.angle:disabled{cursor:not-allowed;opacity:.55}
+.editor{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.ebar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;padding:6px 10px;background:var(--sunk);font-size:12px;color:var(--muted)}
+.ebar .mono{color:var(--fg)}
+.frow{display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.frow .k{color:var(--muted);font-size:12px}
+.frow .v{min-width:0;overflow-wrap:anywhere}
+input#subject{border:0;background:none;padding:2px 0;width:100%;font:500 14px var(--f-body)}
+input#subject:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+textarea#body{display:block;width:100%;border:0;resize:vertical;min-height:190px;padding:12px;font:14.5px/1.6 var(--f-body);color:var(--fg);background:var(--panel)}
+textarea#body:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+textarea:disabled,input:disabled{color:var(--muted)}
+.checks{display:grid;gap:3px;padding:8px 12px;border-top:1px solid var(--line);font-size:12.5px}
+.ok{color:var(--good)} .bad{color:var(--bad)} .wn{color:var(--warn)}
+.actions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:7px 12px;font:500 13px var(--f-body);cursor:pointer}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);display:inline-flex;gap:8px;align-items:center}
+.btn.primary:hover{filter:brightness(1.08);color:var(--on-accent)}
+kbd{font-family:var(--f-mono);font-size:11px;padding:0 5px;border-radius:4px;border:1px solid currentColor;opacity:.75}
+.sender{font-size:12px;color:var(--muted)}
+.sender .mono{color:var(--fg)}
+
+.seq{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seq li{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+.seq li:last-child{border-bottom:0}
+.seq li.branch{padding-left:22px;background:var(--sunk);grid-template-columns:28px minmax(0,1fr) auto}
+.seq li.off{color:var(--muted)}
+.seq li.off .stx{text-decoration:line-through}
+.seq .day{font-family:var(--f-mono);color:var(--muted);font-size:12px}
+.seq .br{font-family:var(--f-mono);color:var(--muted)}
+.ch{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+.stag{font-family:var(--f-mono);font-size:10.5px;color:var(--signal);background:var(--signal-soft);border-radius:4px;padding:0 5px;margin-left:6px;white-space:nowrap}
+
+details.trace summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
+.tr{list-style:none;margin:8px 0 0;font-family:var(--f-mono);font-size:12px;display:grid;gap:4px;background:var(--sunk);border-radius:6px;padding:10px}
+.tr li{display:grid;grid-template-columns:140px minmax(0,1fr) 64px;gap:10px}
+.tr .s{color:var(--accent)} .tr .ms{text-align:right;color:var(--muted)}
+pre.prompt{white-space:pre-wrap;font-family:var(--f-mono);font-size:11.5px;background:var(--sunk);padding:10px;border-radius:6px;margin:8px 0 0}
+
+/* Ops */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--panel);padding:12px 14px;display:grid;gap:2px;min-width:0}
+.kpi .v{font-family:var(--f-mono);font-size:22px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted)}
+.simnote{font-size:12px;color:var(--muted);margin:-6px 2px 0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
+.bars{display:grid;gap:8px}
+.brow,.axis{display:grid;grid-template-columns:110px minmax(0,1fr) 50px;gap:10px;align-items:center;font-size:12.5px}
+.track{position:relative;height:16px;background:repeating-linear-gradient(to right,transparent 0,transparent calc(25% - 1px),var(--line) calc(25% - 1px),var(--line) 25%);border-left:1px solid var(--line)}
+.fill{position:absolute;inset:2px auto 2px 0;background:var(--accent);border-radius:0 3px 3px 0}
+.fill.base{background:var(--muted);opacity:.5}
+.axis{font-size:11px;color:var(--muted)} .ticks{display:flex;justify-content:space-between;font-family:var(--f-mono)}
+.takeaway{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+tr:last-child td{border-bottom:0}
+.r{text-align:right}
+.cap{display:grid;grid-template-columns:52px 50px;gap:8px;align-items:center}
+.capbar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.capbar i{display:block;height:100%;background:var(--accent)} .capbar i.hot{background:var(--warn)}
+.auth{display:flex;gap:4px}
+.auth span{font-family:var(--f-mono);font-size:10.5px;padding:0 5px;border-radius:4px}
+.auth .p{background:var(--good-soft);color:var(--good)} .auth .f{background:var(--bad-soft);color:var(--bad)} .auth .w{background:var(--warn-soft);color:var(--warn)}
+.why{display:block;font-size:11px;color:var(--muted);margin-top:3px;white-space:normal;max-width:190px}
+.rule{font-size:12px;color:var(--muted);margin:10px 0 0}
+.engine{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.engine div{background:var(--panel);padding:10px 12px;display:grid;gap:2px}
+.engine .v{font-family:var(--f-mono);font-size:17px}
+.workers{display:flex;gap:4px;margin-top:2px}
+.workers i{width:14px;height:8px;border-radius:2px;background:var(--sunk)} .workers i.on{background:var(--accent)}
+.log{list-style:none;margin:0;padding:0;font-family:var(--f-mono);font-size:12px;display:grid;gap:4px;max-height:280px;overflow:auto}
+.log li{display:grid;grid-template-columns:44px 60px minmax(0,1fr);gap:8px}
+.log .t{color:var(--muted)} .log .a{color:var(--accent)} .log .a.user{color:var(--signal)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;z-index:20;max-width:calc(100% - 32px)}
+
+@media (max-width:1100px){.angles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:980px){.work,.grid2{grid-template-columns:minmax(0,1fr)} .work > .panel:first-child{position:static} .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} .kpis .kpi:last-child{grid-column:1/-1} .engine{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){
+  .angles{grid-template-columns:minmax(0,1fr)}
+  .brow,.axis{grid-template-columns:86px minmax(0,1fr) 44px}
+  .tr li{grid-template-columns:minmax(0,1fr) 58px} .tr li span:nth-child(2){grid-column:1/-1;order:3}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Signal Desk</h1>
+      <span class="sample">Sample data · fictional companies and people</span>
+    </div>
+    <div class="bar">
+      <div class="seg" role="tablist" aria-label="View">
+        <button type="button" role="tab" id="tab-work" aria-selected="true">Workspace</button>
+        <button type="button" role="tab" id="tab-ops" aria-selected="false">Ops</button>
+      </div>
+      <div class="seg" role="group" aria-label="Signed in as">
+        <button type="button" id="role-admin" aria-pressed="true">Admin</button>
+        <button type="button" id="role-rep" aria-pressed="false">Rep</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="view-work" class="view">
+    <div class="sub" id="worksub"></div>
+    <div class="work">
+      <section class="panel" aria-label="Lead queue">
+        <div class="ph"><h2>Queue</h2><div class="qtabs" role="tablist" id="qtabs"></div></div>
+        <div class="chips" id="chips"></div>
+        <ul class="queue" id="queue"></ul>
+        <details class="filtered" id="filtered"></details>
+      </section>
+      <section class="panel" aria-label="Lead detail"><div class="pb detail" id="detail"></div></section>
+    </div>
+    <p class="sample" style="margin:0">Shortcuts: <kbd>J</kbd> / <kbd>K</kbd> move through the queue · <kbd>⌘</kbd><kbd>↵</kbd> approve</p>
+  </section>
+
+  <section id="view-ops" class="view" hidden>
+    <section class="kpis" aria-label="Outcomes">
+      <div class="kpi"><span class="label">Leads scored today</span><span class="v">20</span><span class="s">6 surfaced, 14 filtered</span></div>
+      <div class="kpi"><span class="label">Enrolled</span><span class="v" id="k-enr">1</span><span class="s">in active sequences</span></div>
+      <div class="kpi"><span class="label">Edited before send</span><span class="v" id="k-edit">–</span><span class="s">of snippets approved here</span></div>
+      <div class="kpi"><span class="label">Positive reply rate</span><span class="v">9.4%</span><span class="s">vs 1.8% with no signal</span></div>
+      <div class="kpi"><span class="label">Meetings booked</span><span class="v">7</span><span class="s">last 14 days</span></div>
+    </section>
+    <p class="simnote">Reply, meeting and reply-by-signal figures are simulated for this demo. Everything else reflects actions taken on this page.</p>
+
+    <div class="grid2">
+      <section class="panel">
+        <div class="ph"><h2>Reply rate by signal type</h2><span class="label">positive replies / sends</span></div>
+        <div class="pb">
+          <div class="bars" id="bars"></div>
+          <div class="axis" style="margin-top:6px"><span></span><div class="ticks"><span>0%</span><span>4%</span><span>8%</span><span>12%</span><span>16%</span></div><span></span></div>
+          <p class="takeaway">Hiring signals reply at 7.9× the no-signal rate: a team posting its first sales role is feeling the problem this week.</p>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="ph"><h2>Sender health</h2><span class="label">rotation skips paused domains</span></div>
+        <div class="pb" style="padding-top:6px">
+          <div class="tbl"><table>
+            <thead><tr><th>Mailbox domain</th><th>Auth</th><th>Sent today</th><th class="r">Bounce</th><th class="r">Spam</th><th>Status</th></tr></thead>
+            <tbody id="senders"></tbody>
+          </table></div>
+          <p class="rule">A domain sends only when SPF, DKIM and DMARC all pass. Auto-pause: bounce above <span class="mono">4%</span> or spam complaints above <span class="mono">0.3%</span>. Max <span class="mono">50</span> sends per mailbox per day.</p>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <div class="ph"><h2>Engine</h2><span class="label">today</span></div>
+      <div class="pb"><div class="engine">
+        <div><span class="label">Workers busy</span><span class="v">3 / 5</span><div class="workers" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div>
+        <div><span class="label">Queue depth</span><span class="v">12</span></div>
+        <div><span class="label">Run time p50 / p95</span><span class="v">3.8 s / 9.1 s</span></div>
+        <div><span class="label">Rate-limit headroom</span><span class="v">64%</span></div>
+        <div><span class="label">Fetch retry rate</span><span class="v">1.2%</span></div>
+        <div><span class="label">Dedupe merges</span><span class="v">17</span></div>
+        <div><span class="label">Drafts blocked by guardrails</span><span class="v">9</span></div>
+        <div><span class="label">Bounces recovered</span><span class="v" id="k-rec">0 / 1</span></div>
+      </div></div>
+    </section>
+
+    <section class="panel">
+      <div class="ph"><h2>Audit log</h2><span class="label">every agent and user action</span></div>
+      <div class="pb"><ul class="log" id="log"></ul></div>
+    </section>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const SIG = {hiring:"Hiring", funding:"Funding", launch:"Launch", post:"Founder post", job:"Job change", visit:"Site visit"};
+const ANGLES = [
+  {id:"signal", name:"Signal first", hint:"Lead with what they did"},
+  {id:"peer", name:"Peer proof", hint:"What similar teams did"},
+  {id:"short", name:"Short ask", hint:"Two lines, one question"},
+  {id:"raw", name:"Unconstrained", hint:"No guardrails, for comparison", flag:true}
+];
+const HYPE = ["revolutionize","game-changer","game changer","cutting-edge","synergy","best-in-class","unprecedented","10x","finds you well","next level","transform your business"];
+const SENDERS = [
+ {d:"mail1.signaldesk.dev",s:38,c:50,b:0.8,sp:0.02,auth:["p","p","p"]},
+ {d:"mail2.signaldesk.dev",s:41,c:50,b:1.1,sp:0.03,auth:["p","p","p"]},
+ {d:"hello.signaldesk.co",s:47,c:50,b:2.6,sp:0.09,auth:["p","p","p"]},
+ {d:"team.signaldesk.co",s:0,c:50,b:4.9,sp:0.31,auth:["p","p","p"]},
+ {d:"mail3.signaldesk.dev",s:0,c:50,b:0,sp:0,auth:["p","p","f"],note:"DMARC record not found"}
+];
+
+const LEADS = [
+ {id:"l1", person:"Amara Okafor", role:"Co-founder & CEO", company:"Ledgerline", email:"amara@ledgerline.co", what:"AP automation for mid-market finance", stage:"Seed", size:12, status:"ready", sender:1,
+  buyer:{st:"good",lbl:"Buyer verified",why:"CEO at 12 people: owns sales until the founding AE starts."},
+  signals:[
+   {t:"hiring",txt:"Posted a Founding Account Executive role",src:"Ashby job board",h:6,ex:"You'll build our outbound motion from scratch and own the first $1M in pipeline."},
+   {t:"launch",txt:"Shipped v2 with multi-entity support",src:"Company LinkedIn page",h:52,ex:"v2 is live: multi-entity AP for finance teams running more than one ledger."}],
+  ground:[["founding AE",0],["founding account executive",0],["from scratch",0],["first $1M",0],["v2",1],["multi-entity",1]],
+  parts:[["ICP match",40],["Hiring signal",30],["Fresh, under 24h",15],["2 signals stacked",7]],
+  li:{txt:"Connection note: congrats on shipping v2 multi-entity support", s:2},
+  drafts:{
+   signal:["your founding AE role","Hi Amara,\n\nSaw the founding AE posting on Ashby, especially the line about building outbound from scratch. That usually means the new hire spends their first month wiring tools together instead of selling.\n\nWe set up signal-based outbound for seed teams, so the AE starts with finance leads already warmed up.\n\nWorth 15 minutes before they start?"],
+   peer:["before your first AE starts","Hi Amara,\n\nTwo AP-automation teams we work with hired their first AE this year. Both had outbound running before day one, so the hire started with meetings instead of an empty pipeline.\n\nYour founding AE role reads like the same moment. Want to see how they set it up?"],
+   short:["founding AE","Hi Amara,\n\nSaw the founding AE role on Ashby. Want their first month of pipeline ready before they start?"]}},
+ {id:"l2", person:"Daniel Reyes", role:"Head of Growth", company:"Patchwork Labs", email:"daniel.reyes@patchworklabs.com", what:"Feature flags for mobile teams", stage:"Series A", size:34, status:"ready", sender:0,
+  bounce:{bad:"daniel@patchwork.dev", code:"550 5.1.1 recipient address does not exist", how:"Matched the first.last pattern used by 4 staff addresses on the company site. MX record verified. Old address added to suppression list."},
+  buyer:{st:"acc",lbl:"Buyer rerouted",why:"First match was the CTO. Rerouted to Head of Growth, who owns the SDR hires."},
+  signals:[
+   {t:"funding",txt:"Announced a $14M Series A",src:"Company blog",h:20,ex:"We raised $14M to bring safe feature releases to every mobile team."},
+   {t:"hiring",txt:"Hiring 2 SDRs in Austin",src:"Greenhouse job board",h:30,ex:"SDRs will run outbound to mobile engineering leaders at Series B+ companies."}],
+  ground:[["Series A",0],["$14M",0],["raise",0],["SDR",1],["Austin",1]],
+  parts:[["ICP match",40],["Funding signal",25],["Hiring signal",15],["Fresh, under 24h",8]],
+  li:{txt:"Connection note: congrats on the SDR hires in Austin", s:2},
+  drafts:{
+   signal:["your two SDR roles","Hi Daniel,\n\nCongrats on the Series A. Two SDR openings in Austin right after a raise usually means outbound is about to become a real channel.\n\nMost teams spend the first quarter wiring tools together before the SDRs can sell. We skip that part.\n\nOpen to a quick look before they start?"],
+   peer:["after the Series A","Hi Daniel,\n\nThree Series A dev-tool teams we work with hired SDRs right after they raised. The ones with signal-based lists ready booked meetings in week one. The rest spent a month building lists.\n\nWant to see the difference in setup?"],
+   short:["SDRs in Austin","Hi Daniel,\n\nSaw the Series A and the SDR roles in Austin. Want their pipeline ready on day one?"]}},
+ {id:"l3", person:"Priya Nair", role:"Founder", company:"Quillstack", email:"priya@quillstack.io", what:"Contract review for in-house legal", stage:"Seed", size:9, status:"ready", sender:1,
+  buyer:{st:"good",lbl:"Buyer verified",why:"Founder at 9 people who runs every sales call herself (from her own post)."},
+  signals:[
+   {t:"post",txt:"Posted that running every sales call herself isn't scaling",src:"LinkedIn post",h:14,ex:"I'm still taking every sales call myself and it is not scaling. Half of them shouldn't have been booked."}],
+  ground:[["sales call",0],["every call",0],["not scaling",0],["your post",0]],
+  parts:[["ICP match",40],["Founder pain post",25],["Fresh, under 24h",16]],
+  li:null,
+  drafts:{
+   signal:["your post on sales calls","Hi Priya,\n\nYour post about taking every sales call yourself landed. At 9 people, relief usually comes from booking the right calls, not more of them.\n\nWe have an agent research and qualify each lead before it reaches your calendar.\n\nWant to see what it would have filtered out this month?"],
+   peer:["founder-led sales at 9 people","Hi Priya,\n\nThree seed-stage legal-tech founders we work with were taking every sales call themselves, like your post describes. Qualifying leads before the call cut their wasted calls roughly in half.\n\nWorth 15 minutes to compare notes?"],
+   short:["every sales call","Hi Priya,\n\nRead your post on sales calls not scaling. Want an agent to qualify leads before you show up?"]}},
+ {id:"l5", person:"Hana Mori", role:"CEO", company:"Tidepool Analytics", email:"hana@tidepool.dev", what:"Warehouse-native product analytics", stage:"Seed", size:15, status:"ready", sender:2,
+  buyer:{st:"good",lbl:"Buyer verified",why:"CEO at 15 people with no sales leader yet."},
+  signals:[
+   {t:"visit",txt:"Viewed the pricing page 3 times this week",src:"Website analytics",h:9,ex:"/pricing ×3, /docs/sequences ×1, matched to tidepool.dev by reverse IP."}],
+  ground:[["pricing",0],["plans",0],["comparing",0]],
+  parts:[["ICP match",40],["Repeat pricing visits",20],["Fresh, under 24h",11]],
+  li:null,
+  drafts:{
+   signal:["pricing questions","Hi Hana,\n\nNoticed someone at Tidepool has been comparing our pricing plans this week. Picking a plan without seeing it on your own volume is hard.\n\nHappy to walk through which plan fits a 15-person team, based on how much outbound you run today.\n\nWould a 10-minute call help?"],
+   peer:["how teams your size chose","Hi Hana,\n\nTwo analytics startups around your size were comparing our pricing plans last month. I can share which plan each picked and what the first month actually cost.\n\nWant the short version by email?"],
+   short:["pricing","Hi Hana,\n\nSaw you checking our pricing. Want a 10-minute walkthrough of which plan fits?"]}},
+ {id:"l4", person:"Marcus Bell", role:"VP Sales", company:"Fernway", email:"marcus@fernway.co", what:"Route planning for field service", stage:"Series A", size:58, status:"replied", sender:0,
+  buyer:{st:"good",lbl:"Buyer verified",why:"VP Sales: owns the outbound stack."},
+  signals:[{t:"job",txt:"Joined Fernway as VP Sales",src:"LinkedIn profile",h:70,ex:"Started a new position: VP Sales at Fernway."}],
+  ground:[["new role",0],["joined",0],["Fernway",0],["first 90 days",0]],
+  parts:[["ICP match",35],["Champion job change",30],["Signal under 72h",11]],
+  li:null,
+  reply:"Timing is good, we're rebuilding outbound this month. Can you do Thursday?",
+  drafts:{
+   signal:["your first 90 days at Fernway","Hi Marcus,\n\nCongrats on the new role at Fernway. New sales leaders usually rebuild the outbound stack in their first 90 days.\n\nIf that's on your list, I'd love to compare notes on what to keep and what to cut.\n\nOpen to a short call?"],
+   peer:["",""],short:["",""]}},
+ {id:"l6", person:"Kofi Asante", role:"Co-founder & CEO", company:"Gridmark", email:"kofi@gridmark.io", what:"Energy usage APIs for building managers", stage:"Seed", size:7, status:"enrolled", sender:1, approvedAngle:"signal",
+  buyer:{st:"good",lbl:"Buyer verified",why:"CEO at 7 people: founder-led sales."},
+  signals:[{t:"launch",txt:"Launched public API on Hacker News",src:"Hacker News",h:40,ex:"Show HN: Gridmark, an energy usage API for building managers."}],
+  ground:[["API",0],["launch",0],["HN",0],["Hacker News",0]],
+  parts:[["ICP match",35],["Launch signal",18],["Signal under 48h",11]],
+  li:null,
+  drafts:{
+   signal:["after the Show HN","Hi Kofi,\n\nSaw the Gridmark API launch on Hacker News. Launch interest fades fast, usually within a week.\n\nWe help teams turn the people who engaged into conversations before it does.\n\nWant help following up with this week's signups?"],
+   peer:["",""],short:["",""]}}
+];
+const RAW = l => ["Revolutionize your sales!!", `Hi ${l.person.split(" ")[0]},\n\nI hope this email finds you well. Our cutting-edge AI platform is a game-changer that will revolutionize how ${l.company} does sales — driving 10x pipeline growth and unlocking unprecedented synergy across your entire go-to-market organization. Companies like yours are seeing incredible results with our best-in-class solution, and we would love to show you how it can transform your business and take your revenue to the next level. Let me know a good time to connect.`];
+
+const FILTERED = [
+ {s:43, c:"Sprout Clinics", r:"Pre-seed, 4 people; only signal is a 4-day-old shared article"},
+ {s:39, c:"Brightbay Health", r:"In ICP but no signal in 30 days"},
+ {s:28, c:"Carton & Co", r:"Series B, 140 people: outside ICP"},
+ {s:22, c:"Northwind Freight", r:"400 people, enterprise buying cycle"}
+];
+const REPLY = [{t:"Hiring",v:14.2},{t:"Funding",v:11.8},{t:"Job change",v:10.1},{t:"Launch",v:8.6},{t:"Founder post",v:7.3},{t:"Site visit",v:5.9},{t:"No signal",v:1.8,base:true}];
+const LOG = [
+ {t:"18:44",a:"agent",m:"Patchwork Labs: daniel@patchwork.dev bounced (550 5.1.1); corrected address found, awaiting approval"},
+ {t:"18:41",a:"agent",m:"halted sequence for Fernway: positive reply detected"},
+ {t:"18:30",a:"agent",m:"blocked unconstrained draft for Ledgerline: no signal reference, hype phrases"},
+ {t:"18:02",a:"agent",m:"scored Ledgerline 92 (hiring + launch)"},
+ {t:"17:55",a:"agent",m:"mail3.signaldesk.dev held: DMARC record not found"},
+ {t:"17:41",a:"agent",m:"paused team.signaldesk.co: bounce 4.9% > 4%, spam 0.31% > 0.3%"},
+ {t:"17:33",a:"agent",m:"buyer check: rerouted Patchwork Labs from CTO to Head of Growth"},
+ {t:"17:20",a:"agent",m:"merged duplicate: 'Patchwork Labs Inc.' into Patchwork Labs"},
+ {t:"17:02",a:"agent",m:"filtered 14 leads below score 50"},
+ {t:"16:58",a:"tomi",m:"edited ICP: added 'founder-led sales'"},
+ {t:"16:12",a:"agent",m:"retry 2/3 on fetch: careers page timeout"}
+];
+
+const state = {sel:"l1", q:"ready", sig:null, role:"admin", tab:"work", angle:{}, subj:{}, body:{}, edited:new Set(), busy:false};
+const draft=(l,a)=>a==="raw"?RAW(l):l.drafts[a];
+LEADS.forEach(l=>{const a=l.approvedAngle||"signal"; state.angle[l.id]=a; [state.subj[l.id],state.body[l.id]]=draft(l,a);});
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const age=h=>h<48?h+"h":Math.round(h/24)+"d";
+const total=l=>l.parts.reduce((a,p)=>a+p[1],0);
+const cls=s=>s>=75?"hi":s>=50?"md":"lo";
+const words=t=>t.trim()?t.trim().split(/\s+/).length:0;
+const now=()=>{const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")};
+const idem=l=>"idem_"+(l.id.charCodeAt(1)*7919).toString(16)+"a"+l.company.length;
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+const has=(text,phrase)=>new RegExp("(^|[^a-z0-9])"+reEsc(phrase.toLowerCase())+"($|[^a-z0-9])").test(text.toLowerCase());
+const cur=()=>LEADS.find(x=>x.id===state.sel);
+function log(a,m){LOG.unshift({t:now(),a,m});renderLog();}
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200);}
+function visible(){return [...LEADS].sort((a,b)=>total(b)-total(a)).filter(l=>l.status===state.q&&(!state.sig||l.signals.some(s=>s.t===state.sig)));}
+
+function checks(l){
+  const subj=state.subj[l.id]||"", body=state.body[l.id]||"", all=subj+"\n"+body;
+  const hits=[]; l.ground.forEach(([p,i])=>{if(has(all,p)&&!hits.some(h=>h[0].toLowerCase()===p.toLowerCase()))hits.push([p,i]);});
+  const hype=HYPE.filter(h=>all.toLowerCase().includes(h));
+  const dash=/[—–]/.test(all);
+  const wc=words(body);
+  const q=/\?\s*$/.test(body.trim());
+  const out=[];
+  out.push(hits.length?`<span class="ok">✓ Grounded: ${hits.map(h=>`"${esc(h[0])}" <span class="mono">(signal ${h[1]+1})</span>`).join(", ")}</span>`:`<span class="bad">✕ Not grounded: mentions none of the detected signals</span>`);
+  out.push(hype.length?`<span class="bad">✕ Generic phrases: ${hype.map(h=>`"${esc(h)}"`).join(", ")}</span>`:`<span class="ok">✓ No generic sales phrases</span>`);
+  out.push(dash?`<span class="bad">✕ Contains a dash that reads as AI-written</span>`:`<span class="ok">✓ No AI-tell punctuation</span>`);
+  out.push(wc===0?`<span class="bad">✕ Body is empty</span>`:wc<=80?`<span class="ok">✓ ${wc} words, under 80</span>`:`<span class="wn">! ${wc} words, over 80</span>`);
+  out.push(q?`<span class="ok">✓ Ends with a question</span>`:`<span class="wn">! No closing question</span>`);
+  if(!subj.trim()) out.push(`<span class="bad">✕ Subject is empty</span>`);
+  return {html:out.join(""), pass:hits.length>0&&!hype.length&&!dash&&wc>0&&subj.trim().length>0};
+}
+
+function renderSub(){
+  const c=k=>LEADS.filter(l=>l.status===k).length;
+  const att=LEADS.filter(l=>l.status==="ready"&&l.bounce).length;
+  $("#worksub").innerHTML=`<span><b>${c("ready")}</b> ready for review${att?` (<b>${att}</b> bounce to fix)`:""}</span><span><b>${c("enrolled")}</b> enrolled</span><span><b>${c("replied")}</b> replied</span><span><b>14</b> filtered out by the agent</span><span>ICP: seed to Series A B2B, 5–60 people, founder-led sales</span>`;
+}
+function renderQTabs(){
+  const c=k=>LEADS.filter(l=>l.status===k).length;
+  $("#qtabs").innerHTML=[["ready","Ready"],["enrolled","Enrolled"],["replied","Replied"]].map(([k,n])=>`<button type="button" role="tab" class="qtab" data-q="${k}" aria-selected="${state.q===k}">${n}<span class="n">${c(k)}</span></button>`).join("");
+}
+function renderChips(){
+  $("#chips").innerHTML=["all",...Object.keys(SIG)].map(t=>`<button type="button" class="chip" data-t="${t}" aria-pressed="${(state.sig||"all")===t}">${t==="all"?"All signals":SIG[t]}</button>`).join("");
+}
+function renderQueue(){
+  const list=visible();
+  $("#queue").innerHTML=list.length?list.map(l=>{const s=l.signals[0];return `<li><button type="button" class="lead" data-id="${l.id}" aria-current="${l.id===state.sel}">
+    <span class="score ${cls(total(l))}">${total(l)}</span>
+    <span class="who"><span class="co">${esc(l.company)}${l.bounce&&l.status==="ready"?'<span class="pill bad">Bounced</span>':''}${l.recovered?'<span class="pill neutral">Resent</span>':''}${state.edited.has(l.id)&&l.status!=="ready"?'<span class="pill neutral">Edited</span>':''}</span>
+    <span class="meta">${esc(l.person)} · ${esc(l.role)} · ${l.stage}</span>
+    <span class="sig">${SIG[s.t]}: ${esc(s.txt)}${l.signals.length>1?` <span class="stag">+${l.signals.length-1}</span>`:""}</span></span>
+    <span class="age ${s.h<48?"fresh":""}">${age(s.h)}</span></button></li>`}).join(""):
+    `<li class="empty">${state.q==="ready"?"Queue cleared. New leads appear here as the agent finds signals.":"Nothing here yet."}</li>`;
+  $("#filtered").innerHTML=`<summary>14 leads filtered out below score 50</summary><ul>${FILTERED.map(f=>`<li><span class="score lo" style="font-size:12px;padding:1px 0">${f.s}</span><span><b>${esc(f.c)}</b> <span class="r">${esc(f.r)}</span></span></li>`).join("")}<li><span></span><span class="r">and 10 more with no qualifying signal</span></li></ul>`;
+}
+
+function seqHtml(l){
+  const P=(c,t)=>`<span class="pill ${c}">${t}</span>`;
+  const tag=n=>n?`<span class="stag">signal ${n}</span>`:"";
+  const row=(o)=>`<li class="${o.cls||""}"><span class="${(o.cls||"").includes("branch")?"br":"day"}">${o.day}</span><span><span class="stx">${o.ch?`<span class="ch">${o.ch}</span>`:""}${o.txt}</span>${tag(o.s)}</span>${o.pill||""}</li>`;
+  const liTxt=l.li?esc(l.li.txt):"No second signal yet: connection request, no note";
+  const liS=l.li?l.li.s:0;
+  const st=l.status;
+  const pend=P("neutral","Pending"), wait=P("neutral","Waiting for approval");
+  if(st==="ready"&&l.bounce) return [
+    row({day:"Day 1",ch:"Email",txt:`Opener to <span class="mono strike">${esc(l.bounce.bad)}</span>`,s:1,pill:P("bad","Bounced")}),
+    row({day:"Day 1",ch:"Email",txt:`Resend to <span class="mono">${esc(l.email)}</span>`,s:1,pill:wait}),
+    row({day:"Day 3",ch:"Check",txt:"Has the lead replied or opened?",pill:pend}),
+    row({cls:"branch",day:"├",txt:"Replied → stop sequence, notify owner"}),
+    row({cls:"branch",day:"├",ch:"LinkedIn",txt:"Opened 2+ times → Day 4: "+liTxt,s:liS}),
+    row({cls:"branch",day:"└",ch:"Email",txt:"No opens → Day 4 new subject line, same thread"}),
+    row({day:"Day 7",ch:"Email",txt:"One case study from a similar team",pill:pend}),
+    row({day:"Day 11",ch:"Email",txt:"Short close-the-loop note",pill:pend})].join("");
+  if(st==="ready") return [
+    row({day:"Day 1",ch:"Email",txt:"Opener with the approved email",s:1,pill:wait}),
+    row({day:"Day 3",ch:"Check",txt:"Has the lead replied or opened?",pill:pend}),
+    row({cls:"branch",day:"├",txt:"Replied → stop sequence, notify owner"}),
+    row({cls:"branch",day:"├",ch:"LinkedIn",txt:"Opened 2+ times → Day 4: "+liTxt,s:liS}),
+    row({cls:"branch",day:"└",ch:"Email",txt:"No opens → Day 4 new subject line, same thread"}),
+    row({day:"Day 7",ch:"Email",txt:"One case study from a similar team",pill:pend}),
+    row({day:"Day 11",ch:"Email",txt:"Short close-the-loop note",pill:pend})].join("");
+  if(st==="enrolled") return [
+    row({day:"Day 1",ch:"Email",txt:l.recovered?`Resent to <span class="mono">${esc(l.email)}</span>`:"Opener with the approved email",s:1,pill:P(l.recovered?"acc":"good",l.recovered?"Queued":"Sent")}),
+    row({day:"Day 3",ch:"Check",txt:"Has the lead replied or opened?",pill:l.recovered?pend:P("acc","Opened 2×")}),
+    row({cls:"branch"+(l.recovered?"":" off"),day:"├",txt:"Replied → stop sequence, notify owner"}),
+    row({cls:"branch",day:"├",ch:"LinkedIn",txt:"Opened 2+ times → Day 4: "+liTxt,s:liS,pill:l.recovered?"":P("acc","Next")}),
+    row({cls:"branch"+(l.recovered?"":" off"),day:"└",ch:"Email",txt:"No opens → Day 4 new subject line",pill:l.recovered?"":P("neutral","Skipped")}),
+    row({day:"Day 7",ch:"Email",txt:"One case study from a similar team",pill:P("neutral","Scheduled")}),
+    row({day:"Day 11",ch:"Email",txt:"Short close-the-loop note",pill:P("neutral","Scheduled")})].join("");
+  return [
+    row({day:"Day 1",ch:"Email",txt:"Opener with the approved email",s:1,pill:P("good","Sent")}),
+    row({day:"Day 3",ch:"Check",txt:"Has the lead replied or opened?",pill:P("good","Replied")}),
+    row({cls:"branch",day:"├",txt:"Replied → stop sequence, notify owner",pill:P("good","Taken")}),
+    row({cls:"branch off",day:"├",ch:"LinkedIn",txt:"Opened 2+ times → Day 4 connection request",pill:P("neutral","Cancelled")}),
+    row({cls:"branch off",day:"└",ch:"Email",txt:"No opens → new subject line",pill:P("neutral","Cancelled")}),
+    row({cls:"off",day:"Day 7",ch:"Email",txt:"One case study from a similar team",pill:P("neutral","Cancelled")}),
+    row({cls:"off",day:"Day 11",ch:"Email",txt:"Short close-the-loop note",pill:P("neutral","Cancelled")})].join("");
+}
+function traceHtml(l,i){
+  const tok=980+i*53, gen=1400+i*170;
+  const steps=[
+    ["fetch_signals",`${l.signals.length} signal(s): ${l.signals.map(s=>s.src).join(", ")}`, 310+i*40],
+    ["dedupe",l.id==="l2"?"merged 'Patchwork Labs Inc.' into existing record":"no duplicates", 22],
+    ["buyer_check",l.buyer.why, 140],
+    ["score",`${total(l)} from ${l.parts.length} weighted factors`, 4],
+    ["generate",`3 angles + 1 unconstrained baseline, ${tok} tokens${i===2?", 1 retry after 429":""}`, gen],
+    ["guardrails","baseline blocked; 3 angles passed grounding, phrasing, length", 9]
+  ];
+  if(l.bounce) steps.push(["bounce_recovery",`${l.bounce.code} → ${l.email}`, 480]);
+  steps.push(["enqueue",`${idem(l)} (lock set, duplicate sends blocked)`, 12]);
+  return `<ul class="tr">${steps.map(s=>`<li><span class="s">${s[0]}</span><span>${esc(s[1])}</span><span class="ms">${s[2]} ms</span></li>`).join("")}</ul>`;
+}
+function promptFor(l){
+  const a=ANGLES.find(x=>x.id===state.angle[l.id]);
+  if(a.flag) return `System: Write a cold email to ${l.person} at ${l.company}.\n\n(No signals, rules or angle supplied. This baseline shows what the model writes without guardrails.)`;
+  return `System: Write a B2B cold email: subject line plus body.
+Rules: body under 80 words. Quote or name at least one detected signal. No hype phrases, no dashes. End with one low-effort question.
+Angle: ${a.name} (${a.hint.toLowerCase()})
+
+Lead: ${l.person}, ${l.role} at ${l.company} (${l.what}, ${l.stage}, ${l.size} people)
+${l.signals.map((s,k)=>`Signal ${k+1} [${SIG[s.t]}, ${s.src}, ${age(s.h)} ago]: "${s.ex}"`).join("\n")}
+Seller: outbound platform for early-stage B2B teams`;
+}
+
+function renderDetail(){
+  const l=cur(); if(!l){$("#detail").innerHTML=`<p class="empty">Select a lead.</p>`;return;}
+  const i=LEADS.indexOf(l), locked=l.status!=="ready", snd=SENDERS[l.sender], ang=state.angle[l.id], aObj=ANGLES.find(a=>a.id===ang);
+  const ck=checks(l);
+  const statusPill=l.status==="ready"?(l.bounce?'<span class="pill bad">Bounce recovery</span>':'<span class="pill warn">Needs review</span>'):l.status==="enrolled"?'<span class="pill acc">Enrolled</span>':'<span class="pill good">Replied</span>';
+  $("#detail").innerHTML=`
+  <div class="dh"><div><span class="label">Lead</span><h3>${esc(l.person)} <span style="color:var(--muted);font-weight:500;font-size:15px">· ${esc(l.company)}</span></h3>
+    <div class="facts"><span>${esc(l.role)}</span><span>${esc(l.what)}</span><span><span class="num">${l.size}</span> people · ${l.stage}</span></div></div>${statusPill}</div>
+  ${l.status==="replied"?`<div class="alert good"><span class="label">Reply received · sequence stopped</span><div>"${esc(l.reply)}"</div></div>`:""}
+  ${l.bounce&&l.status==="ready"?`<div class="alert bad"><span class="label">Day 1 email bounced</span>
+     <div><span class="mono strike">${esc(l.bounce.bad)}</span> returned <span class="mono">${esc(l.bounce.code)}</span></div>
+     <div>Corrected address: <span class="mono">${esc(l.email)}</span>. ${esc(l.bounce.how)}</div>
+     <div>Approve to resend. Nothing goes out to the new address without a person signing off.</div></div>`:""}
+  <div class="sec"><span class="label">Signals · ${l.signals.length} detected</span>
+    <div class="sigcards">${l.signals.map((s,k)=>`<div class="sigcard"><div class="sigtop"><span class="sn">${k+1}</span><span class="stype">${SIG[s.t]}</span><span class="stxt0">${esc(s.txt)}</span><span class="src">${esc(s.src)} · ${age(s.h)} ago</span></div><p class="ex">"${esc(s.ex)}"</p></div>`).join("")}</div>
+    <div class="math">${l.parts.map((p,k)=>`${k?'<span class="eq">+</span>':''}<span class="part">${p[0]} <b>${p[1]}</b></span>`).join("")}<span class="eq">=</span><span class="tot">${total(l)}</span></div>
+    <div class="buyer"><span class="pill ${l.buyer.st}">${l.buyer.lbl}</span><span>${esc(l.buyer.why)}</span></div>
+  </div>
+  <div class="sec"><span class="label">Email</span>
+    ${locked?"":`<div class="angles">${ANGLES.map(a=>`<button type="button" class="angle ${a.flag?"flag":""}" data-a="${a.id}" aria-pressed="${ang===a.id}" ${state.busy?"disabled":""}><b>${a.flag?"⚠ ":""}${a.name}</b><span>${a.hint}</span></button>`).join("")}</div>`}
+    ${aObj.flag&&!locked?`<div class="alert warn"><span class="label">Blocked by guardrails</span><div>This is what the model writes with no signals, rules or angle. It can't be approved. Pick an angle above to see the grounded version.</div></div>`:""}
+    <div class="editor">
+      <div class="ebar"><span id="estate">${locked?"Sent version":"Draft · edit before approving"}${state.edited.has(l.id)?' · <span class="mono">edited</span>':''}</span>${locked?"":`<button type="button" class="btn" id="regen" ${state.busy||aObj.flag?"disabled":""} style="padding:3px 9px;font-size:12px">Regenerate</button>`}</div>
+      <div class="frow"><span class="k">From</span><span class="v mono" style="font-size:12.5px">tomi@${snd.d}</span></div>
+      <div class="frow"><span class="k">To</span><span class="v">${esc(l.person)} <span class="mono" style="font-size:12.5px">&lt;${esc(l.email)}&gt;</span>${l.bounce&&l.status==="ready"?' <span class="pill acc">corrected</span>':''}</span></div>
+      <div class="frow"><label class="k" for="subject">Subject</label><input id="subject" value="${esc(state.busy?"…":state.subj[l.id])}" ${locked||state.busy||aObj.flag?"disabled":""}></div>
+      <label for="body" style="position:absolute;left:-9999px">Email body</label>
+      <textarea id="body" ${locked||state.busy||aObj.flag?"disabled":""}>${esc(state.busy?"Generating with the "+aObj.name.toLowerCase()+" angle…":state.body[l.id])}</textarea>
+      <div class="checks" id="checks">${state.busy?"":ck.html}</div>
+    </div>
+    ${locked?"":`<div class="actions"><span class="sender">${snd.s}/${snd.c} sent today from this mailbox · SPF, DKIM, DMARC pass</span>
+      <button type="button" class="btn primary" id="approve" ${ck.pass&&!state.busy?"":"disabled"}>${l.bounce?"Approve &amp; resend":"Approve &amp; enroll"} <kbd>⌘↵</kbd></button></div>`}
+  </div>
+  <div class="sec"><span class="label">Sequence · each touch uses its own signal</span><ol class="seq">${seqHtml(l)}</ol></div>
+  <div class="sec">
+    <details class="trace"><summary>Agent trace for this lead</summary>${traceHtml(l,i)}</details>
+    <details class="trace"><summary>Prompt sent to the model</summary><pre class="prompt">${esc(promptFor(l))}</pre></details>
+  </div>`;
+}
+function updateChecks(){
+  const l=cur(), ck=checks(l);
+  $("#checks").innerHTML=ck.html; const b=$("#approve"); if(b) b.disabled=!ck.pass;
+  $("#estate").innerHTML="Draft · edit before approving"+(state.edited.has(l.id)?' · <span class="mono">edited</span>':'');
+}
+function renderBars(){
+  $("#bars").innerHTML=REPLY.map(r=>`<div class="brow"><span>${r.t}</span><div class="track"><span class="fill ${r.base?"base":""}" style="width:${(r.v/16*100).toFixed(1)}%"></span></div><span class="num r">${r.v.toFixed(1)}%</span></div>`).join("");
+}
+function renderSenders(){
+  const names=["SPF","DKIM","DMARC"];
+  $("#senders").innerHTML=SENDERS.map(s=>{
+    const reasons=[]; if(s.b>4)reasons.push(`bounce ${s.b.toFixed(1)}% > 4%`); if(s.sp>0.3)reasons.push(`spam ${s.sp.toFixed(2)}% > 0.3%`);
+    const authFail=s.auth.some(a=>a!=="p");
+    let pill;
+    if(authFail) pill=`<span class="pill warn">Held</span><span class="why">${esc(s.note)}</span>`;
+    else if(reasons.length) pill=`<span class="pill bad">Paused</span><span class="why">${reasons.join(", ")}</span>`;
+    else if(s.s/s.c>=.9) pill='<span class="pill warn">Near cap</span>';
+    else pill='<span class="pill good">Healthy</span>';
+    return `<tr><td class="mono">${s.d}</td><td><span class="auth">${s.auth.map((a,k)=>`<span class="${a}" title="${names[k]} ${a==="p"?"pass":"fail"}">${names[k]}</span>`).join("")}</span></td>
+    <td><div class="cap"><span class="num">${s.s} / ${s.c}</span><span class="capbar"><i class="${s.s/s.c>=.9?"hot":""}" style="width:${s.s/s.c*100}%"></i></span></div></td>
+    <td class="r num ${s.b>4?"bad":""}">${s.b.toFixed(1)}%</td><td class="r num ${s.sp>0.3?"bad":""}">${s.sp.toFixed(2)}%</td><td>${pill}</td></tr>`}).join("");
+}
+function renderLog(){
+  $("#log").innerHTML=LOG.map(e=>`<li><span class="t">${e.t}</span><span class="a ${e.a==="agent"?"":"user"}">${esc(e.a)}</span><span>${esc(e.m)}</span></li>`).join("");
+}
+function renderKpis(){
+  $("#k-enr").textContent=LEADS.filter(l=>l.status==="enrolled").length;
+  const appr=LEADS.filter(l=>l.approvedHere);
+  $("#k-edit").textContent=appr.length?Math.round(appr.filter(l=>state.edited.has(l.id)).length/appr.length*100)+"%":"–";
+  $("#k-rec").textContent=`${LEADS.filter(l=>l.recovered).length} / 1`;
+}
+function renderView(){
+  const rep=state.role==="rep";
+  if(rep&&state.tab==="ops") state.tab="work";
+  $("#tab-ops").hidden=rep;
+  $("#view-work").hidden=state.tab!=="work";
+  $("#view-ops").hidden=state.tab!=="ops";
+  $("#tab-work").setAttribute("aria-selected",state.tab==="work");
+  $("#tab-ops").setAttribute("aria-selected",state.tab==="ops");
+  $("#role-admin").setAttribute("aria-pressed",!rep);
+  $("#role-rep").setAttribute("aria-pressed",rep);
+}
+function renderWork(){renderSub();renderQTabs();renderChips();renderQueue();renderDetail();renderKpis();}
+
+function approve(){
+  const l=cur();
+  if(!l||l.status!=="ready"||state.busy||!checks(l).pass) return;
+  const who=state.role==="rep"?"rep":"tomi", aName=ANGLES.find(a=>a.id===state.angle[l.id]).name.toLowerCase();
+  l.status="enrolled"; l.approvedHere=true; l.approvedAngle=state.angle[l.id];
+  if(l.bounce){l.recovered=true; log(who,`approved resend for ${l.company} to ${l.email} (${aName}${state.edited.has(l.id)?", edited":""})`); delete l.bounce;}
+  else log(who,`approved ${l.company} (${aName}${state.edited.has(l.id)?", edited":""})`);
+  SENDERS[l.sender].s=Math.min(SENDERS[l.sender].c,SENDERS[l.sender].s+1);
+  log("agent",`enrolled ${l.company} · ${idem(l)} · day 1 email queued`);
+  const next=visible()[0]; state.sel=next?next.id:l.id;
+  toast(`${l.company} ${l.recovered?"resend queued":"enrolled"}`);
+  renderWork(); renderSenders();
+}
+function move(d){
+  const list=visible(); if(!list.length) return;
+  let i=list.findIndex(l=>l.id===state.sel); i=Math.max(0,Math.min(list.length-1,(i<0?0:i+d)));
+  state.sel=list[i].id; renderQueue(); renderDetail();
+  const el=document.querySelector(`.lead[data-id="${state.sel}"]`); el&&el.focus();
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target;
+  const lead=t.closest(".lead"); if(lead){state.sel=lead.dataset.id;renderQueue();renderDetail();return;}
+  const qt=t.closest(".qtab"); if(qt){state.q=qt.dataset.q;const v=visible();if(v.length)state.sel=v[0].id;renderWork();return;}
+  const ch=t.closest(".chip"); if(ch){state.sig=ch.dataset.t==="all"?null:ch.dataset.t;renderChips();renderQueue();return;}
+  const an=t.closest(".angle"); if(an&&!an.disabled){
+    const l=cur(), a=an.dataset.a;
+    state.angle[l.id]=a; [state.subj[l.id],state.body[l.id]]=draft(l,a); state.edited.delete(l.id);
+    if(a==="raw") log("agent",`blocked unconstrained draft for ${l.company}: ${checks(l).pass?"":"failed guardrails"}`);
+    renderDetail(); return;}
+  if(t.closest("#regen")){
+    const l=cur(); state.busy=true; renderDetail();
+    setTimeout(()=>{state.busy=false;[state.subj[l.id],state.body[l.id]]=draft(l,state.angle[l.id]);state.edited.delete(l.id);
+      log("agent",`regenerated ${state.angle[l.id]} angle for ${l.company}`);renderDetail();},900);
+    return;}
+  if(t.closest("#approve")){approve();return;}
+  if(t.closest("#tab-work")){state.tab="work";renderView();return;}
+  if(t.closest("#tab-ops")){state.tab="ops";renderView();return;}
+  if(t.closest("#role-admin")||t.closest("#role-rep")){
+    state.role=t.closest("#role-rep")?"rep":"admin"; renderView(); log(state.role==="rep"?"rep":"tomi",`signed in as ${state.role}`); return;}
+});
+document.addEventListener("input",e=>{
+  if(e.target.id!=="body"&&e.target.id!=="subject") return;
+  const l=cur();
+  if(e.target.id==="body") state.body[l.id]=e.target.value; else state.subj[l.id]=e.target.value;
+  const [s0,b0]=draft(l,state.angle[l.id]);
+  (state.subj[l.id]===s0&&state.body[l.id]===b0)?state.edited.delete(l.id):state.edited.add(l.id);
+  updateChecks();
+});
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){e.preventDefault();approve();return;}
+  const typing=/^(TEXTAREA|INPUT)$/.test(document.activeElement&&document.activeElement.tagName);
+  if(typing||state.tab!=="work"||e.metaKey||e.ctrlKey||e.altKey) return;
+  if(e.key==="j") move(1); else if(e.key==="k") move(-1);
+});
+
+renderWork(); renderBars(); renderSenders(); renderLog(); renderView();
+</script>

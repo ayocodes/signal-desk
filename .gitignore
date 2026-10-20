@@ -1,0 +1,27 @@
+# Secrets: only .env.example is committed
+.env*
+!.env.example
+
+# Supabase CLI local state (project ref, pooler url)
+supabase/.temp/
+supabase/.branches/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
