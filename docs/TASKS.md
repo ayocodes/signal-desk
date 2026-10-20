@@ -157,7 +157,7 @@ Then tell the user the card is ready for Flash's rework prompt.
 
 ### You
 
-- [ ] **U1.0** In the Supabase dashboard: Authentication → Sign In / Providers → Email, turn off "Allow new users to sign up". Only the seeded demo users should exist. (RLS already gives a stranger's account nothing, since it has no profile; this closes the door entirely.)
+- [x] **U1.0** In the Supabase dashboard: Authentication → Sign In / Providers → Email, turn off "Allow new users to sign up". Only the seeded demo users should exist. (RLS already gives a stranger's account nothing, since it has no profile; this closes the door entirely.)
 
 ### Flash
 
