@@ -3,12 +3,12 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from agent import config
+from agent.config import load_config
 from agent.contacts import buyer_check, inbox_for, placeholder_contact
 from agent.scoring import SignalFacts, score_lead
 
 NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)
-CFG = config.scoring()
+CFG = load_config("test-org").scoring
 
 
 def signal(kind: str, hours_ago: float, founding: bool = False, title: str = "Signal") -> SignalFacts:
@@ -98,7 +98,7 @@ def test_buyer_check(title: str, team: int | None, status: str) -> None:
 
 
 def test_inbox_routing_is_deterministic_test_only_and_roughly_the_configured_share() -> None:
-    share = config.guardrails().test_inboxes
+    share = load_config("test-org").guardrails.test_inboxes
     ids = [f"00000000-0000-4000-8000-{i:012d}" for i in range(2000)]
     addresses = [inbox_for(i, share) for i in ids]
     assert addresses == [inbox_for(i, share) for i in ids]  # same every run
@@ -109,7 +109,7 @@ def test_inbox_routing_is_deterministic_test_only_and_roughly_the_configured_sha
 
 
 def test_placeholder_contact_is_marked_and_routed() -> None:
-    contact = placeholder_contact("org", "11111111-2222-4333-8444-555555555555", 12, config.guardrails().test_inboxes)
+    contact = placeholder_contact("org", "11111111-2222-4333-8444-555555555555", 12, load_config("test-org").guardrails.test_inboxes)
     assert contact["is_placeholder"] is True
     assert contact["name"] == "Founder"
     assert contact["buyer_status"] == "verified"

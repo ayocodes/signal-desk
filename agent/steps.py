@@ -12,7 +12,7 @@ from typing import Any
 
 import httpx
 
-from agent import config
+from agent.config import AgentConfig
 from agent.db import Database, Row
 from agent.domains import normalize_domain
 from agent.http_client import PoliteClient
@@ -36,6 +36,7 @@ class Context:
     run: RunRecorder
     org_id: str
     now: datetime
+    config: AgentConfig  # loaded once per org run via load_config(org_id)
 
 
 def companies(ctx: Context, columns: str) -> list[Row]:
@@ -55,7 +56,7 @@ def discover(ctx: Context) -> None:
     """YC dataset -> ICP evaluation -> upsert tracked companies (full and partial matches)."""
     parsed, skipped = yc.parse_companies(yc.load_dataset(ctx.client))
     ctx.run.count("yc_records", len(parsed) + skipped)
-    rules = config.scoring()
+    rules = ctx.config.scoring
     today = ctx.now.date()
 
     rows: dict[str, dict[str, Any]] = {}
@@ -118,7 +119,7 @@ def probe_job_boards(ctx: Context) -> None:
     ctx.run.count("probe_queue", len(pending))
 
     budget_start = ctx.client.request_count
-    keywords = config.hiring_keywords()
+    keywords = ctx.config.keywords
     for row in pending:
         if ctx.client.request_count - budget_start >= ctx.settings.discovery_probes_per_run:
             break
@@ -144,14 +145,14 @@ def probe_job_boards(ctx: Context) -> None:
 
 def refresh_hiring(ctx: Context) -> None:
     """Re-reads known job boards whose jobs are older than the refresh window."""
-    window = timedelta(hours=config.scoring().signal_windows.jobs_refresh_hours)
+    window = timedelta(hours=ctx.config.scoring.signal_windows.jobs_refresh_hours)
     due = [
         row
         for row in companies(ctx, "id,domain,ats_type,ats_token,jobs_fetched_at")
         if row["ats_type"]
         and (row["jobs_fetched_at"] is None or datetime.fromisoformat(row["jobs_fetched_at"]) < ctx.now - window)
     ]
-    keywords = config.hiring_keywords()
+    keywords = ctx.config.keywords
     for row in due[:MAX_BOARD_REFRESHES]:
         try:
             board = ats.fetch_board(ctx.client, row["ats_type"], row["ats_token"])
@@ -167,7 +168,7 @@ def refresh_hiring(ctx: Context) -> None:
 
 def detect_launches(ctx: Context) -> None:
     """Show HN / Launch HN stories from the lookback window, matched by the strict rule."""
-    window = config.scoring().signal_windows.launch_lookback_days
+    window = ctx.config.scoring.signal_windows.launch_lookback_days
     stories = hn.fetch_launch_stories(ctx.client, ctx.now, window)
     ctx.run.count("hn_stories", len(stories))
     tracked = [(r["id"], r["name"], r["domain"], r["yc_batch"]) for r in companies(ctx, "id,name,domain,yc_batch")]
@@ -179,7 +180,7 @@ def detect_launches(ctx: Context) -> None:
 
 def detect_yc_recency(ctx: Context) -> None:
     """A recent YC batch is a weak funding signal."""
-    months = config.scoring().signal_windows.funding_recent_months
+    months = ctx.config.scoring.signal_windows.funding_recent_months
     rows = [
         signal
         for r in companies(ctx, "id,yc_batch,yc_slug")
@@ -209,7 +210,7 @@ def _signal_facts(rows: list[Row]) -> dict[str, list[SignalFacts]]:
 
 def ensure_contacts(ctx: Context, tracked: list[Row]) -> dict[str, str]:
     """A placeholder contact for every tracked company that has none. Returns company id -> contact id."""
-    share = config.guardrails().test_inboxes
+    share = ctx.config.guardrails.test_inboxes
     existing = {c["company_id"]: c["id"] for c in ctx.db.select_all("contacts", "id,company_id", org_id=ctx.org_id)}
     missing = [placeholder_contact(ctx.org_id, r["id"], r["team_size"], share) for r in tracked if r["id"] not in existing]
     for contact in ctx.db.upsert("contacts", missing, on_conflict="company_id,name", ignore_duplicates=True):
@@ -230,7 +231,7 @@ def score_leads(ctx: Context) -> None:
 
     reps = [p["id"] for p in ctx.db.select_all("profiles", "id,role,created_at", org_id=ctx.org_id) if p["role"] == "rep"]
     load = {rep: sum(1 for lead in leads.values() if lead["assigned_to"] == rep) for rep in reps}
-    rules = config.scoring()
+    rules = ctx.config.scoring
 
     new_rows: list[dict[str, Any]] = []
     status_rows: list[dict[str, Any]] = []

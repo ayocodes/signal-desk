@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from agent import config
+from agent.config import load_config
 from agent.http_client import PoliteClient
 from agent.signals import classify_title, excerpt_for, hiring_fingerprint, hiring_signals
 from agent.sources.ats import html_to_text, parse_jobs, probe_company, slug_guesses
@@ -45,7 +45,7 @@ def test_slug_guesses_are_capped() -> None:
     ],
 )
 def test_sales_and_gtm_titles_are_classified(title: str, category: str, founding: bool) -> None:
-    match = classify_title(title, config.hiring_keywords())
+    match = classify_title(title, load_config("test-org").keywords)
     assert match is not None
     assert (match.category, match.founding) == (category, founding)
 
@@ -55,14 +55,14 @@ def test_sales_and_gtm_titles_are_classified(title: str, category: str, founding
     ["Senior Software Engineer", "Salesforce Developer", "Sales Engineer", "Product Designer", "Sales Intern", "Wholesale Buyer"],
 )
 def test_other_titles_are_not_sales_signals(title: str) -> None:
-    assert classify_title(title, config.hiring_keywords()) is None
+    assert classify_title(title, load_config("test-org").keywords) is None
 
 
 def test_excerpt_picks_the_first_relevant_sentence_and_caps_length() -> None:
     text = "We are a small team in Austin. You will own outbound pipeline from first touch to close. Benefits are great."
-    assert excerpt_for(text, config.hiring_keywords()) == "You will own outbound pipeline from first touch to close."
+    assert excerpt_for(text, load_config("test-org").keywords) == "You will own outbound pipeline from first touch to close."
     long = "Sales " + "word " * 80 + "end."
-    excerpt = excerpt_for(long, config.hiring_keywords())
+    excerpt = excerpt_for(long, load_config("test-org").keywords)
     assert excerpt is not None and len(excerpt) <= 220 and excerpt.endswith("…")
 
 
@@ -106,7 +106,7 @@ def test_hiring_signals_only_for_sales_roles_with_stable_fingerprints() -> None:
         {"id": "j1", "title": "Founding Account Executive", "jobUrl": "https://j/1", "descriptionPlain": "Own the sales cycle."},
         {"id": "j2", "title": "Backend Engineer", "jobUrl": "https://j/2", "descriptionPlain": "Build APIs."},
     ]})
-    rows = hiring_signals("org", "co", "ashby", jobs, config.hiring_keywords(), NOW)
+    rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").keywords, NOW)
     assert len(rows) == 1
     assert rows[0]["title"] == "Hiring: Founding Account Executive"
     assert rows[0]["source_name"] == "Ashby"

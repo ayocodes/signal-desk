@@ -31,6 +31,7 @@ class RunRecorder:
         self.stats: dict[str, int] = {}
         self.step_ms: dict[str, int] = {}
         self.errors: list[dict[str, str]] = []
+        self.config_version: str | None = None
         self._audit: list[Row] = []
 
     def start(self) -> None:
@@ -69,7 +70,10 @@ class RunRecorder:
         )
 
     def finish(self) -> None:
-        self.audit("agent.run_finished", "agent_run", self.run_id, stats=self.stats, errors=len(self.errors))
+        self.audit(
+            "agent.run_finished", "agent_run", self.run_id,
+            stats=self.stats, errors=len(self.errors), config_version=self.config_version,
+        )
         if self.run_id is not None:
             self._db.update(
                 "agent_runs",

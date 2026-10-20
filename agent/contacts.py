@@ -4,7 +4,7 @@ The YC dataset has no founder names, so every company starts with a placeholder 
 contact (is_placeholder = true, shown as such in the UI).
 
 Hard rule 3: we never email real people. Every contact's send address is a Resend test
-inbox. A small, fixed share (shared/guardrails.json, testInboxes) is routed to the bounce
+inbox. A small, fixed share (load_config guardrails; defaults: shared/guardrails.json) is routed to the bounce
 and complaint test inboxes, chosen deterministically from the company id, so the
 deliverability paths get exercised by real webhook events.
 """

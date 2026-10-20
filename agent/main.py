@@ -16,6 +16,7 @@ import sys
 from collections.abc import Callable
 
 from agent import steps
+from agent.config import load_config
 from agent.db import Database
 from agent.http_client import PoliteClient
 from agent.run import RunRecorder, utc_now
@@ -36,17 +37,21 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
     trigger = f"{settings.trigger}:dry-run" if dry_run else settings.trigger
     run = RunRecorder(db, org["id"], trigger)
     run.start()
-    ctx = steps.Context(settings=settings, db=db, client=client, run=run, org_id=org["id"], now=utc_now())
+    ctx = steps.Context(
+        settings=settings, db=db, client=client, run=run, org_id=org["id"], now=utc_now(),
+        config=load_config(org["id"]),
+    )
     for name, step in STEPS:
         with run.step(name):
             step(ctx)
     run.stats["http_requests"] = client.request_count
+    run.config_version = ctx.config.version
     run.finish()
     return run
 
 
 def print_summary(org: dict, run: RunRecorder, db: Database) -> None:  # type: ignore[type-arg]
-    print(f"\n== {org['name']} ({run.trigger}) ==")
+    print(f"\n== {org['name']} ({run.trigger}, rules: {run.config_version}) ==")
     print("stats:   " + json.dumps(dict(sorted(run.stats.items()))))
     print("step ms: " + json.dumps(run.step_ms))
     if run.errors:

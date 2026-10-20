@@ -1,4 +1,4 @@
-"""Explainable lead scoring (weights in shared/scoring.json).
+"""Explainable lead scoring (weights come from load_config; defaults: shared/scoring.json).
 
 score = ICP points + one entry per signal type present + freshness of the newest signal
         + a bonus for each extra signal type ("stacked" signals)

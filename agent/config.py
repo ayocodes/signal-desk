@@ -1,6 +1,9 @@
-"""Typed access to the shared rule files in /shared (read by the web app too).
+"""The agent's rules, through one function: load_config(org_id).
 
-Scoring weights, ICP rules, keyword lists and guardrail numbers live there, never in code.
+ICP rules, scoring weights, the threshold, keyword lists and guardrail numbers are never
+read anywhere else (agent/tests/test_config.py enforces it). Today load_config returns the
+/shared JSON defaults for every organization; Phase 4.5 moves rules into the database per
+org (versioned), and only this module changes.
 """
 
 from __future__ import annotations
@@ -96,20 +99,39 @@ class GuardrailsConfig(_Model):
     test_inboxes: InboxShare = Field(alias="testInboxes")
 
 
+class AgentConfig(_Model):
+    """Every rule one agent run uses, for one organization."""
+
+    # Which rules produced a score: "defaults" for the /shared files; a database version id
+    # once rules are stored per org (Phase 4.5).
+    version: str
+    scoring: ScoringConfig
+    keywords: HiringKeywords
+    guardrails: GuardrailsConfig
+
+
+DEFAULTS_VERSION = "defaults"
+
+
 def _read(name: str) -> object:
     return json.loads((SHARED / name).read_text(encoding="utf-8"))
 
 
 @lru_cache(maxsize=1)
-def scoring() -> ScoringConfig:
-    return ScoringConfig.model_validate(_read("scoring.json"))
+def _load_defaults() -> AgentConfig:
+    return AgentConfig(
+        version=DEFAULTS_VERSION,
+        scoring=ScoringConfig.model_validate(_read("scoring.json")),
+        keywords=HiringKeywords.model_validate(_read("hiring_keywords.json")),
+        guardrails=GuardrailsConfig.model_validate(_read("guardrails.json")),
+    )
 
 
-@lru_cache(maxsize=1)
-def hiring_keywords() -> HiringKeywords:
-    return HiringKeywords.model_validate(_read("hiring_keywords.json"))
+def load_config(org_id: str) -> AgentConfig:
+    """The rules for one organization's run.
 
-
-@lru_cache(maxsize=1)
-def guardrails() -> GuardrailsConfig:
-    return GuardrailsConfig.model_validate(_read("guardrails.json"))
+    Currently the /shared defaults for every org (org_id is unused until rules move into the
+    database in Phase 4.5, where this returns the org's current version, seeded from these).
+    """
+    del org_id  # part of the contract already, so callers don't change later
+    return _load_defaults()

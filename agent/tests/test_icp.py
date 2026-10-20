@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from agent import config
+from agent.config import load_config
 from agent.icp import evaluate
 from agent.sources.yc import YcCompany
 
@@ -26,7 +26,7 @@ def company(**overrides: object) -> YcCompany:
 
 
 def test_full_match_with_readable_reasons() -> None:
-    result = evaluate(company(), TODAY, config.scoring())
+    result = evaluate(company(), TODAY, load_config("test-org").scoring)
     assert result.tier == "full"
     assert result.reasons == (
         "Active",
@@ -37,13 +37,13 @@ def test_full_match_with_readable_reasons() -> None:
 
 
 def test_b2b_by_tag_says_where_it_was_filed() -> None:
-    result = evaluate(company(industry="Fintech", subindustry="Fintech -> Payments", tags=["B2B"]), TODAY, config.scoring())
+    result = evaluate(company(industry="Fintech", subindustry="Fintech -> Payments", tags=["B2B"]), TODAY, load_config("test-org").scoring)
     assert result.tier == "full"
     assert "B2B tag, filed under Fintech" in result.reasons
 
 
 def test_plain_b2b_subindustry_has_no_redundant_detail() -> None:
-    result = evaluate(company(subindustry="B2B"), TODAY, config.scoring())
+    result = evaluate(company(subindustry="B2B"), TODAY, load_config("test-org").scoring)
     assert "B2B industry" in result.reasons
 
 
@@ -56,7 +56,7 @@ def test_plain_b2b_subindustry_has_no_redundant_detail() -> None:
     ],
 )
 def test_one_near_miss_is_a_partial_match(overrides: dict[str, object], reason_part: str) -> None:
-    result = evaluate(company(**overrides), TODAY, config.scoring())
+    result = evaluate(company(**overrides), TODAY, load_config("test-org").scoring)
     assert result.tier == "partial"
     assert reason_part in result.reasons
 
@@ -76,8 +76,8 @@ def test_one_near_miss_is_a_partial_match(overrides: dict[str, object], reason_p
     ],
 )
 def test_not_tracked(overrides: dict[str, object]) -> None:
-    assert evaluate(company(**overrides), TODAY, config.scoring()).tier is None
+    assert evaluate(company(**overrides), TODAY, load_config("test-org").scoring).tier is None
 
 
 def test_an_upcoming_batch_counts_as_recent() -> None:
-    assert evaluate(company(batch="Winter 2027"), TODAY, config.scoring()).tier == "full"
+    assert evaluate(company(batch="Winter 2027"), TODAY, load_config("test-org").scoring).tier == "full"
