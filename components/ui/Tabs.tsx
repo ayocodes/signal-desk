@@ -41,8 +41,6 @@ export function Tabs({
             key={item.id}
             type="button"
             role="tab"
-            id={`tab-${item.id}`}
-            aria-controls={`tabpanel-${item.id}`}
             aria-selected={isSelected}
             disabled={item.disabled}
             onClick={() => onChange(item.id)}

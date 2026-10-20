@@ -40,6 +40,7 @@ export function Avatar({
         sizeStyles[size],
         className
       )}
+      role={name ? "img" : undefined}
       aria-label={name}
       {...props}
     >

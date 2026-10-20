@@ -152,7 +152,7 @@ describe("UI Primitives", () => {
         <SegmentedControl options={options} value="admin" onChange={() => {}} />
       );
 
-      expect(html).toContain('role="group"');
+      expect(html).toContain('role="radiogroup"');
       expect(html).toContain('role="radio"');
       expect(html).toContain('aria-checked="true"');
       expect(html).toContain("Admin");

@@ -203,7 +203,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   git commit -m "flash(p1): UI primitives"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.2.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F1.3 Designed app shell
@@ -432,7 +432,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Claude
 
-- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
+- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Give each list item a `scoreTier` computed from `shared/scoring.json`'s threshold, and pass it to `ScoreBadge` as `tier` (its built-in 75/50 cutoffs are only a fallback). Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
 - [ ] **C3.2** `useLiveLeads()` hook (Supabase Realtime, falling back to polling). Check RLS by hand: the rep sees only their own leads, even through a direct query.
 
 ### Flash

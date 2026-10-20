@@ -30,7 +30,7 @@ export function SegmentedControl<T extends string = string>({
 }: SegmentedControlProps<T>) {
   return (
     <div
-      role="group"
+      role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
         "inline-flex rounded-control border border-border bg-surface-2 p-1 gap-1",
