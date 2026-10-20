@@ -7,7 +7,7 @@ export default function SequencesPage() {
       <EmptyState
         icon={Send}
         title="No active sequences"
-        body="Leads enrolled from the queue run through multi-step email sequences with live deliverability guardrails."
+        body="Approve a lead in the Queue and its email sequence starts here, with every step, branch and send."
       />
     </div>
   );
