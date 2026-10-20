@@ -182,7 +182,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   git commit -m "flash(p1): five themes and contrast test"
   git switch main
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.1.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F1.2 UI primitives
