@@ -22,7 +22,7 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
 4. Never add a dependency (`npm install`, `pip install`). If you need one, stop and tell the user.
 5. Never touch `.env*`, `supabase/`, `proxy.ts`, `next.config.ts`, any `layout.tsx` or `actions.ts`, `app/forbidden.tsx`, `app/403/`, `app/api/`, files in `lib/` other than ones your card names, `docs/TASKS.md`, `docs/reviews/`, or anything under `agent/` other than test files your card names. Claude ticks the boxes in this file after merging.
 6. No raw hex colors outside `app/themes.css`. Use the token utilities from `app/globals.css`: colors (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text`, `text-muted`, `text-subtle`, `bg-accent`, `text-accent-fg`, `bg-accent-soft`, `text-good`, `text-warn`, `text-bad`, `text-signal`), type (`text-label`, `text-meta`, `text-body`, `text-emphasis`, `text-section`, `text-title`) and radius (`rounded-control`, `rounded-panel`, `rounded-dialog`). Tailwind's default palette is switched off, so classes like `bg-blue-500`, `bg-black` or `text-white` do nothing (for an overlay, use `bg-bg/70`); `lib/design-tokens.test.ts` fails the check if one slips in. No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
-7. **Checks must pass before you commit.** Each Finish block starts with `npm run check` (and `python -m pytest agent/tests` where listed).
+7. **Checks must pass before you commit.** Each Finish block starts with `npm run check` (and `.venv/bin/python -m pytest agent/tests` where listed).
    - If a check fails, fix it by changing only the card's "Touch only" files, then run it again.
    - If it can't be fixed within those files: stop, **don't commit**, leave the changes on the branch, and report the failing command and its full error output to the user.
 8. When the checks pass, run the rest of the **Finish** commands exactly. Report the branch name to the user and stop. Never commit on `main`, merge, push, or delete branches: Claude merges after review.
@@ -349,10 +349,12 @@ Almost all of this phase is Claude's: it's the agent core.
 #### F2.1 Extend hiring keywords + classification cases
 - **Starts after:** C2.9
 - **Build:**
-  - Add sales/GTM title variants to `shared/hiring_keywords.json`: account executive, SDR/BDR, sales lead, head of growth, GTM engineer, revenue ops, founding AE, and so on. Add exclusions that must **not** count, such as "sales engineer" if Claude's notes say so, and "salesforce developer".
-  - Write `agent/tests/test_keywords_extra.py`: at least 30 parametrized `(title, expected_category)` cases that call the existing classifier. Import it; don't reimplement it.
+  - How the file works (read `agent/signals.py` `classify_title`): `categories` are checked **in order** (sales, then gtm, then marketing) and the first match wins; `categoryExclude` disqualifies a title from one category only (gtm skips "marketing" titles, so they fall through to marketing); `exclude` drops a title entirely unless it matches `excludeExceptions`; `founding` marks founding/first roles. Phrases match whole words, case-insensitive, with spaces or hyphens between words.
+  - Add title variants that real job boards use, e.g. "AE", "account exec", "enterprise account executive", "inside sales", "sales development rep", "head of revenue", "RevOps lead", "growth marketer". Keep the user's marketing scope: senior marketing (Head / VP / Director / Lead / Founding / First), demand generation and growth marketing count; junior roles (coordinator, associate, content writer, social media), product marketing and brand don't.
+  - Don't change category order, weights, or move a phrase to another category without saying so in the commit message.
+  - Write `agent/tests/test_keywords_extra.py`: at least 30 parametrized `(title, expected_category or None)` cases calling `classify_title(title, load_config("test-org").keywords)` from `agent.signals` / `agent.config`. Import them; don't reimplement them. Include titles that must **not** count.
 - **Touch only:** `shared/hiring_keywords.json`, `agent/tests/test_keywords_extra.py`
-- **Done when:** `python -m pytest agent/tests` passes.
+- **Done when:** `.venv/bin/python -m pytest agent/tests` passes.
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
@@ -361,7 +363,7 @@ Almost all of this phase is Claude's: it's the agent core.
   ```
 - **Finish:**
   ```bash
-  python -m pytest agent/tests  # must pass before committing (rule 7)
+  .venv/bin/python -m pytest agent/tests  # must pass before committing (rule 7)
   git add shared/hiring_keywords.json agent/tests/test_keywords_extra.py  # only the Touch-only files
   git commit -m "flash(p2): extend hiring keywords and classification cases"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
@@ -371,10 +373,26 @@ Almost all of this phase is Claude's: it's the agent core.
 
 #### F2.2 Extra scoring and ICP test cases
 - **Starts after:** C2.9
-- **Examples:** Claude adds these here on `main` before the card starts.
-- **Build:** `agent/tests/test_scoring_extra.py`, using the companies and signals under **Examples**. Assert the total score, the `score_parts` labels and order, and the filtered reason text. Import the existing functions.
+- **Examples** (computed by the real code; `NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)`, signal ages are "hours before NOW"):
+
+  | Tier | Signals | Score | Ready | Parts, in order | Filtered reason |
+  |---|---|---|---|---|---|
+  | full | none | 40 | no | ICP match 40 | Score 40, under 50: no buying signals yet |
+  | partial | sales hire, 30 days | 50 | **yes** | Partial ICP match 20, Hiring 30 | (none) |
+  | partial | launch, 30h | 49 | no | Partial ICP match 20, Launch 18, Fresh (under 2 days) 11 | Score 49, under 50: partial ICP match needs a stronger signal |
+  | full | funding "YC Fall 2026", 40 days | 50 | **no** | ICP match 40, YC recent 10 | Score 50: only a weak signal (YC Fall 2026) |
+  | full | sales hire 10h + funding 40 days | 102 | yes | ICP match 40, Hiring 30, YC recent 10, Fresh (under 24h) 15, 2 signal types 7 | (none) |
+  | partial | sales hire 60h + launch 200h | 83 | yes | Partial ICP match 20, Hiring 30, Launch 18, Fresh (under 3 days) 8, 2 signal types 7 | (none) |
+  | full | founding sales hire 80h + launch 300h + funding 40 days | 121 | yes | ICP match 40, Hiring 30, Founding sales role 5, Launch 18, YC recent 10, Fresh (under 7 days) 4, 3 signal types 14 | (none) |
+  | full | marketing hire, 30 days | 60 | yes | ICP match 40, Marketing hire 20 | (none) |
+
+  ICP (`evaluate(company, date(2026, 10, 20), cfg.scoring)` with a `YcCompany`):
+  - Fintech, tags `["B2B"]`, team 70, Summer 2025 → `partial`, reasons `["Active", "B2B tag, filed under Fintech", "Team of 70, outside 5 to 60", "YC Summer 2025 (within 3 years)"]`
+  - same but team 2 → not tracked (`tier` is `None`)
+  - industry B2B, subindustry "B2B -> Sales", team 22, Winter 2025 → `full`, reasons `["Active", "B2B industry (Sales)", "Team of 22 (5 to 60)", "YC Winter 2025 (within 3 years)"]`
+- **Build:** `agent/tests/test_scoring_extra.py`, one test per row above. Build signals with `SignalFacts(type=..., occurred_at=NOW - timedelta(hours=...), title=..., founding=..., category=...)` (category `"sales"` or `"marketing"` for hiring) and call `score_lead(tier, signals, NOW, load_config("test-org").scoring)` from `agent.scoring`. Assert the score, ready, the parts (labels, points, order) and the reason. Import the existing functions; don't reimplement them.
 - **Touch only:** `agent/tests/test_scoring_extra.py`
-- **Done when:** `python -m pytest agent/tests` passes.
+- **Done when:** `.venv/bin/python -m pytest agent/tests` passes.
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
@@ -383,7 +401,7 @@ Almost all of this phase is Claude's: it's the agent core.
   ```
 - **Finish:**
   ```bash
-  python -m pytest agent/tests  # must pass before committing (rule 7)
+  .venv/bin/python -m pytest agent/tests  # must pass before committing (rule 7)
   git add agent/tests/test_scoring_extra.py  # only the Touch-only files
   git commit -m "flash(p2): extra scoring and ICP test cases"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
@@ -412,10 +430,10 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Phase gate
 
-- [ ] **C2.11** Automated checks:
-  - `python -m pytest agent/tests`
-  - `python -m agent.main --dry-run`
-  - `python -m agent.main --once` twice, comparing row counts in `companies`, `signals` and `leads` (the second run must add 0)
+- [x] **C2.11** Automated checks:
+  - `.venv/bin/python -m pytest agent/tests`
+  - `.venv/bin/python -m agent.main --dry-run`
+  - `.venv/bin/python -m agent.main --once` twice, comparing row counts in `companies`, `signals` and `leads` (the second run must add 0)
   - print one filtered lead's reason
 
   Report the results to the user.
@@ -638,7 +656,7 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Starts after:** C4.2
 - **Build:** add at least 20 cases to `shared/fixtures/guardrails_cases.json`: em-dashes and en-dashes, every banned phrase, word-count edges (80 and 81), a missing closing question, a grounded phrase that appears in the email but not in the signal, a case-insensitive match, and word-boundary traps. Don't change the guardrail code. If Python and TS disagree on a case, stop and report it; that's a bug for Claude.
 - **Touch only:** `shared/fixtures/guardrails_cases.json`
-- **Done when:** `npm run check` and `python -m pytest agent/tests` both pass.
+- **Done when:** `npm run check` and `.venv/bin/python -m pytest agent/tests` both pass.
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
@@ -648,7 +666,7 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Finish:**
   ```bash
   npm run check  # must pass before committing (rule 7)
-  python -m pytest agent/tests  # must pass before committing (rule 7)
+  .venv/bin/python -m pytest agent/tests  # must pass before committing (rule 7)
   git add shared/fixtures/guardrails_cases.json  # only the Touch-only files
   git commit -m "flash(p4): more guardrail fixture cases"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
@@ -663,7 +681,7 @@ Almost all of this phase is Claude's: it's the agent core.
 ### Phase gate
 
 - [ ] **C4.5** Automated checks:
-  - `npm run check` and `python -m pytest agent/tests`; both guardrail suites must agree on every shared fixture.
+  - `npm run check` and `.venv/bin/python -m pytest agent/tests`; both guardrail suites must agree on every shared fixture.
   - Route tests: the approve route rejects the `raw` angle and any draft whose grounding check fails.
   - One `--once` run creates drafts for at least one ready lead.
 
@@ -767,7 +785,7 @@ Almost all of this phase is Claude's: it's the agent core.
 ### Phase gate
 
 - [ ] **C5.7** Automated checks:
-  - `npm run check` and `python -m pytest agent/tests` (branching, idempotent sends, webhook dedupe, auto-pause).
+  - `npm run check` and `.venv/bin/python -m pytest agent/tests` (branching, idempotent sends, webhook dedupe, auto-pause).
   - Webhook tests: a bad signature is rejected, and so is any request when `RESEND_WEBHOOK_SECRET` is missing.
   - After one `--once` run, `email_events` holds real Resend events for a `bounced+` and a `complained+` address.
 
@@ -963,7 +981,7 @@ Almost all of this phase is Claude's: it's the agent core.
 ### Phase gate
 
 - [ ] **C7.3** Automated checks:
-  - `npm run check`, `python -m pytest agent/tests` and `npm run build`.
+  - `npm run check`, `.venv/bin/python -m pytest agent/tests` and `npm run build`.
   - The latest Vercel deploy and the latest Actions run are both green.
   - With the user's OK, run `npm run seed:reset` so the demo starts clean.
 
