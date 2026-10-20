@@ -20,8 +20,13 @@ Ats = Literal["greenhouse", "lever", "ashby"]
 ATS_ORDER: tuple[Ats, ...] = ("ashby", "greenhouse", "lever")
 ATS_LABEL: dict[Ats, str] = {"greenhouse": "Greenhouse", "lever": "Lever", "ashby": "Ashby"}
 
-# Prefixes some companies put on their marketing domain (app.x.com, getx.com is a different case).
+# Subdomain labels in front of the brand (app.acme.ai -> acme.ai).
 DOMAIN_PREFIXES = {"app", "www", "get", "try", "use", "go", "join", "my"}
+# Legal suffixes are never part of a board token ("DeepReach Inc." -> deepreach).
+LEGAL_SUFFIX = re.compile(r"\b(inc|llc|ltd|limited|corp|corporation|co|gmbh|pbc)\b\.?", re.IGNORECASE)
+# Trailing words a board token often drops ("Gojiberry AI" -> gojiberry).
+GENERIC_TRAILING = {"ai", "labs", "hq", "technologies", "tech", "app", "io", "data", "software"}
+MAX_GUESSES = 4
 
 
 @dataclass(frozen=True)
@@ -50,29 +55,36 @@ def board_url(ats: Ats, token: str) -> str:
 
 
 def slug_guesses(name: str, domain: str | None) -> list[str]:
-    """Likely board tokens, most likely first, at most three.
+    """Likely board tokens, most likely first, at most four.
 
-    'Trigger.dev' / trigger.dev -> ['triggerdev', 'trigger', 'trigger-dev']
+    Measured on real YC companies (every hit was on Ashby, usually the plain brand name):
+      'Trigger.dev' / trigger.dev        -> ['triggerdev', 'trigger', 'trigger-dev']
+      'DeepReach Inc.' / deepreach.ai    -> ['deepreach', 'deepreachai']
+      'Gojiberry AI' / gojiberry.ai      -> ['gojiberryai', 'gojiberry', ...]
+      'TryNearby' / trynearby.com        -> ['trynearby', 'trynearbycom']
     """
+    words = re.findall(r"[a-z0-9]+", LEGAL_SUFFIX.sub("", name.lower()))
     guesses: list[str] = []
-    compact_name = re.sub(r"[^a-z0-9]", "", name.lower())
-    if compact_name:
-        guesses.append(compact_name)
+    if words:
+        guesses.append("".join(words))
+        if len(words) > 1 and words[-1] in GENERIC_TRAILING:
+            guesses.append("".join(words[:-1]))
     if domain:
         labels = domain.split(".")
-        if labels and labels[0] in DOMAIN_PREFIXES and len(labels) > 2:
+        if labels[0] in DOMAIN_PREFIXES and len(labels) > 2:
             labels = labels[1:]
-        guesses.append(re.sub(r"[^a-z0-9]", "", "".join(labels)))  # domain without dots
-        guesses.append(re.sub(r"[^a-z0-9-]", "", labels[0]))  # domain stem
-    hyphenated = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-    if hyphenated:
-        guesses.append(hyphenated)
+        # A glued prefix (getacme.com) needs no stripping: the name guess already covers "acme",
+        # and stripping breaks brands that start with one ("Gojiberry" isn't "go" + "jiberry").
+        guesses.append(re.sub(r"[^a-z0-9-]", "", labels[0]))
+        guesses.append(re.sub(r"[^a-z0-9]", "", "".join(labels)))  # brand includes the TLD (triggerdev)
+    if len(words) > 1:
+        guesses.append("-".join(words))
 
     unique: list[str] = []
     for guess in guesses:
         if guess and guess not in unique:
             unique.append(guess)
-    return unique[:3]
+    return unique[:MAX_GUESSES]
 
 
 class _TextExtractor(HTMLParser):

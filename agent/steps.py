@@ -23,7 +23,6 @@ from agent.scoring import SignalFacts, score_lead
 from agent.settings import Settings
 from agent.signals import hiring_signals, launch_signal, yc_recency_signal
 from agent.sources import ats, hn, yc
-from agent.sources.yc import batch_start
 
 # Politeness cap on job-board refreshes per tick (separate from the discovery probe budget).
 MAX_BOARD_REFRESHES = 30
@@ -97,13 +96,14 @@ def discover(ctx: Context) -> None:
             ctx.run.audit("company.untracked", "company", row["id"], domain=row["domain"])
 
 
-def _probe_order(row: Row) -> tuple[int, int, int]:
-    """Full matches before partial; then companies YC lists as hiring; then newest batch."""
-    start = batch_start(row.get("yc_batch") or "")
+def _probe_order(row: Row) -> tuple[int, int, int, str]:
+    """Full matches before partial; then companies YC lists as hiring; then larger teams
+    (more likely to run a real job board and to be scaling sales; weeks-old batches mostly don't)."""
     return (
         0 if row.get("icp_tier") == "full" else 1,
         0 if row.get("yc_is_hiring") else 1,
-        -(start.toordinal() if start else 0),
+        -(row.get("team_size") or 0),
+        row.get("name") or "",
     )
 
 
@@ -111,7 +111,7 @@ def probe_job_boards(ctx: Context) -> None:
     """Finds public job boards for companies not probed yet, within the per-run request budget."""
     pending = [
         row
-        for row in companies(ctx, "id,name,domain,icp_tier,yc_is_hiring,yc_batch,ats_probed_at")
+        for row in companies(ctx, "id,name,domain,icp_tier,yc_is_hiring,team_size,ats_probed_at")
         if row["ats_probed_at"] is None
     ]
     pending.sort(key=_probe_order)

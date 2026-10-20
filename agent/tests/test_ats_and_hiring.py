@@ -11,11 +11,24 @@ from agent.sources.ats import html_to_text, parse_jobs, probe_company, slug_gues
 NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)
 
 
-def test_slug_guesses_cover_name_and_domain_variants() -> None:
-    assert slug_guesses("Trigger.dev", "trigger.dev") == ["triggerdev", "trigger", "trigger-dev"]
-    assert slug_guesses("Chima", "withchima.com") == ["chima", "withchimacom", "withchima"]
-    assert slug_guesses("Acme AI", "app.acme.ai")[0] == "acmeai"
-    assert len(slug_guesses("Some Long Name Inc", "somelongname.io")) <= 3
+@pytest.mark.parametrize(
+    ("name", "domain", "expected"),
+    [
+        ("Trigger.dev", "trigger.dev", ["triggerdev", "trigger", "trigger-dev"]),
+        ("DeepReach Inc.", "deepreach.ai", ["deepreach", "deepreachai"]),
+        ("Prescience, Inc.", "getprescience.com", ["prescience", "getprescience", "getpresciencecom"]),
+        ("Gojiberry AI", "gojiberry.ai", ["gojiberryai", "gojiberry", "gojiberry-ai"]),
+        ("TryNearby", "trynearby.com", ["trynearby", "trynearbycom"]),
+        ("Chima", "withchima.com", ["chima", "withchima", "withchimacom"]),
+        ("Acme AI", "app.acme.ai", ["acmeai", "acme", "acme-ai"]),
+    ],
+)
+def test_slug_guesses(name: str, domain: str, expected: list[str]) -> None:
+    assert slug_guesses(name, domain) == expected
+
+
+def test_slug_guesses_are_capped() -> None:
+    assert len(slug_guesses("Some Long Name Labs Inc", "getsomelongname.io")) <= 4
 
 
 @pytest.mark.parametrize(
