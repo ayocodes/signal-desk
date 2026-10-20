@@ -1,0 +1,31 @@
+{
+  "categories": {
+    "sales": [
+      "account executive",
+      "sales",
+      "sdr",
+      "bdr",
+      "sales development",
+      "business development",
+      "head of sales",
+      "vp of sales",
+      "vp sales",
+      "sales lead",
+      "sales manager"
+    ],
+    "gtm": [
+      "go-to-market",
+      "go to market",
+      "gtm",
+      "growth lead",
+      "head of growth",
+      "revenue",
+      "revops",
+      "demand generation",
+      "outbound"
+    ]
+  },
+  "founding": ["founding", "first sales", "first account executive", "first gtm"],
+  "exclude": ["engineer", "engineering", "developer", "salesforce", "intern"],
+  "excludeExceptions": ["gtm engineer", "go-to-market engineer", "sales development"]
+}

@@ -1,7 +1,10 @@
 {
   "maxBodyWords": 80,
   "requireClosingQuestion": true,
-  "bannedChars": ["—", "–"],
+  "bannedChars": [
+    "—",
+    "–"
+  ],
   "bannedPhrases": [
     "revolutionize",
     "game-changer",
@@ -22,5 +25,9 @@
     "pauseBouncePct": 4.0,
     "pauseComplaintPct": 0.3,
     "minSendsForRates": 20
+  },
+  "testInboxes": {
+    "bouncedPer100": 5,
+    "complainedPer100": 2
   }
 }
