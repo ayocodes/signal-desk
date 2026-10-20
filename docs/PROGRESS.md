@@ -4,11 +4,23 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 0 (setup)
-- Next step: Phase 0 complete. Run the Phase 1 prompt from docs/PLAN.md (starts with C1.1)
+- Phase: 1 (foundation). Claude cards C1.1 to C1.6 done.
+- Next step: Flash F1.1 (themes) and F1.2 (UI primitives) can start; user does U1.0.
 - Blockers: none
 
 ## Log
+
+### 2026-10-20: Phase 1, Claude cards C1.1 to C1.6
+- Done: Next 16.4.2 scaffold with `npm run check`; env validation (`lib/env-schema.ts`, fails `next dev`/`next build` naming the variable); migrations 001 (schema) and 002 (RLS) pushed to the remote project; `npm run seed` (idempotent); `npm run test:rls` (11 checks pass); auth with `proxy.ts`, real 403 on /ops for reps; bare login, shell and stub pages; theme tokens, no-flash script, save to profile; DB types generated.
+- Decisions (and why):
+  - Next 16 renamed middleware to `proxy.ts`. Cache Components stays on (user's choice), so session reads sit inside `<Suspense>`.
+  - Real 403: pages stream with 200 before `forbidden()` runs inside Suspense, so `proxy.ts` checks the role on `/ops` only (one query) and rewrites to `/403`, which calls `forbidden()` while prerendered. `Cache-Control: private, no-store` on that response. `requireAdmin()` in the ops layout and RLS remain as the other layers.
+  - RLS helpers live in a non-exposed `private` schema; profile updates limited to `theme` and `full_name` by column grants.
+  - Tailwind's default palette is disabled so only design tokens exist.
+  - `@types/node` bumped to ^22 to match the Node 22 runtime (vitest 5 needs it).
+  - `shared/guardrails.json` created early for the mailbox cap; DB types generated early (`npm run db:types`).
+- Not done / known issues: login form submission not exercised from the terminal (server actions need a browser); verify in U1.1, then check `audit_log` has `auth.sign_in` rows. The rep-leads RLS check is vacuous until leads exist (re-tested in C3.3). Local Python is 3.13 (Actions uses 3.12).
+- Next step (exact): user does U1.0; Flash runs F1.1 and F1.2 (one at a time); Claude reviews each branch.
 
 ### 2026-10-20: Phase 0, task board revisions
 - Done:

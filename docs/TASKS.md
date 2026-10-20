@@ -155,6 +155,10 @@ Then tell the user the card is ready for Flash's rework prompt.
   - Tailwind `@theme inline` mapping, Geist fonts, and the no-flash script in the root layout.
   - `lib/theme-client.ts`: `applyTheme(id)` (preview only), `saveTheme(id)` (writes `profiles.theme` and `localStorage`), `readStoredTheme()`. `components/theme-sync.tsx` makes the profile's theme win across devices.
 
+### You
+
+- [ ] **U1.0** In the Supabase dashboard: Authentication → Sign In / Providers → Email, turn off "Allow new users to sign up". Only the seeded demo users should exist. (RLS already gives a stranger's account nothing, since it has no profile; this closes the door entirely.)
+
 ### Flash
 
 #### F1.1 Five remaining themes + contrast test
