@@ -341,8 +341,8 @@ Almost all of this phase is Claude's: it's the agent core.
 - [x] **C2.6** HN launch signals with the strict matching rule; YC recency as a weak funding signal; fingerprints; the `jobs_fetched_at` refresh window.
 - [x] **C2.7** Scoring with `score_parts`, filtered reasons, round-robin assignment, contacts, the buyer check, and test-inbox routing (including the fixed bounce/complaint share).
 - [x] **C2.8** `main.py`: `agent_runs` and `audit_log` writes, per-step timings, errors captured per step, `--once`, `--dry-run`.
-- [ ] **C2.9** pytest: scoring, keyword classification, the HN matching rule, fingerprinting, inbox routing.
-- [ ] **C2.10** `.github/workflows/agent.yml`: schedule `7,37 * * * *`, `workflow_dispatch`, pip cache, secrets, 15-minute timeout.
+- [x] **C2.9** pytest: scoring, keyword classification, the HN matching rule, fingerprinting, inbox routing.
+- [x] **C2.10** `.github/workflows/agent.yml`: schedule `7,37 * * * *`, `workflow_dispatch`, pip cache, secrets, 15-minute timeout.
 
 ### Flash
 
