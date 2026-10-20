@@ -25,7 +25,7 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
 7. **Checks must pass before you commit.** Each Finish block starts with `npm run check` (and `python -m pytest agent/tests` where listed).
    - If a check fails, fix it by changing only the card's "Touch only" files, then run it again.
    - If it can't be fixed within those files: stop, **don't commit**, leave the changes on the branch, and report the failing command and its full error output to the user.
-8. When the checks pass, run the rest of the **Finish** commands exactly. Report the branch name to the user and stop.
+8. When the checks pass, run the rest of the **Finish** commands exactly. Report the branch name to the user and stop. Never commit on `main`, merge, push, or delete branches: Claude merges after review.
 9. **Rework:** Claude writes review notes in `docs/reviews/<card-id>.md` and commits them on your branch.
    - Run `git status --short` (it must print nothing), then `git switch <the card's branch>`.
    - Read the latest round in that file and fix every note, changing only the "Touch only" files. Never edit the review file.
@@ -171,16 +171,16 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Done when:** `npm run check` passes, and setting `data-theme` on `<html>` in devtools recolors the whole page for each theme.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p1-themes
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p1-themes  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add app/themes.css lib/theme-contrast.test.ts
-  git commit -m "flash(p1): five themes and contrast test"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add app/themes.css lib/theme-contrast.test.ts  # only the Touch-only files
+  git commit -m "flash(p1): five themes and contrast test"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -192,16 +192,16 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Done when:** `npm run check` passes, and each component is typed and exported from `components/ui/index.ts`.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p1-ui-primitives
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p1-ui-primitives  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/ui
-  git commit -m "flash(p1): UI primitives"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/ui  # only the Touch-only files
+  git commit -m "flash(p1): UI primitives"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -218,16 +218,16 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Done when:** the admin sees Ops in the nav, the rep doesn't, sign out works, and `npm run check` passes.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p1-shell
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p1-shell  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/shell
-  git commit -m "flash(p1): designed app shell"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/shell  # only the Touch-only files
+  git commit -m "flash(p1): designed app shell"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.3.md`, on the card's branch (only exists if Claude asked for changes)
@@ -241,16 +241,16 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Done when:** both demo buttons log in, a wrong password shows an error, and `npm run check` passes.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p1-login
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p1-login  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add "app/(auth)/login/page.tsx" components/forbidden.tsx
-  git commit -m "flash(p1): login page design and 403 page"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add "app/(auth)/login/page.tsx" components/forbidden.tsx  # only the Touch-only files
+  git commit -m "flash(p1): login page design and 403 page"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.4.md`, on the card's branch (only exists if Claude asked for changes)
@@ -262,16 +262,16 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Done when:** every nav link opens a designed page, and `npm run check` passes.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p1-placeholder-pages
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p1-placeholder-pages  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add "app/(app)"
-  git commit -m "flash(p1): placeholder pages with empty states"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add "app/(app)"  # only the Touch-only files
+  git commit -m "flash(p1): placeholder pages with empty states"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.5.md`, on the card's branch (only exists if Claude asked for changes)
@@ -287,16 +287,16 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Done when:** the theme previews live while arrowing, survives a reload, Esc reverts it, and `npm run check` passes.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p1-command-palette
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p1-command-palette  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/command-palette.tsx components/theme-picker.tsx components/shell "app/(app)/settings/page.tsx"
-  git commit -m "flash(p1): command palette and theme picker"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/command-palette.tsx components/theme-picker.tsx components/shell "app/(app)/settings/page.tsx"  # only the Touch-only files
+  git commit -m "flash(p1): command palette and theme picker"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.6.md`, on the card's branch (only exists if Claude asked for changes)
@@ -355,16 +355,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Done when:** `python -m pytest agent/tests` passes.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p2-keywords
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p2-keywords  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  python -m pytest agent/tests
-  git add shared/hiring_keywords.json agent/tests/test_keywords_extra.py
-  git commit -m "flash(p2): extend hiring keywords and classification cases"
-  git switch main
+  python -m pytest agent/tests  # must pass before committing (rule 7)
+  git add shared/hiring_keywords.json agent/tests/test_keywords_extra.py  # only the Touch-only files
+  git commit -m "flash(p2): extend hiring keywords and classification cases"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F2.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -377,16 +377,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Done when:** `python -m pytest agent/tests` passes.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p2-scoring-tests
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p2-scoring-tests  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  python -m pytest agent/tests
-  git add agent/tests/test_scoring_extra.py
-  git commit -m "flash(p2): extra scoring and ICP test cases"
-  git switch main
+  python -m pytest agent/tests  # must pass before committing (rule 7)
+  git add agent/tests/test_scoring_extra.py  # only the Touch-only files
+  git commit -m "flash(p2): extra scoring and ICP test cases"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F2.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -397,15 +397,15 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `agent/README.md`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p2-agent-readme
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p2-agent-readme  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  git add agent/README.md
-  git commit -m "flash(p2): agent README"
-  git switch main
+  git add agent/README.md  # only the Touch-only files
+  git commit -m "flash(p2): agent README"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F2.3.md`, on the card's branch (only exists if Claude asked for changes)
@@ -449,16 +449,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/leads/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p3-lead-components
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p3-lead-components  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/leads
-  git commit -m "flash(p3): lead display components"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/leads  # only the Touch-only files
+  git commit -m "flash(p3): lead display components"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -472,16 +472,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/queue/*`, `app/(app)/queue/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p3-queue-list
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p3-queue-list  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/queue "app/(app)/queue"
-  git commit -m "flash(p3): queue list and split view"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/queue "app/(app)/queue"  # only the Touch-only files
+  git commit -m "flash(p3): queue list and split view"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -498,16 +498,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/queue/LeadDetail.tsx`, `app/(app)/queue/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p3-lead-detail
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p3-lead-detail  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/queue/LeadDetail.tsx "app/(app)/queue"
-  git commit -m "flash(p3): read-only lead detail"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/queue/LeadDetail.tsx "app/(app)/queue"  # only the Touch-only files
+  git commit -m "flash(p3): read-only lead detail"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.3.md`, on the card's branch (only exists if Claude asked for changes)
@@ -520,16 +520,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/ui/Table.tsx`, `components/ui/index.ts`, `app/(app)/leads/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p3-leads-table
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p3-leads-table  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/ui/Table.tsx components/ui/index.ts "app/(app)/leads"
-  git commit -m "flash(p3): leads table"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/ui/Table.tsx components/ui/index.ts "app/(app)/leads"  # only the Touch-only files
+  git commit -m "flash(p3): leads table"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.4.md`, on the card's branch (only exists if Claude asked for changes)
@@ -545,16 +545,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/queue/*`, `components/command-palette.tsx`, `components/ui/Table.tsx`, `app/(app)/queue/*`, `app/(app)/leads/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p3-keyboard-states
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p3-keyboard-states  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/queue components/command-palette.tsx components/ui/Table.tsx "app/(app)/queue" "app/(app)/leads"
-  git commit -m "flash(p3): keyboard navigation and loading/empty/error states"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/queue components/command-palette.tsx components/ui/Table.tsx "app/(app)/queue" "app/(app)/leads"  # only the Touch-only files
+  git commit -m "flash(p3): keyboard navigation and loading/empty/error states"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.5.md`, on the card's branch (only exists if Claude asked for changes)
@@ -597,16 +597,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/drafts/*`, `components/queue/LeadDetail.tsx`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p4-email-editor
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p4-email-editor  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/drafts components/queue/LeadDetail.tsx
-  git commit -m "flash(p4): email editor with live checks"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/drafts components/queue/LeadDetail.tsx  # only the Touch-only files
+  git commit -m "flash(p4): email editor with live checks"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -620,16 +620,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/drafts/*`, `components/queue/*`, `components/command-palette.tsx`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p4-approve-ui
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p4-approve-ui  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/drafts components/queue components/command-palette.tsx
-  git commit -m "flash(p4): approve, regenerate, agent trace"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/drafts components/queue components/command-palette.tsx  # only the Touch-only files
+  git commit -m "flash(p4): approve, regenerate, agent trace"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -641,17 +641,17 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Done when:** `npm run check` and `python -m pytest agent/tests` both pass.
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p4-guardrail-cases
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p4-guardrail-cases  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  python -m pytest agent/tests
-  git add shared/fixtures/guardrails_cases.json
-  git commit -m "flash(p4): more guardrail fixture cases"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  python -m pytest agent/tests  # must pass before committing (rule 7)
+  git add shared/fixtures/guardrails_cases.json  # only the Touch-only files
+  git commit -m "flash(p4): more guardrail fixture cases"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.3.md`, on the card's branch (only exists if Claude asked for changes)
@@ -707,16 +707,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/queue/*`, `components/drafts/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p5-bounce-recovery
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p5-bounce-recovery  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/queue components/drafts
-  git commit -m "flash(p5): bounce recovery UI"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/queue components/drafts  # only the Touch-only files
+  git commit -m "flash(p5): bounce recovery UI"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F5.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -730,16 +730,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/sequences/*`, `components/queue/LeadDetail.tsx`, `app/(app)/sequences/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p5-sequences-ui
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p5-sequences-ui  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/sequences components/queue/LeadDetail.tsx "app/(app)/sequences"
-  git commit -m "flash(p5): sequence timeline and sequences page"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/sequences components/queue/LeadDetail.tsx "app/(app)/sequences"  # only the Touch-only files
+  git commit -m "flash(p5): sequence timeline and sequences page"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F5.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -750,16 +750,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/sequences/*`, `components/queue/LeadDetail.tsx`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p5-simulate-ui
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p5-simulate-ui  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/sequences components/queue/LeadDetail.tsx
-  git commit -m "flash(p5): admin simulate controls"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/sequences components/queue/LeadDetail.tsx  # only the Touch-only files
+  git commit -m "flash(p5): admin simulate controls"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F5.3.md`, on the card's branch (only exists if Claude asked for changes)
@@ -810,16 +810,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/ops/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p6-kpis
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p6-kpis  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/ops
-  git commit -m "flash(p6): KPI strip and reply rate by signal"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/ops  # only the Touch-only files
+  git commit -m "flash(p6): KPI strip and reply rate by signal"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F6.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -833,16 +833,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/ops/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p6-ops-panels
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p6-ops-panels  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components/ops
-  git commit -m "flash(p6): mailbox health, engine panel, audit log"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components/ops  # only the Touch-only files
+  git commit -m "flash(p6): mailbox health, engine panel, audit log"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F6.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -853,16 +853,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `app/(app)/ops/*`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p6-ops-page
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p6-ops-page  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add "app/(app)/ops"
-  git commit -m "flash(p6): ops page"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add "app/(app)/ops"  # only the Touch-only files
+  git commit -m "flash(p6): ops page"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F6.3.md`, on the card's branch (only exists if Claude asked for changes)
@@ -904,15 +904,15 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `README.md`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p7-readme
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p7-readme  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  git add README.md
-  git commit -m "flash(p7): README and design decisions"
-  git switch main
+  git add README.md  # only the Touch-only files
+  git commit -m "flash(p7): README and design decisions"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F7.1.md`, on the card's branch (only exists if Claude asked for changes)
@@ -923,16 +923,16 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `components/**`, `app/(app)/**`, `app/themes.css`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p7-a11y-pass
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p7-a11y-pass  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  npm run check
-  git add components "app/(app)" app/themes.css
-  git commit -m "flash(p7): accessibility, keyboard, mobile and theme fixes"
-  git switch main
+  npm run check  # must pass before committing (rule 7)
+  git add components "app/(app)" app/themes.css  # only the Touch-only files
+  git commit -m "flash(p7): accessibility, keyboard, mobile and theme fixes"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F7.2.md`, on the card's branch (only exists if Claude asked for changes)
@@ -943,15 +943,15 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Touch only:** `docs/screenshots.md`
 - **Start:**
   ```bash
-  git status --short
-  git switch main
-  git switch -c flash/p7-captions
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p7-captions  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
-  git add docs/screenshots.md
-  git commit -m "flash(p7): screenshot captions"
-  git switch main
+  git add docs/screenshots.md  # only the Touch-only files
+  git commit -m "flash(p7): screenshot captions"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F7.3.md`, on the card's branch (only exists if Claude asked for changes)
