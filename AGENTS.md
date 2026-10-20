@@ -28,7 +28,7 @@ The name "Signal Desk" is a working title. Keep it in one constant (`lib/brand.t
 
 - **Web:** Next.js (App Router), TypeScript (strict), React, Tailwind CSS. Deployed on Vercel (Hobby).
 - **Data and auth:** Supabase: Postgres, Auth (email + password), Row Level Security. Use `@supabase/ssr` in Next.js.
-- **Agent worker:** Python 3.12 in `/agent`, run by GitHub Actions on a schedule. Libraries: `httpx`, `pydantic`, `supabase` (Python client), `google-genai`. Add others only with a reason.
+- **Agent worker:** Python 3.12 in `/agent`, run by GitHub Actions on a schedule. Libraries: `httpx`, `pydantic`, `pydantic-settings` (env validation), `supabase` (Python client), `google-genai`. Add others only with a reason.
 - **LLM:** Gemini API free tier. Model name comes from `GEMINI_MODEL`, never hardcoded. All LLM calls go through one provider interface (`agent/llm.py`, `lib/llm.ts`) so a free fallback (Groq) can be swapped in with `LLM_PROVIDER`.
 - **Email:** Resend free tier. Webhooks verified by signature.
 - **UI:** `cmdk` (command palette), `lucide-react` (icons), Geist Sans + Geist Mono via the `geist` package. Small hand-built components on Tailwind + CSS variables. No heavy component kits.
@@ -73,6 +73,7 @@ docs/                   PLAN, TASKS, PROGRESS, ARCHITECTURE, DESIGN, SETUP, refe
 - **Migrations only.** Schema changes go in `supabase/migrations/`. Never change the schema by hand in the dashboard.
 - **Security in two layers.** RLS on every table, plus server-side role checks on admin routes.
 - **Multi-tenant from day one.** Every business table has `org_id`; every RLS policy filters by the user's org.
+- **Env is validated at startup.** Web code reads variables only through `lib/env.ts` (zod) and the agent only through `agent/settings.py` (pydantic-settings). Never read `process.env` or `os.environ` directly. Empty strings count as missing.
 - Small, typed functions. Explicit error handling. No silent `catch {}`.
 - Use the design tokens from `docs/DESIGN.md`. Never write a raw hex color in a component.
 
@@ -91,7 +92,7 @@ python -m pytest agent/tests
 Two agents share this repo, never at the same time. `docs/TASKS.md` is the owner-tagged checklist for every phase.
 
 - **Claude Code** (`C` cards) builds the risky parts: schema, RLS, auth, the agent core, scoring, guardrails, sends, webhooks, deliverability, API routes and data functions. It also defines the typed contracts the UI builds on, and reviews all Flash work. It commits to `main`.
-- **Gemini Flash in Antigravity** (`F` cards) builds UI components, pages, themes, empty states, keyboard UX, extra tests and docs. It does one card per branch (`flash/p<N>-<slug>`), runs the card's git commands exactly, and touches only the files the card lists.
+- **Gemini Flash in Antigravity** (`F` cards) builds UI components, pages, themes, empty states, keyboard UX, extra tests and docs. It does one card per branch (`flash/p<N>-<slug>`), runs the card's git commands exactly, touches only the files the card lists, and never edits `docs/TASKS.md`. It doesn't commit while checks fail. Review notes arrive in `docs/reviews/<card-id>.md` on its branch.
 - **The user** (`U` cards) handles accounts, keys, dashboards and deploy settings.
 
 ## Working agreement

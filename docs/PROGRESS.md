@@ -10,6 +10,19 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Log
 
+### 2026-10-20: Phase 0, task board revisions
+- Done:
+  - Flash never edits TASKS.md: removed it from every card's file list and `git add` line. Claude ticks both boxes on `main` after merging.
+  - Review notes now go in `docs/reviews/<card-id>.md`, committed on Flash's branch.
+  - Flash rule: fix failing checks within the "Touch only" files, or stop without committing and report.
+  - Each phase gate is now three cards: Claude's automated checks, the user's browser check (admin and rep), then Claude closes the phase.
+  - Added `lib/env.ts` (C1.1) and `agent/settings.py` (C2.1) env validation.
+- Decisions (and why):
+  - Added `pydantic-settings` (official, built for env validation).
+  - The agent reads `SUPABASE_URL` and falls back to `NEXT_PUBLIC_SUPABASE_URL`, so the GitHub secrets and `.env.local` both work without renames.
+  - The selected `LLM_PROVIDER`'s key and model are required; the other provider's are optional.
+- Next step (exact): user completes U0.2 to U0.6; then run the Phase 1 prompt from PLAN.md.
+
 ### 2026-10-20: Phase 0, owner split and task board
 - Done: added `.gitignore` and made the first commit; created `docs/TASKS.md` with C (Claude), F (Flash), U (user) cards for every phase, each F card with exact git commands; updated AGENTS.md, CLAUDE.md and PLAN.md to point to it.
 - Decisions (and why):
