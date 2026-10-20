@@ -11,21 +11,22 @@ Seven phases. Each one ends with something working that you can see. Tick the bo
 Paste this at the start of each phase (change N):
 
 ```
-Read CLAUDE.md, docs/PROGRESS.md and Phase N in docs/PLAN.md, plus any docs it references.
-Enter plan mode and propose a plan for Phase N only: files to create or change, migrations,
-packages to add (with reasons), and how you'll test it. Flag anything that needs me
-(accounts, keys, decisions). Wait for my "go" before writing code.
-Work task by task. After each task: run checks, commit, tick the box in PLAN.md.
-Stop at the end of Phase N and update PROGRESS.md.
+Read CLAUDE.md, docs/PROGRESS.md, Phase N in docs/PLAN.md and Phase N in docs/TASKS.md,
+plus any docs they reference. Enter plan mode and propose a plan for Phase N's C cards only:
+files to create or change, migrations, packages to add (with reasons), the contracts Flash
+will build on, and how you'll test it. Flag anything that needs me (accounts, keys, decisions).
+Wait for my "go" before writing code. Work card by card. After each card: run checks, commit,
+tick it in TASKS.md. Stop when the C cards that unblock Flash are done and tell me which F cards can start.
 ```
 
 Then add the phase's extra notes (below each phase) if any.
 
 ## Using Antigravity (Flash) alongside
 
-- Never run Claude Code and Antigravity on the repo at the same time. Commit first, then switch.
-- Give Flash small, single-area tasks (marked **Flash** below). Point it at `AGENTS.md` and `docs/DESIGN.md` first.
-- Review the diff (`git diff`) before committing Flash's work. If it touched files outside the task, discard with `git checkout -- <file>`.
+`docs/TASKS.md` has the owner split, every Flash card with its exact git commands, and Claude's review procedure.
+
+- Never run Claude Code and Antigravity on the repo at the same time. Flash finishes a card (commit on its branch, back on `main`) before Claude starts.
+- Each Flash card runs on its own branch, `flash/p<N>-<slug>`. Claude reviews the branch and merges it, or commits review notes onto the branch for Flash to fix.
 
 ---
 
@@ -53,7 +54,7 @@ Then add the phase's extra notes (below each phase) if any.
 - [ ] Contrast unit test for all themes
 - [ ] Placeholder pages for Queue, Leads, Sequences, Ops, Settings with designed empty states
 
-**Flash:** the six theme blocks in `app/themes.css` once the token structure exists; empty-state copy and icons; the 403 page.
+**Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 
 **Done when:** you can log in as admin and see Ops; log in as rep and Ops is gone from the nav and returns 403 by URL; switching themes in `⌘K` previews live and persists after reload; RLS test: a rep querying `mailboxes` gets zero rows.
 
@@ -80,7 +81,7 @@ Then add the phase's extra notes (below each phase) if any.
 - [ ] pytest: scoring, keyword classification, HN matching rule, fingerprinting
 - [ ] `.github/workflows/agent.yml`: schedule `7,37 * * * *`, `workflow_dispatch`, Python setup with pip cache, secrets from repo settings, 15-minute timeout
 
-**Flash:** extending `hiring_keywords.json`; writing extra pytest cases from examples you give it.
+**Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 
 **Done when:** a manual run from the Actions tab finishes green; Supabase shows real companies, signals and scored leads; a second run adds no duplicates; at least one filtered lead has a readable reason.
 
@@ -98,7 +99,7 @@ Then add the phase's extra notes (below each phase) if any.
 - [ ] Loading skeletons, empty and error states
 - [ ] Realtime or polling refresh so new leads from the agent appear without reload
 
-**Flash:** SignalCard, ScoreMath and Pill components once props are defined; skeleton states.
+**Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 
 **Done when:** everything on screen comes from the database; admin and rep see different lead sets.
 
@@ -146,7 +147,7 @@ Then add the phase's extra notes (below each phase) if any.
 - [ ] Audit log stream with filters (agent / user, action type)
 - [ ] Optional: "Run agent now" button via GitHub `repository_dispatch`
 
-**Flash:** chart and table presentational components once data shapes are fixed.
+**Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 
 **Done when:** every number on Ops traces back to a query; reps can't reach any of it.
 
@@ -161,4 +162,4 @@ Then add the phase's extra notes (below each phase) if any.
 - [ ] Record the walkthrough video
 - [ ] Final deploy, check both logins on the live URL
 
-**Flash:** README first draft from the docs folder; screenshot captions.
+**Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).

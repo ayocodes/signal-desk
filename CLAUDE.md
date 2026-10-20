@@ -8,4 +8,6 @@
 - Run `npm run check` (and `python -m pytest agent/tests` when the agent changed) before saying a task is done.
 - When a phase is finished, tick its checkboxes in `docs/PLAN.md` and add a short entry to `docs/PROGRESS.md`.
 - If context or usage is running low, write the exact next steps into `docs/PROGRESS.md` before stopping, so the next session (or another tool) can continue.
-- Tasks marked "Flash" in the plan are meant for a smaller model in Antigravity. Don't do them unless asked; leave a clear TODO with the file path instead.
+- `docs/TASKS.md` splits every phase into cards: `C` (Claude), `F` (Gemini Flash in Antigravity), `U` (the user). Build only `C` cards. Don't build `F` cards unless asked; if a `C` card needs something Flash will build, define the typed contract (props, data shape, helper) and leave the UI to Flash.
+- Claude commits to `main`. Flash works on one branch per card (`flash/p<N>-<slug>`).
+- Review every Flash card before it merges, following "How Claude reviews a Flash card" in `docs/TASKS.md`. Always run `git branch --show-current` and `git status --short` before reviewing, and again before merging.
