@@ -29,4 +29,102 @@
   --signal: #c2410c;
 }
 
-/* F1.1 (Flash): add mist, graphite, midnight, forest and high-contrast below, same structure. */
+/* Mist (light) */
+[data-theme="mist"] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef0f3;
+  --border: #dfe3e8;
+  --border-strong: #c9ced6;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --text-subtle: #6b7280;
+  --accent: #0f766e;
+  --accent-fg: #ffffff;
+  --accent-soft: #ddf3ef;
+  --good: #15803d;
+  --warn: #a16207;
+  --bad: #b91c1c;
+  --signal: #b45309;
+}
+
+/* Graphite (dark) */
+[data-theme="graphite"] {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface-2: #1a1a1a;
+  --border: #262626;
+  --border-strong: #333333;
+  --text: #ededed;
+  --text-muted: #a1a1a1;
+  --text-subtle: #737373;
+  --accent: #fafafa;
+  --accent-fg: #0a0a0a;
+  --accent-soft: #1f1f1f;
+  --good: #4ade80;
+  --warn: #facc15;
+  --bad: #f87171;
+  --signal: #fb923c;
+}
+
+/* Midnight (dark) */
+[data-theme="midnight"] {
+  color-scheme: dark;
+  --bg: #0e0f13;
+  --surface: #14161c;
+  --surface-2: #1b1e26;
+  --border: #262a35;
+  --border-strong: #343949;
+  --text: #e6e8ee;
+  --text-muted: #9ba1b0;
+  --text-subtle: #6b7180;
+  --accent: #7c83ff;
+  --accent-fg: #0e0f13;
+  --accent-soft: #232650;
+  --good: #5bd48a;
+  --warn: #e8c35a;
+  --bad: #f2777a;
+  --signal: #f0a35e;
+}
+
+/* Forest (dark) */
+[data-theme="forest"] {
+  color-scheme: dark;
+  --bg: #0f1513;
+  --surface: #151d1a;
+  --surface-2: #1c2622;
+  --border: #283530;
+  --border-strong: #33443d;
+  --text: #e2eae7;
+  --text-muted: #94a69f;
+  --text-subtle: #6c7d77;
+  --accent: #4fc1ad;
+  --accent-fg: #0b1412;
+  --accent-soft: #183a34;
+  --good: #6fcf8b;
+  --warn: #e8c25a;
+  --bad: #f08a80;
+  --signal: #f0a54a;
+}
+
+/* High Contrast (dark) */
+[data-theme="high-contrast"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --surface: #0a0a0a;
+  --surface-2: #141414;
+  --border: #5a5a5a;
+  --border-strong: #8a8a8a;
+  --text: #ffffff;
+  --text-muted: #d4d4d4;
+  --text-subtle: #b3b3b3;
+  --accent: #4da3ff;
+  --accent-fg: #000000;
+  --accent-soft: #0d2540;
+  --good: #3dff8b;
+  --warn: #ffd60a;
+  --bad: #ff5c5c;
+  --signal: #ff9f43;
+}
