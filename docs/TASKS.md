@@ -319,7 +319,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Claude
 
-- [ ] **C2.1** `agent/` package with `requirements.txt` and pydantic models. Includes:
+- [x] **C2.1** `agent/` package with `requirements.txt` and pydantic models. Includes:
   - `db.py` (service role)
   - `llm.py` (provider interface, Gemini + Groq)
   - a config loader for `shared/`

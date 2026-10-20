@@ -1,0 +1,5 @@
+# Agent runtime. Pinned so GitHub Actions and local runs behave the same.
+httpx==0.28.1              # HTTP client for every public source
+pydantic==2.14.1           # typed models for everything the agent reads and writes
+pydantic-settings==2.16.1  # env validation (agent/settings.py)
+supabase==2.33.0           # Postgres access with the service-role key

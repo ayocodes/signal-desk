@@ -84,8 +84,10 @@ docs/                   PLAN, TASKS, PROGRESS, ARCHITECTURE, DESIGN, SETUP, refe
 npm run dev          # web app
 npm run check        # lint + typecheck + tests (run before calling any task done)
 supabase db push     # apply migrations to the linked project
-python -m agent.main --once          # run one agent tick locally
-python -m pytest agent/tests
+python3 -m venv .venv && .venv/bin/pip install -r agent/requirements-dev.txt   # once
+.venv/bin/python -m agent.main --once           # run one agent tick locally
+.venv/bin/python -m agent.main --dry-run        # same, but writes nothing
+.venv/bin/python -m pytest agent/tests
 ```
 
 ## Who builds what

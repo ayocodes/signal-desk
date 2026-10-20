@@ -29,3 +29,6 @@ __pycache__/
 # Build output and keys
 /build
 *.pem
+
+# Agent download cache (YC dataset)
+agent/.cache/
