@@ -4,11 +4,24 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 1 done (2026-10-20). Next: Phase 2, the agent (discover, signals, score).
-- Next step: Claude plans Phase 2's C cards (plan mode, wait for "go"); first stop gate is the YC dataset fields.
+- Phase: 2 (agent). Claude cards C2.1 to C2.11 done; the agent has run 3 times on the real project.
+- Next step: user pushes (GitHub needs the workflow file), then U2.1 (run the workflow twice from Actions) and U2.2 (check tables in Supabase). Flash can do F2.1, F2.2, F2.3.
 - Blockers: none
 
 ## Log
+
+### 2026-10-21: Phase 2 build (C2.1 to C2.11) plus product changes
+- Done: Python agent (settings, polite HTTP client, db, run recorder, YC source, ICP, ATS discovery, hiring/launch/YC signals, scoring, contacts, leads, main, workflow), migration 003, 126 offline tests. Real runs: 1,060 companies/contacts/leads, re-runs add no duplicates. Repo variables DISCOVERY_PROBES_PER_RUN=150 and DRAFTS_PER_RUN=5 (the two "secrets" didn't exist on GitHub, so nothing was deleted).
+- Decisions (and why):
+  - ICP: full (418) + near-miss partial (643); full probed first; B2B by industry or tag, with the reason saying which.
+  - HN launches: URL on the company domain, or a Launch HN title with the company's own YC batch marker. Show HN titles alone matched unrelated projects for ordinary-word names (33 mostly false matches down to 7 genuine).
+  - Ready = score >= 50 AND at least one non-weak signal (a recent YC batch alone can't qualify; user decision).
+  - Marketing hires: own category worth 20, labelled "Marketing hire" (user decision); senior/demand gen/growth marketing only.
+  - Job-board probing: legal suffixes stripped, generic trailing word dropped, larger teams first (measured: ~30% of companies have an Ashby board; weeks-old batches rarely do).
+  - All agent rules go through load_config(org_id), guarded by an ast-based test, so Phase 4.5 can move rules into the database without touching scoring.
+  - Phase 4.5 "Configurable agent" added to PLAN.md and TASKS.md after the cut line.
+- Not done / known issues: the workflow hasn't run on GitHub yet (needs a push). Signals for closed job postings stay; freshness handles recency.
+- Next step (exact): user pushes, runs the workflow twice (U2.1), inspects Supabase (U2.2); Flash F2.1 to F2.3; then C2.12 closes Phase 2.
 
 ### 2026-10-20: Phase 1 closed (C1.7, U1.1, C1.8)
 - Done: all six Flash cards (F1.1 to F1.6) reviewed and merged, with small fixes on main (a11y roles, inert mobile drawer, link-styled buttons, theme save no longer waits on the network, SSR-safe theme picker). Automated gate: 72 tests, 11 RLS checks, build. User browser walkthrough passed. `audit_log` shows real sign-in/out rows. Pushed; Vercel deploy succeeded (env validation passed there too).

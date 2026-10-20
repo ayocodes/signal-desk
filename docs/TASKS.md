@@ -697,6 +697,151 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ---
 
+## Phase 4.5: Configurable agent
+
+Rules move into the database per org, versioned. The agent already reads them only through `load_config(org_id)` (`agent/config.py`), so the scoring code doesn't change.
+
+### Claude
+
+- [ ] **C4.5.1** One rules schema for both languages:
+  - the schema for the full rule set (ICP rules, partial rules, signal types with `enabled` + weight, keyword categories and exclusions, threshold, weak signal types, freshness steps, signal windows); format decided in the phase plan
+  - `shared/fixtures/config_cases.json` with valid and invalid rule sets and the expected error per invalid case
+  - a TypeScript validator (`lib/agent-config.ts`) and the Python validator (`agent/config.py`) both run the fixtures and must agree
+- [ ] **C4.5.2** Migration: `agent_configs` (org_id, version, rules jsonb, created_by, created_at, change_summary jsonb; unique (org_id, version)) plus the org's current version; `leads.config_version`. RLS: every member reads their org's rules; only admins can create a version. Version 1 per org is seeded from `/shared`.
+- [ ] **C4.5.3** Agent: `load_config(org_id)` reads the org's current version (falls back to the `/shared` defaults); scoring skips disabled signal types; every scored lead records `config_version`; when the version changed since a lead was scored, the next run re-scores it if it's `ready`/`filtered`, and never changes enrolled or later leads.
+- [ ] **C4.5.4** Server: `lib/data/agent-config.ts` (`getCurrentConfig()`, `listConfigVersions()`), and admin-only routes (zod input + role check + audit log): `POST /api/agent-config` (validate, compute a readable change summary, create the next version) and `POST /api/agent-config/revert` (copies an old version into a new one). Client helpers in `lib/api.ts`. Admin guard on `app/(app)/settings/agent/layout.tsx`.
+- [ ] **C4.5.5** (Optional) Preview: `previewConfigChange(draft)` returns how many leads would become ready or filtered. Either the scoring formula in TypeScript with parity fixtures shared with Python, or a preview computed by the agent; decided in the phase plan.
+
+### Flash
+
+#### F4.5.1 Admin rules editor
+- **Starts after:** C4.5.4, F1.2
+- **Build:**
+  - `app/(app)/settings/agent/page.tsx` and `components/agent-config/*`: a form with sections for ICP rules (status, team size range, batch age, B2B), partial-match rules, signal types (on/off switch + weight each), keyword lists (add/remove chips per category and exclusion list), threshold, weak signal types, and the freshness table.
+  - Validate on every change with the shared TypeScript validator from `lib/agent-config.ts` and show each error next to its field. "Save new version" is disabled while there are errors; it calls the save helper from `lib/api.ts` and shows a toast with the new version number.
+  - Unsaved changes are highlighted; "Discard changes" restores the current version.
+- **Touch only:** `app/(app)/settings/agent/page.tsx`, `components/agent-config/*`
+- **Done when:** an admin can change the threshold and save a new version; an invalid value shows its error and blocks saving; `npm run check` passes.
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p45-rules-editor  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add "app/(app)/settings/agent/page.tsx" components/agent-config  # only the Touch-only files
+  git commit -m "flash(p4.5): admin rules editor"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.5.1.md`, on the card's branch (only exists if Claude asked for changes)
+
+#### F4.5.2 Version history and revert
+- **Starts after:** F4.5.1
+- **Build:**
+  - `components/agent-config/VersionHistory.tsx`, shown on the editor page: one row per version with number, who, when (mono) and the change summary ("Threshold 50 → 55; Launch weight 18 → 20"). The current version is marked.
+  - "Revert to this version" asks for confirmation inside the page (no browser dialogs), then calls the revert helper and refreshes.
+- **Touch only:** `components/agent-config/*`, `app/(app)/settings/agent/page.tsx`
+- **Done when:** history lists every saved version and a revert creates a new version; `npm run check` passes.
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p45-version-history  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add components/agent-config "app/(app)/settings/agent/page.tsx"  # only the Touch-only files
+  git commit -m "flash(p4.5): version history and revert"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.5.2.md`, on the card's branch (only exists if Claude asked for changes)
+
+#### F4.5.3 "What our agent looks for" page
+- **Starts after:** C4.5.4, F1.2
+- **Build:**
+  - `app/(app)/agent/page.tsx`: a read-only, plain-language view of the current rules for every member, from `getCurrentConfig()`. Example sentences: "We look for active B2B startups with 5 to 60 people from YC batches in the last 3 years." "A sales or GTM hire adds 30 points; a senior marketing hire adds 20." "A lead reaches your queue at 50 points with at least one hiring or launch signal."
+  - Show the version number and when it changed. Admins also see an "Edit rules" link to `/settings/agent`.
+  - Add the page to the sidebar and the command palette for everyone.
+- **Touch only:** `app/(app)/agent/page.tsx`, `components/agent-config/*`, `components/shell/*`, `components/command-palette.tsx`
+- **Done when:** a rep sees the rules in plain language and no edit link; `npm run check` passes.
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p45-rules-page  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add "app/(app)/agent" components/agent-config components/shell components/command-palette.tsx  # only the Touch-only files
+  git commit -m "flash(p4.5): what our agent looks for page"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.5.3.md`, on the card's branch (only exists if Claude asked for changes)
+
+#### F4.5.4 More config fixture cases
+- **Starts after:** C4.5.1
+- **Build:**
+  - Add at least 20 cases to `shared/fixtures/config_cases.json`: negative and swapped team size ranges, a threshold of 0 or above the maximum possible score, an empty keyword category, a duplicate phrase, every signal type disabled, unsorted freshness steps, unknown fields. Don't change either validator. If TypeScript and Python disagree on a case, stop and report it: that's a bug for Claude.
+- **Touch only:** `shared/fixtures/config_cases.json`
+- **Done when:** `npm run check` and `.venv/bin/python -m pytest agent/tests` both pass.
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p45-config-cases  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  .venv/bin/python -m pytest agent/tests  # must pass before committing (rule 7)
+  git add shared/fixtures/config_cases.json  # only the Touch-only files
+  git commit -m "flash(p4.5): more config fixture cases"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.5.4.md`, on the card's branch (only exists if Claude asked for changes)
+
+#### F4.5.5 (Optional) Change preview panel
+- **Starts after:** C4.5.5, F4.5.1
+- **Build:**
+  - On the editor, a "Preview" button calls the preview helper with the unsaved draft and shows "This would move N leads into the queue and M out of it", with a loading state and an error state.
+- **Touch only:** `components/agent-config/*`
+- **Done when:** the preview shows counts for an unsaved change; `npm run check` passes.
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p45-preview  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add components/agent-config  # only the Touch-only files
+  git commit -m "flash(p4.5): change preview panel"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.5.5.md`, on the card's branch (only exists if Claude asked for changes)
+
+### Phase gate
+
+- [ ] **C4.5.6** Automated checks: `npm run check` and `.venv/bin/python -m pytest agent/tests` (both validators agree on every fixture); RLS tests: a rep can read the rules but can't insert a version; an agent run after a threshold change re-scores `ready`/`filtered` leads, records the new `config_version`, and leaves an enrolled lead's score alone. Report the results to the user.
+- [ ] **U4.5.1** In the browser, check PLAN.md Phase 4.5 "Done when":
+  - As admin: change the threshold (and one weight), save, and see the change in the history with your name.
+  - Run the agent (Actions → Run workflow); the queue reflects the new rules, and a lead's detail shows the new version.
+  - As rep: the "What our agent looks for" page shows the new rules in plain language; `/settings/agent` shows the 403 page.
+  - Tell Claude what passed and what didn't.
+- [ ] **C4.5.7** After U4.5.1 passes: tick PLAN.md Phase 4.5, add a PROGRESS.md entry, commit.
+
+---
+
 ## Phase 5: Sending, webhooks, deliverability
 
 ### Claude

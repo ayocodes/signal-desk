@@ -1,6 +1,6 @@
 # Build plan
 
-Seven phases. Each one ends with something working that you can see. Tick the boxes as you go (agents tick them too).
+Seven phases, plus Phase 4.5 (configurable agent) after the cut line. Each one ends with something working that you can see. Tick the boxes as you go (agents tick them too).
 
 **Cut line:** after Phase 4 plus a deploy, you have a real, sendable application: real companies, real signals, real scores, real AI drafts with guardrails, real login with roles. Phases 5 and 6 make it much stronger. Phase 7 is polish.
 
@@ -119,6 +119,27 @@ Then add the phase's extra notes (below each phase) if any.
 **Done when:** a new lead gets drafts on the next agent run; deleting the signal phrase from a draft disables Approve; approving creates a sequence row; the raw baseline is visibly blocked.
 
 **This is the cut line.** You can apply from here.
+
+---
+
+## Phase 4.5: Configurable agent
+
+The agent's rules (ICP, signal types and weights, keyword lists, threshold, freshness) move from `/shared` files into the database, per organization and versioned, with an admin editor. The agent already reads every rule through `load_config(org_id)` (Phase 2), so only that function changes on the Python side.
+
+- [ ] One validation schema for the rules, shared by TypeScript and Python, with shared accept/reject fixtures that both must agree on
+- [ ] Rules stored per org in the database, versioned (who, when, what changed), every change audit logged; `/shared` JSON becomes the default seed (version 1)
+- [ ] Signal types can be switched on/off and re-weighted; keyword lists, threshold and freshness editable
+- [ ] Each lead records the config version that scored it
+- [ ] Agent loads the org's current version each run (falls back to the `/shared` defaults); the next run re-scores `ready`/`filtered` leads; enrolled and later leads keep their score
+- [ ] Admin settings page to edit the rules, with version history and revert (a revert creates a new version)
+- [ ] Read-only "What our agent looks for" page for reps
+- [ ] Optional: preview how many leads a change would surface or filter before saving
+
+**Who builds what:** see this phase in `docs/TASKS.md`. Storage, versioning, RLS, validation and agent loading are Claude's; the settings form, history and rep page UI are Flash's.
+
+**Done when:** an admin changes the threshold and saves; history shows who changed what; the next agent run re-scores and leads show the new version; enrolled leads keep their score; a rep can read the rules page but can't open the editor (403) or write a version (RLS); both validators reject the same bad fixture.
+
+**Open decisions for the phase plan:** schema format (one JSON Schema file read by both languages, or a schema generated from one side); whether the optional preview ports the scoring formula to TypeScript (with parity fixtures) or asks the agent to compute it.
 
 ---
 
