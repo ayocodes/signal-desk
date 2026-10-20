@@ -6,12 +6,19 @@ import { AppShell, type ShellProfile } from "./AppShell";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/queue",
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
-// Mock server action for signOut
+// Mock server actions and server-only
 vi.mock("@/app/(auth)/login/actions", () => ({
   signOut: vi.fn(),
 }));
+
+vi.mock("@/app/(app)/settings/actions", () => ({
+  saveThemePreference: vi.fn(),
+}));
+
+vi.mock("server-only", () => ({}));
 
 describe("AppShell", () => {
   const adminProfile: ShellProfile = {

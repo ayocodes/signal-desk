@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
+import { CommandPalette } from "@/components/command-palette";
 import { Avatar, Kbd, Pill } from "@/components/ui";
 import type { Role } from "@/lib/auth";
 import { BRAND_NAME } from "@/lib/brand";
@@ -53,6 +54,7 @@ export function AppShell({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
 
   // Close mobile drawer when pathname changes
   const [prevPathname, setPrevPathname] = React.useState(pathname);
@@ -324,6 +326,7 @@ export function AppShell({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={() => setPaletteOpen(true)}
               className="flex h-8 items-center gap-2 rounded-control border border-border bg-surface-2 px-2.5 text-meta text-muted hover:border-border-strong hover:text-text transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               aria-label="Command palette (⌘K)"
             >
@@ -339,6 +342,13 @@ export function AppShell({
           {children}
         </main>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        role={profile.role}
+      />
     </div>
   );
 }
