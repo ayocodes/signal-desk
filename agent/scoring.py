@@ -5,7 +5,9 @@ score = ICP points + one entry per signal type present + freshness of the newest
 
 The parts are kept in order so the UI can print the math:
 "ICP match 40 + Hiring 30 + Fresh 15 + 2 signal types 7 = 92".
-A lead is ready when score >= threshold (so partial 20 + one sales hire 30 = 50 is ready).
+A lead is ready when score >= threshold AND it has at least one signal that isn't "weak"
+(weakSignalTypes: a recent YC batch adds points but can't qualify a lead alone).
+So partial 20 + one sales hire 30 = 50 is ready; full 40 + YC recent 10 = 50 is not.
 """
 
 from __future__ import annotations
@@ -45,14 +47,14 @@ def _freshness(newest: datetime, now: datetime, cfg: ScoringConfig) -> tuple[str
     return None
 
 
-def _filtered_reason(score: int, threshold: int, tier: str, signals: Sequence[SignalFacts]) -> str:
-    head = f"Score {score}, under {threshold}"
-    types = {s.type for s in signals}
+def _filtered_reason(score: int, cfg: ScoringConfig, tier: str, signals: Sequence[SignalFacts]) -> str:
+    threshold = cfg.threshold
+    head = f"Score {score}, under {threshold}" if score < threshold else f"Score {score}"
     if not signals:
         return f"{head}: no buying signals yet"
-    if types == {"funding"}:
-        batch = next(s.title for s in signals if s.type == "funding")
-        return f"{head}: only a weak signal ({batch})"
+    if all(s.type in cfg.weak_signal_types for s in signals):
+        weak = next(s.title for s in signals)
+        return f"{head}: only a weak signal ({weak})"
     if tier == "partial":
         return f"{head}: partial ICP match needs a stronger signal"
     return f"{head}: signals aren't strong or fresh enough yet"
@@ -80,6 +82,7 @@ def score_lead(tier: Literal["full", "partial"], signals: Sequence[SignalFacts],
         parts.append((f"{len(types)} signal types", cfg.stacked_per_extra_signal_type * (len(types) - 1)))
 
     score = sum(points for _, points in parts)
-    ready = score >= cfg.threshold
-    reason = None if ready else _filtered_reason(score, cfg.threshold, tier, signals)
+    has_strong_signal = any(s.type not in cfg.weak_signal_types for s in signals)
+    ready = score >= cfg.threshold and has_strong_signal
+    reason = None if ready else _filtered_reason(score, cfg, tier, signals)
     return ScoreResult(score, tuple(parts), ready, reason)

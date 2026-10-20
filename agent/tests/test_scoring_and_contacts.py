@@ -68,6 +68,19 @@ def test_a_weak_signal_alone_names_itself_when_filtered() -> None:
     assert result.filtered_reason == "Score 30, under 50: only a weak signal (YC Fall 2026)"
 
 
+def test_a_weak_signal_cannot_make_a_lead_ready_even_at_50() -> None:
+    result = score_lead("full", [signal("funding", 24 * 40, title="YC Fall 2026")], NOW, CFG)
+    assert result.score == 50
+    assert not result.ready
+    assert result.filtered_reason == "Score 50: only a weak signal (YC Fall 2026)"
+
+
+def test_a_weak_signal_still_adds_points_next_to_a_real_one() -> None:
+    result = score_lead("partial", [signal("funding", 24 * 40), signal("hiring", 24 * 40)], NOW, CFG)
+    assert ("YC recent", 10) in result.parts
+    assert result.ready
+
+
 @pytest.mark.parametrize(
     ("title", "team", "status"),
     [

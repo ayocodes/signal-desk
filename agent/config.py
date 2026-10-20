@@ -58,6 +58,7 @@ class SignalWindows(_Model):
 
 class ScoringConfig(_Model):
     threshold: int
+    weak_signal_types: tuple[str, ...] = Field(alias="weakSignalTypes")
     icp: IcpPoints
     signals: SignalPoints
     freshness: tuple[FreshnessStep, ...]
