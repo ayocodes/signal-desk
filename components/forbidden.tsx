@@ -1,13 +1,27 @@
-// Permission-denied state. Bare until Flash designs it in F1.4.
-// Rendered by app/forbidden.tsx (forbidden()) and app/403/page.tsx (proxy rewrite).
 import Link from "next/link";
+import { ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui";
 
 export function Forbidden() {
   return (
-    <main className="p-6">
-      <h1>You don&apos;t have access to this page</h1>
-      <p>Ops is for admins. Your leads are waiting in the queue.</p>
-      <Link href="/queue">Back to Queue</Link>
+    <main className="flex min-h-[60vh] w-full flex-col items-center justify-center p-6 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warn/15 text-warn mb-4">
+        <ShieldAlert className="h-6 w-6" aria-hidden="true" />
+      </div>
+
+      <h1 className="text-title font-semibold tracking-tight text-text mb-2">
+        You don&apos;t have access to this page
+      </h1>
+
+      <p className="text-meta text-muted max-w-sm mb-6 leading-relaxed">
+        Ops is for admins. Your leads are waiting in the queue.
+      </p>
+
+      <Link href="/queue">
+        <Button variant="secondary" size="md">
+          Back to Queue
+        </Button>
+      </Link>
     </main>
   );
 }
