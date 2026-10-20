@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Design tokens and the theme mapping arrive in C1.6 (app/themes.css). */
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}

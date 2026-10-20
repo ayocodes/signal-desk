@@ -25,3 +25,7 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Build output and keys
+/build
+*.pem

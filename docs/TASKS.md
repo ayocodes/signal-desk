@@ -123,9 +123,9 @@ Then tell the user the card is ready for Flash's rework prompt.
 
 ### Claude
 
-- [ ] **C1.1** Scaffold Next.js (App Router, TS strict, Tailwind v4, ESLint) into the repo without overwriting kit files. Install `@supabase/ssr`, `@supabase/supabase-js`, `zod`, `geist`, `lucide-react`, `cmdk`, `vitest`. Add the `npm run check` script and `lib/brand.ts`.
+- [x] **C1.1** Scaffold Next.js (App Router, TS strict, Tailwind v4, ESLint) into the repo without overwriting kit files. Install `@supabase/ssr`, `@supabase/supabase-js`, `zod`, `geist`, `lucide-react`, `cmdk`, `vitest`. Add the `npm run check` script and `lib/brand.ts`.
 
-  Then write `lib/env.ts`, which validates environment variables with zod at startup (from `instrumentation.ts`), so a bad config fails on boot instead of mid-request:
+  Then write `lib/env.ts`, which validates environment variables with zod at startup (`next.config.ts` runs the same check, so `next dev` and `next build` fail at once), so a bad config fails on boot instead of mid-request. Rules live in `lib/env-schema.ts`; browser code uses `lib/env.public.ts`:
   - **Empty strings count as missing.**
   - **Required:**
     - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
