@@ -337,7 +337,7 @@ Almost all of this phase is Claude's: it's the agent core.
 - [x] **C2.2** `shared/scoring.json` and `shared/hiring_keywords.json`, starting from ARCHITECTURE.md.
 - [x] **C2.3** YC source. **Stop gate:** print the dataset's fields and 3 sample records to the user before writing the ICP filter. If the dataset is unreachable, use the 40-company seed fallback and say so.
 - [x] **C2.4** ICP filter with readable `icp_reasons`.
-- [ ] **C2.5** ATS discovery (Greenhouse, Lever, Ashby) with a probe cap, plus hiring signals with excerpts and job URLs, sales/GTM classification and the founding-role bonus.
+- [x] **C2.5** ATS discovery (Greenhouse, Lever, Ashby) with a probe cap, plus hiring signals with excerpts and job URLs, sales/GTM classification and the founding-role bonus.
 - [ ] **C2.6** HN launch signals with the strict matching rule; YC recency as a weak funding signal; fingerprints; the `jobs_fetched_at` refresh window.
 - [ ] **C2.7** Scoring with `score_parts`, filtered reasons, round-robin assignment, contacts, the buyer check, and test-inbox routing (including the fixed bounce/complaint share).
 - [ ] **C2.8** `main.py`: `agent_runs` and `audit_log` writes, per-step timings, errors captured per step, `--once`, `--dry-run`.
