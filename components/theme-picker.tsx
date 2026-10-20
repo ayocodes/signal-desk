@@ -1,21 +1,17 @@
 "use client";
 
-import * as React from "react";
+import { showToast, SegmentedControl } from "@/components/ui";
+import { saveTheme, useStoredTheme } from "@/lib/theme-client";
 import { THEME_CHOICES, type ThemeId } from "@/lib/themes";
-import { readStoredTheme, saveTheme } from "@/lib/theme-client";
-import { SegmentedControl } from "@/components/ui";
 
 export function ThemePicker() {
-  const [theme, setTheme] = React.useState<ThemeId>(() => {
-    if (typeof window !== "undefined") {
-      return readStoredTheme();
-    }
-    return "system";
-  });
+  const theme = useStoredTheme();
 
-  const handleChange = async (newTheme: ThemeId) => {
-    setTheme(newTheme);
-    await saveTheme(newTheme);
+  const handleChange = (newTheme: ThemeId) => {
+    saveTheme(newTheme).catch((error: unknown) => {
+      console.error("Saving the theme to the profile failed.", error);
+      showToast("Theme changed here, but saving it to your profile failed.", { tone: "bad" });
+    });
   };
 
   return (
@@ -23,7 +19,8 @@ export function ThemePicker() {
       <div>
         <h3 className="text-body font-semibold text-text">Theme</h3>
         <p className="text-meta text-muted mt-0.5">
-          Choose how Signal Desk looks on this device. System automatically matches your operating system.
+          Saved to your profile, so it follows you to other devices. System matches your
+          operating system&apos;s light or dark setting.
         </p>
       </div>
 

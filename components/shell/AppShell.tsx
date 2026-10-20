@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
 import { CommandPalette } from "@/components/command-palette";
-import { Avatar, Kbd, Pill } from "@/components/ui";
+import { Avatar, Kbd, Pill, ToastContainer } from "@/components/ui";
 import type { Role } from "@/lib/auth";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -349,6 +349,7 @@ export function AppShell({
         onOpenChange={setPaletteOpen}
         role={profile.role}
       />
+      <ToastContainer />
     </div>
   );
 }

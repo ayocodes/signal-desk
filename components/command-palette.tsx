@@ -16,7 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
-import { Kbd } from "@/components/ui";
+import { Kbd, showToast } from "@/components/ui";
 import type { Role } from "@/lib/auth";
 import { applyTheme, readStoredTheme, saveTheme } from "@/lib/theme-client";
 import { isThemeId, THEME_CHOICES, type ThemeId } from "@/lib/themes";
@@ -92,11 +92,17 @@ export function CommandPalette({
     setActiveValue(readStoredTheme());
   };
 
-  const handleSelectTheme = async (themeId: ThemeId) => {
-    await saveTheme(themeId);
+  const handleSelectTheme = (themeId: ThemeId) => {
+    // The theme is applied and stored locally before the profile save starts, so the palette
+    // can close at once instead of waiting on the network.
+    const saving = saveTheme(themeId);
     setView("root");
     setSearch("");
     setIsOpen(false);
+    saving.catch((error: unknown) => {
+      console.error("Saving the theme to the profile failed.", error);
+      showToast("Theme changed here, but saving it to your profile failed.", { tone: "bad" });
+    });
   };
 
   const handleBackToRoot = () => {
@@ -112,7 +118,7 @@ export function CommandPalette({
       role="dialog"
       aria-modal="true"
       aria-label="Command palette"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 bg-black/60 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 bg-bg/70 backdrop-blur-xs select-none"
       onClick={handleClose}
     >
       <div

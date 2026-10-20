@@ -7,7 +7,7 @@ export default function SettingsPage() {
       <Panel>
         <PanelHeader
           title="Appearance"
-          description="Customize the color scheme and appearance for this device."
+          description="How the workspace looks for you."
         />
         <PanelBody>
           <ThemePicker />

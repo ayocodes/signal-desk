@@ -1,4 +1,5 @@
 // Browser-side theme helpers. Used by ThemeSync, the command palette and the Settings picker.
+import { useSyncExternalStore } from "react";
 import { saveThemePreference } from "@/app/(app)/settings/actions";
 import { isThemeId, resolveTheme, THEME_STORAGE_KEY, type ThemeId } from "@/lib/themes";
 
@@ -24,6 +25,9 @@ export function readStoredTheme(): ThemeId {
   }
 }
 
+// Fired after the stored choice changes, so every picker on the page shows the same value.
+const THEME_CHANGE_EVENT = "signal-desk:theme-change";
+
 export function storeTheme(choice: ThemeId): void {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, choice);
@@ -31,10 +35,27 @@ export function storeTheme(choice: ThemeId): void {
     // Private browsing can block storage; the theme still applies and saves to the profile.
     console.warn("Saving the theme on this device failed.", error);
   }
+  window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
+}
+
+function subscribeToStoredTheme(onChange: () => void): () => void {
+  window.addEventListener(THEME_CHANGE_EVENT, onChange);
+  window.addEventListener("storage", onChange); // another tab changed it
+  return () => {
+    window.removeEventListener(THEME_CHANGE_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+// The saved choice as React state. The server can't see localStorage, so it renders "system";
+// useSyncExternalStore then switches to the real value without a hydration mismatch.
+export function useStoredTheme(): ThemeId {
+  return useSyncExternalStore(subscribeToStoredTheme, readStoredTheme, () => "system");
 }
 
 // Keeps the choice: applies it, remembers it on this device, and saves it to the profile
-// so it follows the user to other devices.
+// so it follows the user to other devices. The first two happen synchronously, so callers
+// can close their UI right away and only wait (or catch) for the profile save.
 export async function saveTheme(choice: ThemeId): Promise<void> {
   applyTheme(choice);
   storeTheme(choice);
