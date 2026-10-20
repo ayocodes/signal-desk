@@ -20,7 +20,7 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
 2. Run the card's **Start** git commands exactly as written. If `git status --short` prints anything, stop and tell the user. Don't stash it or clean it up.
 3. Change only the files listed under **Touch only**. If the card can't be done without touching another file, stop and say which file and why.
 4. Never add a dependency (`npm install`, `pip install`). If you need one, stop and tell the user.
-5. Never touch `.env*`, `lib/env.ts`, `supabase/`, `middleware.ts`, `lib/supabase/`, `app/api/`, `docs/TASKS.md`, `docs/reviews/`, or anything under `agent/` other than test files your card names. Claude ticks the boxes in this file after merging.
+5. Never touch `.env*`, `supabase/`, `proxy.ts`, `next.config.ts`, any `layout.tsx` or `actions.ts`, `app/forbidden.tsx`, `app/403/`, `app/api/`, files in `lib/` other than ones your card names, `docs/TASKS.md`, `docs/reviews/`, or anything under `agent/` other than test files your card names. Claude ticks the boxes in this file after merging.
 6. No raw hex colors outside `app/themes.css`. No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
 7. **Checks must pass before you commit.** Each Finish block starts with `npm run check` (and `python -m pytest agent/tests` where listed).
    - If a check fails, fix it by changing only the card's "Touch only" files, then run it again.
@@ -144,9 +144,9 @@ Then tell the user the card is ready for Flash's rework prompt.
 - [x] **C1.2** Migration 001: every table, enum, index and unique constraint from ARCHITECTURE.md.
 - [x] **C1.3** Migration 002: RLS on every table, plus helper functions for the current user's org and role. Add `npm run test:rls`: signing in as the rep, a query on `mailboxes` must return 0 rows.
 - [x] **C1.4** `npm run seed`: the Demo workspace org, admin and rep users via the admin API, matching `profiles` rows, and 4 mailboxes.
-- [ ] **C1.5** Auth:
+- [x] **C1.5** Auth:
   - Supabase clients in `lib/supabase/`, plus `lib/auth.ts` (`getProfile`, `requireAdmin`).
-  - `middleware.ts`: unauthenticated users go to `/login`; `/ops` returns 403 for reps.
+  - `proxy.ts` (Next 16's name for middleware): unauthenticated users go to `/login`; `/ops` answers reps with a real 403 by rewriting to `/403`, which calls `forbidden()` while prerendered. `app/(app)/ops/layout.tsx` checks again with `requireAdmin()`.
   - Server actions `signIn`, `signOut`, `signInAsDemo(role)`. Demo passwords stay on the server and are never sent to the browser.
   - A **bare** login form and a **bare** app shell with typed props: `AppShell({ profile: { fullName, email, role }, children })`.
 - [ ] **C1.6** Theme plumbing:
@@ -232,7 +232,7 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Starts after:** C1.5, F1.2
 - **Build:**
   - Restyle `app/(auth)/login/page.tsx`: email + password form, error message slot, and two buttons, "Use demo admin" and "Use demo rep", that call the existing `signInAsDemo('admin' | 'rep')` action. Keep all action imports and form field names unchanged.
-  - Create `components/forbidden.tsx`: a permission-denied state with a short explanation and a link back to Queue.
+  - Restyle `components/forbidden.tsx` (it already exists, bare): a permission-denied state with a short explanation and a link back to Queue. It is rendered by `app/forbidden.tsx`; don't edit that file or `app/403/`.
 - **Touch only:** `app/(auth)/login/page.tsx`, `components/forbidden.tsx`
 - **Done when:** both demo buttons log in, a wrong password shows an error, and `npm run check` passes.
 - **Start:**
@@ -253,7 +253,7 @@ Then tell the user the card is ready for Flash's rework prompt.
 
 #### F1.5 Placeholder pages with empty states
 - **Starts after:** F1.3
-- **Build:** `page.tsx` for Queue, Leads, Sequences, Ops and Settings under `app/(app)/`. Each one gets a page title and an EmptyState that says what will appear there and how. Example for Queue: "Leads appear here after the agent's next run, every 30 minutes." For Ops, render `components/forbidden.tsx` when the profile is a rep, using `getProfile()` from `lib/auth.ts`. Don't edit `lib/auth.ts`.
+- **Build:** replace the stub `page.tsx` for Queue, Leads, Sequences, Ops and Settings under `app/(app)/`. Each one gets a page title and an EmptyState that says what will appear there and how. Example for Queue: "Leads appear here after the agent's next run, every 30 minutes." Ops access is already enforced by `proxy.ts` and `app/(app)/ops/layout.tsx`; don't touch them.
 - **Touch only:** `app/(app)/queue/page.tsx`, `app/(app)/leads/page.tsx`, `app/(app)/sequences/page.tsx`, `app/(app)/ops/page.tsx`, `app/(app)/settings/page.tsx`
 - **Done when:** every nav link opens a designed page, and `npm run check` passes.
 - **Start:**
@@ -428,7 +428,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Claude
 
-- [ ] **C3.1** Generate DB types into `lib/database.types.ts`. Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
+- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
 - [ ] **C3.2** `useLiveLeads()` hook (Supabase Realtime, falling back to polling). Check RLS by hand: the rep sees only their own leads, even through a direct query.
 
 ### Flash
@@ -845,7 +845,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 #### F6.3 Ops page assembly
 - **Starts after:** F6.2 (and C6.2, if the "Run agent now" button is wanted)
-- **Build:** `app/(app)/ops/page.tsx`. Lay out the five sections in the order DESIGN.md gives, with a skeleton (`loading.tsx`) and an error state. Keep the existing rep check that renders `forbidden.tsx`. If C6.2 exists, add a "Run agent now" button that renders only when the page gets `canRunAgent: true`.
+- **Build:** `app/(app)/ops/page.tsx`. Lay out the five sections in the order DESIGN.md gives, with a skeleton (`loading.tsx`) and an error state. The rep check lives in `proxy.ts` and `app/(app)/ops/layout.tsx`; don't touch them. If C6.2 exists, add a "Run agent now" button that renders only when the page gets `canRunAgent: true`.
 - **Touch only:** `app/(app)/ops/*`
 - **Start:**
   ```bash

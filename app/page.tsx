@@ -1,6 +1,6 @@
-import { BRAND_NAME } from "@/lib/brand";
+import { redirect } from "next/navigation";
 
-// Replaced in C1.5, where proxy.ts sends "/" to /queue.
+// proxy.ts normally redirects "/" first; this covers any request it skips.
 export default function Home() {
-  return <main className="p-6">{BRAND_NAME}</main>;
+  redirect("/queue");
 }

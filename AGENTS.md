@@ -38,6 +38,7 @@ The name "Signal Desk" is a working title. Keep it in one constant (`lib/brand.t
 ## Repo layout
 
 ```
+proxy.ts                session refresh, login redirects, 403 on admin paths (Next 16's middleware)
 app/                    Next.js routes (App Router)
   (auth)/login/
   (app)/queue/          split list + detail workspace

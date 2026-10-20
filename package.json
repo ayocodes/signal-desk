@@ -11,7 +11,8 @@
     "test": "vitest run",
     "check": "npm run lint && npm run typecheck && npm run test",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
-    "test:rls": "tsx --env-file=.env.local scripts/test-rls.ts"
+    "test:rls": "tsx --env-file=.env.local scripts/test-rls.ts",
+    "db:types": "supabase gen types typescript --linked --schema public > lib/database.types.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
