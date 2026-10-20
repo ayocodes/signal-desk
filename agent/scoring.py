@@ -28,6 +28,12 @@ class SignalFacts:
     occurred_at: datetime
     title: str
     founding: bool = False
+    # For hiring signals: "sales" | "gtm" | "marketing" (from the keyword category).
+    category: str | None = None
+
+
+def _is_marketing(signal: SignalFacts) -> bool:
+    return signal.type == "hiring" and signal.category == "marketing"
 
 
 @dataclass(frozen=True)
@@ -65,10 +71,14 @@ def score_lead(tier: Literal["full", "partial"], signals: Sequence[SignalFacts],
     parts.append(("ICP match", cfg.icp.full) if tier == "full" else ("Partial ICP match", cfg.icp.partial))
 
     types = {s.type for s in signals}
-    if "hiring" in types:
+    sales_hires = [s for s in signals if s.type == "hiring" and not _is_marketing(s)]
+    if sales_hires:
         parts.append(("Hiring", cfg.signals.hiring_sales))
-        if any(s.founding for s in signals if s.type == "hiring"):
+        if any(s.founding for s in sales_hires):
             parts.append(("Founding sales role", cfg.signals.hiring_founding_sales_bonus))
+    if any(_is_marketing(s) for s in signals):
+        # Its own part, worth less; sales and marketing hires are still one signal type.
+        parts.append(("Marketing hire", cfg.signals.hiring_marketing))
     if "launch" in types:
         parts.append(("Launch", cfg.signals.launch))
     if "funding" in types:

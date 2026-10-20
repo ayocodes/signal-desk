@@ -46,10 +46,21 @@ def classify_title(title: str, keywords: HiringKeywords) -> RoleMatch | None:
     if not excepted and any(_contains(text, phrase) for phrase in keywords.exclude):
         return None
     for category, phrases in keywords.categories.items():
-        if any(_contains(text, phrase) for phrase in phrases):
-            founding = any(_contains(text, phrase) for phrase in keywords.founding)
-            return RoleMatch(category, founding)
+        if not any(_contains(text, phrase) for phrase in phrases):
+            continue
+        if any(_contains(text, phrase) for phrase in keywords.category_exclude.get(category, ())):
+            continue
+        founding = any(_contains(text, phrase) for phrase in keywords.founding)
+        return RoleMatch(category, founding)
     return None
+
+
+MARKETING = "marketing"
+
+
+def hiring_label(category: str) -> str:
+    """How a hiring signal is named in titles and score parts."""
+    return "Marketing hire" if category == MARKETING else "Hiring"
 
 
 def excerpt_for(description: str, keywords: HiringKeywords) -> str | None:
@@ -91,7 +102,7 @@ def hiring_signals(
                 "org_id": org_id,
                 "company_id": company_id,
                 "type": "hiring",
-                "title": f"Hiring: {job.title}",
+                "title": f"{hiring_label(match.category)}: {job.title}",
                 "excerpt": excerpt_for(job.description, keywords),
                 "source_name": ATS_LABEL[ats],
                 "source_url": job.url,

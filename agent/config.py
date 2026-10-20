@@ -30,6 +30,7 @@ class IcpPoints(_Model):
 class SignalPoints(_Model):
     hiring_sales: int
     hiring_founding_sales_bonus: int
+    hiring_marketing: int
     launch: int
     funding_yc_recent: int
 
@@ -72,7 +73,10 @@ class ScoringConfig(_Model):
 
 
 class HiringKeywords(_Model):
+    # Checked in order; the first category that matches wins (sales before gtm before marketing).
     categories: dict[str, tuple[str, ...]]
+    # Phrases that disqualify a title from one category only (e.g. gtm skips "marketing" titles).
+    category_exclude: dict[str, tuple[str, ...]] = Field(default_factory=dict, alias="categoryExclude")
     founding: tuple[str, ...]
     exclude: tuple[str, ...]
     exclude_exceptions: tuple[str, ...] = Field(alias="excludeExceptions")

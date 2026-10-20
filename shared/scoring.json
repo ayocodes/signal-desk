@@ -10,6 +10,7 @@
   "signals": {
     "hiring_sales": 30,
     "hiring_founding_sales_bonus": 5,
+    "hiring_marketing": 20,
     "launch": 18,
     "funding_yc_recent": 10
   },

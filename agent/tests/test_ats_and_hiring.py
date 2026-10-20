@@ -112,3 +112,38 @@ def test_hiring_signals_only_for_sales_roles_with_stable_fingerprints() -> None:
     assert rows[0]["source_name"] == "Ashby"
     assert rows[0]["fingerprint"] == hiring_fingerprint("co", "ashby", "j1") == "hiring:co:ashby:j1"
     assert rows[0]["meta"]["founding"] is True
+
+
+@pytest.mark.parametrize(
+    ("title", "category"),
+    [
+        ("Marketing Lead", "marketing"),  # Trigger.dev's real opening
+        ("Head of Marketing", "marketing"),
+        ("VP Marketing", "marketing"),
+        ("Director of Marketing, EMEA", "marketing"),
+        ("Founding Marketing Hire", "marketing"),
+        ("Demand Generation Manager", "marketing"),
+        ("Head of Growth Marketing", "marketing"),  # not gtm: gtm skips marketing titles
+        ("Head of Growth", "gtm"),
+        ("Head of Sales & Marketing", "sales"),  # matches both: the higher one wins
+    ],
+)
+def test_marketing_titles(title: str, category: str) -> None:
+    match = classify_title(title, load_config("test-org").keywords)
+    assert match is not None and match.category == category
+
+
+@pytest.mark.parametrize(
+    "title",
+    ["Marketing Coordinator", "Marketing Associate", "Content Writer", "Social Media Manager",
+     "Head of Product Marketing", "Brand Marketing Lead", "Marketing Intern"],
+)
+def test_junior_product_and_brand_marketing_dont_count(title: str) -> None:
+    assert classify_title(title, load_config("test-org").keywords) is None
+
+
+def test_marketing_signals_are_named_marketing_hire() -> None:
+    jobs = parse_jobs("ashby", {"jobs": [{"id": "m1", "title": "Marketing Lead", "jobUrl": "https://j/m1", "descriptionPlain": "Own demand generation."}]})
+    rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").keywords, NOW)
+    assert rows[0]["title"] == "Marketing hire: Marketing Lead"
+    assert rows[0]["meta"]["category"] == "marketing"

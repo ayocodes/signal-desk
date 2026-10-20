@@ -114,3 +114,29 @@ def test_placeholder_contact_is_marked_and_routed() -> None:
     assert contact["name"] == "Founder"
     assert contact["buyer_status"] == "verified"
     assert contact["send_address"].endswith("+11111111@resend.dev")
+
+
+def hire(category: str, hours_ago: float, founding: bool = False) -> SignalFacts:
+    return SignalFacts(type="hiring", occurred_at=NOW - timedelta(hours=hours_ago), title="Hire", founding=founding, category=category)
+
+
+def test_a_marketing_hire_is_its_own_lower_weighted_part() -> None:
+    result = score_lead("full", [hire("marketing", 24 * 30)], NOW, CFG)
+    assert result.parts == (("ICP match", 40), ("Marketing hire", 20))
+    assert (result.score, result.ready) == (60, True)
+
+
+def test_partial_plus_marketing_hire_alone_stays_filtered() -> None:
+    result = score_lead("partial", [hire("marketing", 24 * 30)], NOW, CFG)
+    assert (result.score, result.ready) == (40, False)
+
+
+def test_sales_and_marketing_hires_both_count_but_stack_as_one_type() -> None:
+    result = score_lead("full", [hire("sales", 24 * 30), hire("marketing", 24 * 30)], NOW, CFG)
+    assert result.parts == (("ICP match", 40), ("Hiring", 30), ("Marketing hire", 20))
+    assert not any("signal types" in label for label, _ in result.parts)
+
+
+def test_founding_bonus_is_for_sales_roles_only() -> None:
+    result = score_lead("full", [hire("marketing", 24 * 30, founding=True)], NOW, CFG)
+    assert ("Founding sales role", 5) not in result.parts

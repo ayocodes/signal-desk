@@ -203,6 +203,7 @@ def _signal_facts(rows: list[Row]) -> dict[str, list[SignalFacts]]:
                 occurred_at=datetime.fromisoformat(row["occurred_at"] or row["detected_at"]),
                 title=row["title"],
                 founding=bool((row.get("meta") or {}).get("founding")),
+                category=(row.get("meta") or {}).get("category"),
             )
         )
     return by_company

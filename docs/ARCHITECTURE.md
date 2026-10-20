@@ -72,7 +72,7 @@ Results are stored per check (`pass` / `fail` / `warn` + message) in `drafts.gua
 {
   "threshold": 50,
   "icp": { "full": 40, "partial": 20 },
-  "signals": { "hiring_sales": 30, "hiring_founding_sales_bonus": 5, "launch": 18, "funding_yc_recent": 10 },
+  "signals": { "hiring_sales": 30, "hiring_founding_sales_bonus": 5, "hiring_marketing": 20, "launch": 18, "funding_yc_recent": 10 },
   "freshness": [ { "maxHours": 24, "points": 15 }, { "maxHours": 48, "points": 11 }, { "maxHours": 72, "points": 8 }, { "maxHours": 168, "points": 4 } ],
   "stackedPerExtraSignalType": 7,
   "icpRules": { "status": "Active", "teamSizeMin": 5, "teamSizeMax": 60, "b2b": true, "maxBatchAgeYears": 3 }
@@ -80,6 +80,8 @@ Results are stored per check (`pass` / `fail` / `warn` + message) in `drafts.gua
 ```
 
 `score_parts` is stored as an ordered array of `[label, points]` so the UI can show "ICP match 40 + Hiring 30 + Fresh 15 + 2 signals 7 = 92".
+
+Hiring signals carry a category from `shared/hiring_keywords.json`. Sales and GTM roles score `hiring_sales` ("Hiring"); senior marketing, demand generation and growth marketing roles score the lower `hiring_marketing` ("Marketing hire"). Junior, product and brand marketing roles don't count. Both kinds can appear on one lead, but they stack as one signal type (hiring).
 
 ## Sequence engine
 

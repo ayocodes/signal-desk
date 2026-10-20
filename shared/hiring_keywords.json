@@ -21,11 +21,56 @@
       "head of growth",
       "revenue",
       "revops",
-      "demand generation",
       "outbound"
+    ],
+    "marketing": [
+      "head of marketing",
+      "vp of marketing",
+      "vp marketing",
+      "director of marketing",
+      "marketing director",
+      "marketing lead",
+      "lead marketing",
+      "chief marketing officer",
+      "cmo",
+      "founding marketing",
+      "first marketing",
+      "demand generation",
+      "demand gen",
+      "growth marketing",
+      "growth marketer"
     ]
   },
-  "founding": ["founding", "first sales", "first account executive", "first gtm"],
-  "exclude": ["engineer", "engineering", "developer", "salesforce", "intern"],
-  "excludeExceptions": ["gtm engineer", "go-to-market engineer", "sales development"]
+  "categoryExclude": {
+    "gtm": [
+      "marketing"
+    ],
+    "marketing": [
+      "coordinator",
+      "associate",
+      "content writer",
+      "social media",
+      "product marketing",
+      "brand"
+    ]
+  },
+  "founding": [
+    "founding",
+    "first sales",
+    "first account executive",
+    "first gtm",
+    "first marketing"
+  ],
+  "exclude": [
+    "engineer",
+    "engineering",
+    "developer",
+    "salesforce",
+    "intern"
+  ],
+  "excludeExceptions": [
+    "gtm engineer",
+    "go-to-market engineer",
+    "sales development"
+  ]
 }
