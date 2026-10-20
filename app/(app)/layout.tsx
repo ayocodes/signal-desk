@@ -3,12 +3,18 @@
 // <Suspense>: the fallback streams first, then the shell once the profile has loaded.
 import { Suspense } from "react";
 import { AppShell } from "@/components/shell/AppShell";
+import { ThemeSync } from "@/components/theme-sync";
 import { requireProfile } from "@/lib/auth";
 
 async function SignedInShell({ children }: { children: React.ReactNode }) {
   const profile = await requireProfile();
   return (
-    <AppShell profile={{ fullName: profile.fullName, email: profile.email, role: profile.role }}>{children}</AppShell>
+    <>
+      <ThemeSync profileTheme={profile.theme} />
+      <AppShell profile={{ fullName: profile.fullName, email: profile.email, role: profile.role }}>
+        {children}
+      </AppShell>
+    </>
   );
 }
 

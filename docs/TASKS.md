@@ -21,7 +21,7 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
 3. Change only the files listed under **Touch only**. If the card can't be done without touching another file, stop and say which file and why.
 4. Never add a dependency (`npm install`, `pip install`). If you need one, stop and tell the user.
 5. Never touch `.env*`, `supabase/`, `proxy.ts`, `next.config.ts`, any `layout.tsx` or `actions.ts`, `app/forbidden.tsx`, `app/403/`, `app/api/`, files in `lib/` other than ones your card names, `docs/TASKS.md`, `docs/reviews/`, or anything under `agent/` other than test files your card names. Claude ticks the boxes in this file after merging.
-6. No raw hex colors outside `app/themes.css`. No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
+6. No raw hex colors outside `app/themes.css`. Use the token utilities from `app/globals.css`: colors (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text`, `text-muted`, `text-subtle`, `bg-accent`, `text-accent-fg`, `bg-accent-soft`, `text-good`, `text-warn`, `text-bad`, `text-signal`), type (`text-label`, `text-meta`, `text-body`, `text-emphasis`, `text-section`, `text-title`) and radius (`rounded-control`, `rounded-panel`, `rounded-dialog`). Tailwind's default palette is switched off, so classes like `bg-blue-500` do nothing. No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
 7. **Checks must pass before you commit.** Each Finish block starts with `npm run check` (and `python -m pytest agent/tests` where listed).
    - If a check fails, fix it by changing only the card's "Touch only" files, then run it again.
    - If it can't be fixed within those files: stop, **don't commit**, leave the changes on the branch, and report the failing command and its full error output to the user.
@@ -149,11 +149,11 @@ Then tell the user the card is ready for Flash's rework prompt.
   - `proxy.ts` (Next 16's name for middleware): unauthenticated users go to `/login`; `/ops` answers reps with a real 403 by rewriting to `/403`, which calls `forbidden()` while prerendered. `app/(app)/ops/layout.tsx` checks again with `requireAdmin()`.
   - Server actions `signIn`, `signOut`, `signInAsDemo(role)`. Demo passwords stay on the server and are never sent to the browser.
   - A **bare** login form and a **bare** app shell with typed props: `AppShell({ profile: { fullName, email, role }, children })`.
-- [ ] **C1.6** Theme plumbing:
+- [x] **C1.6** Theme plumbing:
   - `lib/themes.ts`: ids `paper | mist | graphite | midnight | forest | high-contrast | system`, labels, and the system mapping.
   - `app/themes.css` with the token structure and the **Paper** block only.
   - Tailwind `@theme inline` mapping, Geist fonts, and the no-flash script in the root layout.
-  - `applyTheme(id)` and `saveTheme(id)` (writes `profiles.theme` and `localStorage`).
+  - `lib/theme-client.ts`: `applyTheme(id)` (preview only), `saveTheme(id)` (writes `profiles.theme` and `localStorage`), `readStoredTheme()`. `components/theme-sync.tsx` makes the profile's theme win across devices.
 
 ### Flash
 
@@ -161,9 +161,9 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Starts after:** C1.6
 - **Build:**
   - Add `[data-theme]` blocks for `mist`, `graphite`, `midnight`, `forest` and `high-contrast` to `app/themes.css`. Copy the Paper block's structure and take the values from the DESIGN.md token table. Every token must appear in every block.
-  - Write `lib/themes.test.ts`. It parses `app/themes.css` and, for every theme, asserts a WCAG contrast of at least 4.5:1 for these pairs: `--text` on `--bg`, `--text` on `--surface`, `--text-muted` on `--bg`, and `--accent-fg` on `--accent`. A failure message names the theme and the token pair.
+  - Write `lib/theme-contrast.test.ts` (a new file; `lib/themes.test.ts` is Claude's). It parses `app/themes.css` and, for every theme, asserts a WCAG contrast of at least 4.5:1 for these pairs: `--text` on `--bg`, `--text` on `--surface`, `--text-muted` on `--bg`, and `--accent-fg` on `--accent`. A failure message names the theme and the token pair.
   - If a theme fails, adjust that theme's value (stay close to the original) and say which one you changed in the commit message.
-- **Touch only:** `app/themes.css`, `lib/themes.test.ts`
+- **Touch only:** `app/themes.css`, `lib/theme-contrast.test.ts`
 - **Done when:** `npm run check` passes, and setting `data-theme` on `<html>` in devtools recolors the whole page for each theme.
 - **Start:**
   ```bash
@@ -174,7 +174,7 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Finish:**
   ```bash
   npm run check
-  git add app/themes.css lib/themes.test.ts
+  git add app/themes.css lib/theme-contrast.test.ts
   git commit -m "flash(p1): five themes and contrast test"
   git switch main
   ```
@@ -276,7 +276,7 @@ Then tell the user the card is ready for Flash's rework prompt.
 - **Starts after:** F1.1, F1.3, F1.5
 - **Build:**
   - `components/command-palette.tsx` using `cmdk`, opened with `⌘K` / `Ctrl+K`. Commands: go to each page (role-aware, so no Ops for reps), "Change theme…", and "Sign out" (existing `signOut` action).
-  - "Change theme…" opens a list. Arrow keys call `applyTheme(id)` for a live preview, Enter calls `saveTheme(id)`, and Esc reverts to the theme that was active before.
+  - "Change theme…" opens a list of `THEME_CHOICES` from `lib/themes.ts`. Arrow keys call `applyTheme(id)` for a live preview, Enter calls `saveTheme(id)`, and Esc calls `applyTheme(readStoredTheme())` to revert. All three come from `lib/theme-client.ts`; don't edit it.
   - `components/theme-picker.tsx`: the same list as a SegmentedControl or radio list for the Settings page. Add it to `app/(app)/settings/page.tsx`.
   - Mount the palette inside `components/shell/`.
 - **Touch only:** `components/command-palette.tsx`, `components/theme-picker.tsx`, `components/shell/*`, `app/(app)/settings/page.tsx`

@@ -1,0 +1,32 @@
+/*
+ * Theme tokens (docs/DESIGN.md). One block per theme, selected by data-theme on <html>.
+ * Components never use these colors directly: they use the Tailwind utilities mapped in
+ * app/globals.css (bg-bg, text-muted, border-border, ...).
+ *
+ * Every block must define every token below, one declaration per line
+ * (lib/theme-contrast.test.ts parses this file and checks WCAG contrast for each theme).
+ * The ids match lib/themes.ts.
+ */
+
+/* Paper (light). Also the default before any theme is applied. */
+:root,
+[data-theme="paper"] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --surface: #fafafa;
+  --surface-2: #f3f3f4;
+  --border: #e6e6e8;
+  --border-strong: #d4d4d8;
+  --text: #18181b;
+  --text-muted: #52525b;
+  --text-subtle: #71717a;
+  --accent: #2f6feb;
+  --accent-fg: #ffffff;
+  --accent-soft: #eaf1fe;
+  --good: #15803d;
+  --warn: #a16207;
+  --bad: #dc2626;
+  --signal: #c2410c;
+}
+
+/* F1.1 (Flash): add mist, graphite, midnight, forest and high-contrast below, same structure. */
