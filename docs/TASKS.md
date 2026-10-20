@@ -229,7 +229,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   git commit -m "flash(p1): designed app shell"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.3.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F1.4 Login page design + 403 page
@@ -257,7 +257,7 @@ Then tell the user the card is ready for Flash's rework prompt.
 
 #### F1.5 Placeholder pages with empty states
 - **Starts after:** F1.3
-- **Build:** replace the stub `page.tsx` for Queue, Leads, Sequences, Ops and Settings under `app/(app)/`. Each one gets a page title and an EmptyState that says what will appear there and how. Example for Queue: "Leads appear here after the agent's next run, every 30 minutes." Ops access is already enforced by `proxy.ts` and `app/(app)/ops/layout.tsx`; don't touch them.
+- **Build:** replace the stub `page.tsx` for Queue, Leads, Sequences, Ops and Settings under `app/(app)/`. The shell's top bar already shows the page title as the `<h1>`, so pages don't add their own heading. Each one gets an EmptyState that says what will appear there and how. Example for Queue: "Leads appear here after the agent's next run, every 30 minutes." Ops access is already enforced by `proxy.ts` and `app/(app)/ops/layout.tsx`; don't touch them.
 - **Touch only:** `app/(app)/queue/page.tsx`, `app/(app)/leads/page.tsx`, `app/(app)/sequences/page.tsx`, `app/(app)/ops/page.tsx`, `app/(app)/settings/page.tsx`
 - **Done when:** every nav link opens a designed page, and `npm run check` passes.
 - **Start:**
@@ -282,7 +282,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   - `components/command-palette.tsx` using `cmdk`, opened with `⌘K` / `Ctrl+K`. Commands: go to each page (role-aware, so no Ops for reps), "Change theme…", and "Sign out" (existing `signOut` action).
   - "Change theme…" opens a list of `THEME_CHOICES` from `lib/themes.ts`. Arrow keys call `applyTheme(id)` for a live preview, Enter calls `saveTheme(id)`, and Esc calls `applyTheme(readStoredTheme())` to revert. All three come from `lib/theme-client.ts`; don't edit it.
   - `components/theme-picker.tsx`: the same list as a SegmentedControl or radio list for the Settings page. Add it to `app/(app)/settings/page.tsx`.
-  - Mount the palette inside `components/shell/`.
+  - Mount the palette inside `components/shell/`, and make the existing "Search... ⌘K" button in the top bar open it.
 - **Touch only:** `components/command-palette.tsx`, `components/theme-picker.tsx`, `components/shell/*`, `app/(app)/settings/page.tsx`
 - **Done when:** the theme previews live while arrowing, survives a reload, Esc reverts it, and `npm run check` passes.
 - **Start:**

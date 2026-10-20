@@ -74,7 +74,7 @@ export function AppShell({
 
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || profile.role === "admin");
   const activeItem = items.find((item) => pathname.startsWith(item.href));
-  const pageTitle = activeItem?.label ?? "Signal Desk";
+  const pageTitle = activeItem?.label ?? BRAND_NAME;
 
   return (
     <div className="flex min-h-screen w-full bg-bg text-text">
@@ -83,7 +83,7 @@ export function AppShell({
         <div
           role="presentation"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-bg/70 backdrop-blur-xs md:hidden"
         />
       )}
 
@@ -92,6 +92,8 @@ export function AppShell({
         role="dialog"
         aria-modal="true"
         aria-label="Mobile Navigation"
+        // While closed it is off-screen: inert keeps Tab and screen readers out of it.
+        inert={!mobileOpen}
         className={`fixed inset-y-0 left-0 z-50 flex w-[260px] max-w-[85vw] flex-col justify-between border-r border-border bg-surface shadow-2xl transition-transform duration-200 ease-in-out md:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
