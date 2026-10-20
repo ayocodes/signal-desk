@@ -16,8 +16,10 @@ from agent import config
 from agent.db import Database, Row
 from agent.domains import normalize_domain
 from agent.http_client import PoliteClient
+from agent.contacts import placeholder_contact
 from agent.icp import evaluate
 from agent.run import RunRecorder
+from agent.scoring import SignalFacts, score_lead
 from agent.settings import Settings
 from agent.signals import hiring_signals, launch_signal, yc_recency_signal
 from agent.sources import ats, hn, yc
@@ -185,3 +187,100 @@ def detect_yc_recency(ctx: Context) -> None:
         and (signal := yc_recency_signal(ctx.org_id, r["id"], r["yc_batch"], r["yc_slug"], ctx.now.date(), months))
     ]
     save_signals(ctx, rows)
+
+
+# Leads in these states belong to the sequence engine; scoring never changes their status.
+SCORING_OWNS = {"ready", "filtered"}
+
+
+def _signal_facts(rows: list[Row]) -> dict[str, list[SignalFacts]]:
+    by_company: dict[str, list[SignalFacts]] = {}
+    for row in rows:
+        by_company.setdefault(row["company_id"], []).append(
+            SignalFacts(
+                type=row["type"],
+                occurred_at=datetime.fromisoformat(row["occurred_at"] or row["detected_at"]),
+                title=row["title"],
+                founding=bool((row.get("meta") or {}).get("founding")),
+            )
+        )
+    return by_company
+
+
+def ensure_contacts(ctx: Context, tracked: list[Row]) -> dict[str, str]:
+    """A placeholder contact for every tracked company that has none. Returns company id -> contact id."""
+    share = config.guardrails().test_inboxes
+    existing = {c["company_id"]: c["id"] for c in ctx.db.select_all("contacts", "id,company_id", org_id=ctx.org_id)}
+    missing = [placeholder_contact(ctx.org_id, r["id"], r["team_size"], share) for r in tracked if r["id"] not in existing]
+    for contact in ctx.db.upsert("contacts", missing, on_conflict="company_id,name", ignore_duplicates=True):
+        if contact.get("id"):
+            existing[contact["company_id"]] = contact["id"]
+    ctx.run.count("contacts_new", len(missing))
+    return existing
+
+
+def score_leads(ctx: Context) -> None:
+    """Scores every tracked company and creates or updates its lead. Writes only what changed."""
+    tracked = companies(ctx, "id,name,icp_tier,team_size")
+    tracked_ids = {r["id"] for r in tracked}
+    signals = _signal_facts(ctx.db.select_all("signals", "company_id,type,occurred_at,detected_at,title,meta", org_id=ctx.org_id))
+    leads = {lead["company_id"]: lead for lead in ctx.db.select_all(
+        "leads", "id,company_id,status,score,score_parts,filtered_reason,assigned_to", org_id=ctx.org_id)}
+    contacts = ensure_contacts(ctx, tracked)
+
+    reps = [p["id"] for p in ctx.db.select_all("profiles", "id,role,created_at", org_id=ctx.org_id) if p["role"] == "rep"]
+    load = {rep: sum(1 for lead in leads.values() if lead["assigned_to"] == rep) for rep in reps}
+    rules = config.scoring()
+
+    new_rows: list[dict[str, Any]] = []
+    status_rows: list[dict[str, Any]] = []
+    score_rows: list[dict[str, Any]] = []
+    for company in sorted(tracked, key=lambda c: c["name"]):
+        result = score_lead(company["icp_tier"], signals.get(company["id"], []), ctx.now, rules)
+        status = "ready" if result.ready else "filtered"
+        parts = [[label, points] for label, points in result.parts]
+        lead = leads.get(company["id"])
+
+        if lead is None:
+            assignee = min(load, key=lambda rep: load[rep]) if load else None  # round-robin in effect
+            if assignee:
+                load[assignee] += 1
+            new_rows.append({
+                "org_id": ctx.org_id, "company_id": company["id"], "contact_id": contacts.get(company["id"]),
+                "assigned_to": assignee, "score": result.score, "score_parts": parts,
+                "status": status, "filtered_reason": result.filtered_reason,
+            })
+        elif lead["status"] in SCORING_OWNS:
+            if (lead["score"], lead["score_parts"], lead["status"], lead["filtered_reason"]) != (
+                result.score, parts, status, result.filtered_reason
+            ):
+                status_rows.append({
+                    "org_id": ctx.org_id, "company_id": company["id"], "score": result.score,
+                    "score_parts": parts, "status": status, "filtered_reason": result.filtered_reason,
+                })
+                if lead["status"] != status:
+                    ctx.run.audit("lead.status_changed", "lead", lead["id"], from_status=lead["status"], to_status=status, score=result.score)
+                    ctx.run.count("leads_status_changed")
+        elif (lead["score"], lead["score_parts"]) != (result.score, parts):
+            score_rows.append({"org_id": ctx.org_id, "company_id": company["id"], "score": result.score, "score_parts": parts})
+
+    # Leads whose company stopped matching the ICP leave the queue.
+    for company_id, lead in leads.items():
+        if company_id not in tracked_ids and lead["status"] == "ready":
+            status_rows.append({
+                "org_id": ctx.org_id, "company_id": company_id, "score": lead["score"], "score_parts": lead["score_parts"],
+                "status": "filtered", "filtered_reason": "No longer matches the ICP",
+            })
+
+    for lead in ctx.db.upsert("leads", new_rows, on_conflict="org_id,company_id"):
+        ctx.run.audit("lead.created", "lead", lead.get("id"), score=lead["score"], status=lead["status"])
+    # Each batch has one column set, so an upsert never blanks columns it doesn't mention.
+    ctx.db.upsert("leads", status_rows, on_conflict="org_id,company_id")
+    ctx.db.upsert("leads", score_rows, on_conflict="org_id,company_id")
+
+    ctx.run.count("leads_new", len(new_rows))
+    ctx.run.count("leads_updated", len(status_rows) + len(score_rows))
+    final = {company_id: lead["status"] for company_id, lead in leads.items()}
+    final.update({row["company_id"]: row["status"] for row in new_rows + status_rows})
+    ctx.run.count("leads_ready", sum(1 for s in final.values() if s == "ready"))
+    ctx.run.count("leads_filtered", sum(1 for s in final.values() if s == "filtered"))

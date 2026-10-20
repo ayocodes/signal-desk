@@ -81,7 +81,7 @@ class MailboxRules(_Model):
     min_sends_for_rates: int = Field(alias="minSendsForRates")
 
 
-class TestInboxShare(_Model):
+class InboxShare(_Model):
     bounced_per_100: int = Field(alias="bouncedPer100")
     complained_per_100: int = Field(alias="complainedPer100")
 
@@ -92,7 +92,7 @@ class GuardrailsConfig(_Model):
     banned_chars: tuple[str, ...] = Field(alias="bannedChars")
     banned_phrases: tuple[str, ...] = Field(alias="bannedPhrases")
     mailbox: MailboxRules
-    test_inboxes: TestInboxShare = Field(alias="testInboxes")
+    test_inboxes: InboxShare = Field(alias="testInboxes")
 
 
 def _read(name: str) -> object:
