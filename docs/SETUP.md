@@ -51,14 +51,14 @@ The service_role key bypasses all security rules. It goes only in `.env.local` a
 
 Repo → Settings → Secrets and variables → Actions → New repository secret:
 
-- [ ] `SUPABASE_URL`
-- [ ] `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] `GEMINI_API_KEY` (or `GROQ_API_KEY`)
-- [ ] `GEMINI_MODEL`
-- [ ] `LLM_PROVIDER`
-- [ ] `RESEND_API_KEY`
-- [ ] `RESEND_FROM`
-- [ ] `AGENT_USER_AGENT`
+- [x] `SUPABASE_URL`
+- [x] `SUPABASE_SERVICE_ROLE_KEY`
+- [x] `GEMINI_API_KEY` (or `GROQ_API_KEY`)
+- [x] `GEMINI_MODEL`
+- [x] `LLM_PROVIDER`
+- [x] `RESEND_API_KEY`
+- [x] `RESEND_FROM`
+- [x] `AGENT_USER_AGENT`
 
 ## Keys summary
 
