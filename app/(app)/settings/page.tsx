@@ -1,4 +1,14 @@
-// Placeholder. Flash designs the empty state in F1.5.
+import { Settings } from "lucide-react";
+import { EmptyState } from "@/components/ui";
+
 export default function SettingsPage() {
-  return <h1>Settings</h1>;
+  return (
+    <div className="py-12 max-w-2xl mx-auto">
+      <EmptyState
+        icon={Settings}
+        title="Workspace settings"
+        body="Configure themes, ICP target criteria, scoring weights, and delivery guardrails."
+      />
+    </div>
+  );
 }
