@@ -252,7 +252,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   git commit -m "flash(p1): login page design and 403 page"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F1.4.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F1.5 Placeholder pages with empty states

@@ -117,7 +117,7 @@ export default function LoginPage() {
       </div>
 
       <p className="text-label text-muted text-center mt-6 select-none">
-        Demo passwords stay on the server. Never email real people.
+        Demo workspace. Outreach only goes to test inboxes.
       </p>
     </main>
   );

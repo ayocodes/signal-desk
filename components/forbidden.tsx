@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
-import { Button } from "@/components/ui";
+import { buttonClassName } from "@/components/ui/button-styles";
 
 export function Forbidden() {
   return (
@@ -17,10 +17,8 @@ export function Forbidden() {
         Ops is for admins. Your leads are waiting in the queue.
       </p>
 
-      <Link href="/queue">
-        <Button variant="secondary" size="md">
-          Back to Queue
-        </Button>
+      <Link href="/queue" className={buttonClassName({ variant: "secondary" })}>
+        Back to Queue
       </Link>
     </main>
   );
