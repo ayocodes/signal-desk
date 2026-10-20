@@ -1,0 +1,26 @@
+{
+  "maxBodyWords": 80,
+  "requireClosingQuestion": true,
+  "bannedChars": ["—", "–"],
+  "bannedPhrases": [
+    "revolutionize",
+    "game-changer",
+    "game changer",
+    "cutting-edge",
+    "synergy",
+    "best-in-class",
+    "unprecedented",
+    "10x",
+    "finds you well",
+    "next level",
+    "transform your business",
+    "circle back",
+    "touch base"
+  ],
+  "mailbox": {
+    "dailyCap": 50,
+    "pauseBouncePct": 4.0,
+    "pauseComplaintPct": 0.3,
+    "minSendsForRates": 20
+  }
+}

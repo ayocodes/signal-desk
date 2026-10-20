@@ -143,7 +143,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   - vitest: an empty string counts as missing; the provider switch picks the right required pair; errors name the variable.
 - [x] **C1.2** Migration 001: every table, enum, index and unique constraint from ARCHITECTURE.md.
 - [x] **C1.3** Migration 002: RLS on every table, plus helper functions for the current user's org and role. Add `npm run test:rls`: signing in as the rep, a query on `mailboxes` must return 0 rows.
-- [ ] **C1.4** `npm run seed`: the Demo workspace org, admin and rep users via the admin API, matching `profiles` rows, and 4 mailboxes.
+- [x] **C1.4** `npm run seed`: the Demo workspace org, admin and rep users via the admin API, matching `profiles` rows, and 4 mailboxes.
 - [ ] **C1.5** Auth:
   - Supabase clients in `lib/supabase/`, plus `lib/auth.ts` (`getProfile`, `requireAdmin`).
   - `middleware.ts`: unauthenticated users go to `/login`; `/ops` returns 403 for reps.
@@ -572,7 +572,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Claude
 
-- [ ] **C4.1** `shared/prompts/draft.md`, `shared/guardrails.json`, and `shared/fixtures/guardrails_cases.json` (input → expected result per check).
+- [ ] **C4.1** `shared/prompts/draft.md`, `shared/fixtures/guardrails_cases.json` (input → expected result per check), and a review of `shared/guardrails.json` (created in C1.4 for the mailbox cap).
 - [ ] **C4.2** Guardrails in `agent/guardrails.py` and `lib/guardrails.ts`, both reading the same JSON. Includes the grounding check. Both test suites run the shared fixtures and must agree.
 - [ ] **C4.3** Agent drafting step: 3 angles plus the raw baseline, JSON output, a cap per run, 429 backoff, tokens stored, prompt hash.
 - [ ] **C4.4** `lib/llm.ts`. Routes (zod input + role/ownership check + audit log):
