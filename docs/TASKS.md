@@ -141,7 +141,7 @@ Then tell the user the card is ready for Flash's rework prompt.
   - **Server vs browser:** the full schema is server-only and fails the build if imported from client code. A separate public export holds only the `NEXT_PUBLIC_*` values.
   - App code reads env only through `lib/env.ts`, never `process.env` directly.
   - vitest: an empty string counts as missing; the provider switch picks the right required pair; errors name the variable.
-- [ ] **C1.2** Migration 001: every table, enum, index and unique constraint from ARCHITECTURE.md.
+- [x] **C1.2** Migration 001: every table, enum, index and unique constraint from ARCHITECTURE.md.
 - [ ] **C1.3** Migration 002: RLS on every table, plus helper functions for the current user's org and role. Add `npm run test:rls`: signing in as the rep, a query on `mailboxes` must return 0 rows.
 - [ ] **C1.4** `npm run seed`: the Demo workspace org, admin and rep users via the admin API, matching `profiles` rows, and 4 mailboxes.
 - [ ] **C1.5** Auth:
