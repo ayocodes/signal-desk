@@ -32,8 +32,8 @@ Then add the phase's extra notes (below each phase) if any.
 
 ## Phase 0: Setup (you)
 
-- [ ] Complete every box in `docs/SETUP.md`
-- [ ] Repo has this kit committed on `main`
+- [x] Complete every box in `docs/SETUP.md`
+- [x] Repo has this kit committed on `main`
 
 **Done when:** `.env.local` is filled in, `supabase link` worked, and the repo is public on GitHub.
 
@@ -41,18 +41,18 @@ Then add the phase's extra notes (below each phase) if any.
 
 ## Phase 1: Foundation (app shell, database, real login, themes)
 
-- [ ] Next.js app (App Router, TypeScript strict, Tailwind, ESLint) scaffolded into the existing repo without overwriting the kit files
-- [ ] `npm run check` script (lint + typecheck + vitest)
-- [ ] Migration 001: all tables from `docs/ARCHITECTURE.md`, enums, indexes, unique constraints
-- [ ] Migration 002: RLS policies per the roles table in ARCHITECTURE.md, with a helper SQL function for "current user's org and role"
-- [ ] Seed script (`npm run seed`): one organization ("Demo workspace"), two users created through the Supabase admin API from `DEMO_*` env vars, matching `profiles` rows (admin, rep), 4 logical mailboxes
-- [ ] Login page with email + password, plus two "Use demo admin / Use demo rep" buttons that fill the form
-- [ ] Middleware: unauthenticated users go to /login; reps get a 403 page on /ops
-- [ ] App shell: sidebar (role-aware nav), top bar, user menu with role badge, sign out
-- [ ] Theme system exactly as in `docs/DESIGN.md`: tokens, 6 themes + System, no-flash script, saved to profile + localStorage
-- [ ] Command palette (`⌘K`): navigate pages, "Change theme…" with live preview, sign out
-- [ ] Contrast unit test for all themes
-- [ ] Placeholder pages for Queue, Leads, Sequences, Ops, Settings with designed empty states
+- [x] Next.js app (App Router, TypeScript strict, Tailwind, ESLint) scaffolded into the existing repo without overwriting the kit files
+- [x] `npm run check` script (lint + typecheck + vitest)
+- [x] Migration 001: all tables from `docs/ARCHITECTURE.md`, enums, indexes, unique constraints
+- [x] Migration 002: RLS policies per the roles table in ARCHITECTURE.md, with a helper SQL function for "current user's org and role"
+- [x] Seed script (`npm run seed`): one organization ("Demo workspace"), two users created through the Supabase admin API from `DEMO_*` env vars, matching `profiles` rows (admin, rep), 4 logical mailboxes
+- [x] Login page with email + password, plus two "Use demo admin / Use demo rep" buttons that fill the form
+- [x] Middleware: unauthenticated users go to /login; reps get a 403 page on /ops
+- [x] App shell: sidebar (role-aware nav), top bar, user menu with role badge, sign out
+- [x] Theme system exactly as in `docs/DESIGN.md`: tokens, 6 themes + System, no-flash script, saved to profile + localStorage
+- [x] Command palette (`⌘K`): navigate pages, "Change theme…" with live preview, sign out
+- [x] Contrast unit test for all themes
+- [x] Placeholder pages for Queue, Leads, Sequences, Ops, Settings with designed empty states
 
 **Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 

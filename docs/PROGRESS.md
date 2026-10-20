@@ -4,11 +4,19 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 1 (foundation). Claude cards C1.1 to C1.6 done.
-- Next step: Flash F1.1 (themes) and F1.2 (UI primitives) can start; user does U1.0.
+- Phase: 1 done (2026-10-20). Next: Phase 2, the agent (discover, signals, score).
+- Next step: Claude plans Phase 2's C cards (plan mode, wait for "go"); first stop gate is the YC dataset fields.
 - Blockers: none
 
 ## Log
+
+### 2026-10-20: Phase 1 closed (C1.7, U1.1, C1.8)
+- Done: all six Flash cards (F1.1 to F1.6) reviewed and merged, with small fixes on main (a11y roles, inert mobile drawer, link-styled buttons, theme save no longer waits on the network, SSR-safe theme picker). Automated gate: 72 tests, 11 RLS checks, build. User browser walkthrough passed. `audit_log` shows real sign-in/out rows. Pushed; Vercel deploy succeeded (env validation passed there too).
+- Decisions (and why):
+  - `lib/design-tokens.test.ts` fails the check on default-palette classes or raw hex: Flash used `bg-black` twice, which renders nothing with the palette off.
+  - `vercel.json` pins functions to `dub1`, next to Supabase `eu-west-1`.
+  - Local slowness measured: this machine's connection (1.5 to 10 s TCP connects, even to github.com); the app makes one Supabase round trip per page.
+- Next step (exact): plan Phase 2 C cards.
 
 ### 2026-10-20: Phase 1, Claude cards C1.1 to C1.6
 - Done: Next 16.4.2 scaffold with `npm run check`; env validation (`lib/env-schema.ts`, fails `next dev`/`next build` naming the variable); migrations 001 (schema) and 002 (RLS) pushed to the remote project; `npm run seed` (idempotent); `npm run test:rls` (11 checks pass); auth with `proxy.ts`, real 403 on /ops for reps; bare login, shell and stub pages; theme tokens, no-flash script, save to profile; DB types generated.

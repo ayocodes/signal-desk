@@ -304,12 +304,12 @@ Then tell the user the card is ready for Flash's rework prompt.
 ### Phase gate
 
 - [x] **C1.7** Automated checks on `main`: `npm run check`, `npm run test:rls` (the rep gets 0 rows from `mailboxes`) and `npm run build`. Report the results to the user.
-- [ ] **U1.1** In the browser (`npm run dev`), check PLAN.md Phase 1 "Done when":
+- [x] **U1.1** In the browser (`npm run dev`), check PLAN.md Phase 1 "Done when":
   - As admin ("Use demo admin"): Ops is in the nav and opens.
   - As rep ("Use demo rep"): Ops is missing from the nav, and typing `/ops` shows the 403 page.
   - `⌘K` → "Change theme…": arrowing previews live, Enter keeps the theme after a reload, Esc reverts.
   - Tell Claude what passed and what didn't.
-- [ ] **C1.8** After U1.1 passes: tick PLAN.md Phase 1, add a PROGRESS.md entry, commit.
+- [x] **C1.8** After U1.1 passes: tick PLAN.md Phase 1, add a PROGRESS.md entry, commit.
 
 ---
 
