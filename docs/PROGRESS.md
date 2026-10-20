@@ -5,7 +5,7 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 ## Current state
 
 - Phase: 0 (setup)
-- Next step: user finishes U0.2 to U0.6 in docs/TASKS.md, then Claude starts Phase 1 (C1.1)
+- Next step: Phase 0 complete. Run the Phase 1 prompt from docs/PLAN.md (starts with C1.1)
 - Blockers: none
 
 ## Log

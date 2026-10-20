@@ -35,7 +35,7 @@ The service_role key bypasses all security rules. It goes only in `.env.local` a
 
 - [x] Create an account at resend.com (free plan).
 - [x] API Keys → create a key with sending access.
-- [x] Leave webhooks for later. They need your deployed URL (phase 5).
+- [ ] Leave webhooks for later. They need your deployed URL (phase 5).
 
 ## 5. Vercel
 
@@ -44,21 +44,21 @@ The service_role key bypasses all security rules. It goes only in `.env.local` a
 
 ## 6. Env files
 
-- [ ] `cp .env.example .env.local` and fill in the values.
+- [x] `cp .env.example .env.local` and fill in the values.
 - [x] Check `.env.local` is in `.gitignore` before your next commit: `git status` must not list it.
 
 ## 7. GitHub Actions secrets (for the background agent)
 
 Repo → Settings → Secrets and variables → Actions → New repository secret:
 
-- [x] `SUPABASE_URL`
-- [x] `SUPABASE_SERVICE_ROLE_KEY`
-- [x] `GEMINI_API_KEY` (or `GROQ_API_KEY`)
-- [x] `GEMINI_MODEL`
-- [x] `LLM_PROVIDER`
-- [x] `RESEND_API_KEY`
-- [x] `RESEND_FROM`
-- [x] `AGENT_USER_AGENT`
+- [ ] `SUPABASE_URL`
+- [ ] `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] `GEMINI_API_KEY` (or `GROQ_API_KEY`)
+- [ ] `GEMINI_MODEL`
+- [ ] `LLM_PROVIDER`
+- [ ] `RESEND_API_KEY`
+- [ ] `RESEND_FROM`
+- [ ] `AGENT_USER_AGENT`
 
 ## Keys summary
 
