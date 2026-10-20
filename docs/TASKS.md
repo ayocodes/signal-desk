@@ -110,12 +110,12 @@ Then tell the user the card is ready for Flash's rework prompt.
 ## Phase 0: Setup
 
 - [x] **U0.1** SETUP.md sections 0 to 3 (tools, GitHub, Supabase, Gemini)
-- [ ] **U0.2** SETUP.md section 4, Resend: the key is already in `.env.local`. Confirm it has sending access, then tick it in SETUP.md.
+- [x] **U0.2** SETUP.md section 4, Resend: the key is already in `.env.local`. Confirm it has sending access, then tick it in SETUP.md.
 - [ ] **U0.3** Fill in the rest of `.env.local` from `.env.example`. Still missing: `LLM_PROVIDER`, `RESEND_FROM`, `DEMO_ADMIN_EMAIL`, `DEMO_ADMIN_PASSWORD`, `DEMO_REP_EMAIL`, `DEMO_REP_PASSWORD`, `AGENT_USER_AGENT` (put your contact email in it), `DRAFTS_PER_RUN`, `DISCOVERY_PROBES_PER_RUN`. From C1.1 on, the app refuses to start without `LLM_PROVIDER`, `RESEND_FROM` and the `DEMO_*` values.
-- [ ] **U0.4** SETUP.md section 5, Vercel: import the repo and add env vars using the exact names from `.env.example`. The web app reads `NEXT_PUBLIC_SUPABASE_URL`, so no rename is needed. Whenever you add a variable to `.env.local`, add it to Vercel too. A failed first build is expected.
-- [ ] **U0.5** SETUP.md section 7, GitHub Actions secrets. These are needed before Phase 2's first Actions run. `SUPABASE_URL` is the right name here: the agent reads it, and falls back to `NEXT_PUBLIC_SUPABASE_URL` when running locally.
+- [x] **U0.4** SETUP.md section 5, Vercel: import the repo and add env vars using the exact names from `.env.example`. The web app reads `NEXT_PUBLIC_SUPABASE_URL`, so no rename is needed. Whenever you add a variable to `.env.local`, add it to Vercel too. A failed first build is expected.
+- [x] **U0.5** SETUP.md section 7, GitHub Actions secrets. These are needed before Phase 2's first Actions run. `SUPABASE_URL` is the right name here: the agent reads it, and falls back to `NEXT_PUBLIC_SUPABASE_URL` when running locally.
 - [x] **C0.1** Add `.gitignore` (`.env*` except `.env.example`, `supabase/.temp/`) and make the first commit on `main`
-- [ ] **U0.6** Push `main`: `git push -u origin main`, then check that the repo is public on GitHub
+- [x] **U0.6** Push `main`: `git push -u origin main`, then check that the repo is public on GitHub
 
 ---
 
