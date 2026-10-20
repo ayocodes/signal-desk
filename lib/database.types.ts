@@ -111,6 +111,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          ats_probed_at: string | null
           ats_token: string | null
           ats_type: Database["public"]["Enums"]["ats_type"] | null
           created_at: string
@@ -118,6 +119,7 @@ export type Database = {
           domain: string
           icp_match: boolean
           icp_reasons: Json
+          icp_tier: Database["public"]["Enums"]["icp_tier"] | null
           id: string
           industries: string[]
           jobs_fetched_at: string | null
@@ -125,8 +127,11 @@ export type Database = {
           org_id: string
           team_size: number | null
           yc_batch: string | null
+          yc_is_hiring: boolean
+          yc_slug: string | null
         }
         Insert: {
+          ats_probed_at?: string | null
           ats_token?: string | null
           ats_type?: Database["public"]["Enums"]["ats_type"] | null
           created_at?: string
@@ -134,6 +139,7 @@ export type Database = {
           domain: string
           icp_match?: boolean
           icp_reasons?: Json
+          icp_tier?: Database["public"]["Enums"]["icp_tier"] | null
           id?: string
           industries?: string[]
           jobs_fetched_at?: string | null
@@ -141,8 +147,11 @@ export type Database = {
           org_id: string
           team_size?: number | null
           yc_batch?: string | null
+          yc_is_hiring?: boolean
+          yc_slug?: string | null
         }
         Update: {
+          ats_probed_at?: string | null
           ats_token?: string | null
           ats_type?: Database["public"]["Enums"]["ats_type"] | null
           created_at?: string
@@ -150,6 +159,7 @@ export type Database = {
           domain?: string
           icp_match?: boolean
           icp_reasons?: Json
+          icp_tier?: Database["public"]["Enums"]["icp_tier"] | null
           id?: string
           industries?: string[]
           jobs_fetched_at?: string | null
@@ -157,6 +167,8 @@ export type Database = {
           org_id?: string
           team_size?: number | null
           yc_batch?: string | null
+          yc_is_hiring?: boolean
+          yc_slug?: string | null
         }
         Relationships: [
           {
@@ -732,6 +744,7 @@ export type Database = {
       buyer_status: "verified" | "rerouted" | "unverified"
       draft_angle: "signal" | "peer" | "short" | "raw"
       event_source: "resend" | "simulated"
+      icp_tier: "full" | "partial"
       lead_status:
         | "ready"
         | "filtered"
@@ -877,6 +890,7 @@ export const Constants = {
       buyer_status: ["verified", "rerouted", "unverified"],
       draft_angle: ["signal", "peer", "short", "raw"],
       event_source: ["resend", "simulated"],
+      icp_tier: ["full", "partial"],
       lead_status: [
         "ready",
         "filtered",
