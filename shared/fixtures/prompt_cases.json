@@ -1,0 +1,138 @@
+{
+  "_about": "Lead facts and the exact prompt both renderers (agent/prompts.py, lib/prompts.ts) must produce. Generated from the templates in shared/prompts; regenerate 'expected' when a template changes.",
+  "cases": [
+    {
+      "name": "named contact, three signal types",
+      "kind": "draft",
+      "facts": {
+        "companyName": "Acme Corp",
+        "domain": "acme.dev",
+        "description": "  Acme builds billing software for vertical SaaS teams.  ",
+        "contact": {
+          "name": "Jane Doe",
+          "title": "CEO",
+          "isPlaceholder": false
+        },
+        "signals": [
+          {
+            "type": "hiring",
+            "category": "sales",
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch.",
+            "sourceName": "Greenhouse"
+          },
+          {
+            "type": "launch",
+            "category": null,
+            "title": "Launch HN: Acme (YC W26) - billing for vertical SaaS",
+            "excerpt": null,
+            "sourceName": "Hacker News"
+          },
+          {
+            "type": "funding",
+            "category": null,
+            "title": "YC W26",
+            "excerpt": null,
+            "sourceName": "YC directory"
+          }
+        ]
+      },
+      "expected": "You write the first cold email from Sam at Signal Desk to a person at Acme Corp.\n\nWhat Signal Desk offers: an AI outbound platform for early-stage B2B teams: it watches for buying signals like sales hires and launches, drafts the first email, and runs the follow-up sequence.\n\nProof points you may use, word for word or close to it. These are the only claims about Signal Desk you may make:\n- Built for teams without a dedicated SDR\n- Every first email is approved by a person before it sends\n- Each draft cites the public signal it is based on\n\nWho you are writing to: Jane Doe, CEO\nTheir company: Acme Corp (acme.dev)\nWhat the company does: Acme builds billing software for vertical SaaS teams.\n\nPublic signals about the company, strongest first:\n1. Hiring: Founding Account Executive\n   Excerpt: You will build our outbound motion from scratch.\n   Source: Greenhouse\n2. Launch: Launch HN: Acme (YC W26) - billing for vertical SaaS\n   Source: Hacker News\n3. YC recent: YC W26\n   Source: YC directory\n\nWrite three versions, one per angle:\n- signal: Lead with the strongest signal: name it in their words and connect it to the offer.\n- peer: Speak to what a team at their stage is dealing with, using only the listed proof points. Never name or invent other companies.\n- short: Three sentences at most: the signal, one line on the offer, the question.\n\nRules for every version:\n- At most 80 words in the body.\n- End the body with a question.\n- No sign-off (like \"Best,\") and no signature; they are added later.\n- Never use em dashes or en dashes.\n- Never use these phrases: \"revolutionize\", \"game-changer\", \"game changer\", \"cutting-edge\", \"synergy\", \"best-in-class\", \"unprecedented\", \"10x\", \"finds you well\", \"next level\", \"transform your business\", \"circle back\", \"touch base\".\n- Never invent customers, company names, numbers, results or case studies. Only use numbers that appear in the signals above.\n- Only describe Signal Desk with the offer and the proof points above.\n- In grounded_phrases, list the exact phrases you used from the signals (copied word for word from a signal's title or excerpt). Use at least one.\n\nReturn JSON only, with one entry per angle: {\"drafts\": [{\"angle\": \"signal\" | \"peer\" | \"short\", \"subject\": string, \"body\": string, \"grounded_phrases\": [string]}]}\n"
+    },
+    {
+      "name": "placeholder contact, no description, only the first five signals",
+      "kind": "draft",
+      "facts": {
+        "companyName": "Bolt Labs",
+        "domain": "",
+        "description": null,
+        "contact": {
+          "name": "Founder",
+          "title": null,
+          "isPlaceholder": true
+        },
+        "signals": [
+          {
+            "type": "hiring",
+            "category": "marketing",
+            "title": "Head of Demand Generation 1",
+            "excerpt": "Own pipeline goal number 1.",
+            "sourceName": "Lever"
+          },
+          {
+            "type": "hiring",
+            "category": "marketing",
+            "title": "Head of Demand Generation 2",
+            "excerpt": "Own pipeline goal number 2.",
+            "sourceName": "Lever"
+          },
+          {
+            "type": "hiring",
+            "category": "marketing",
+            "title": "Head of Demand Generation 3",
+            "excerpt": "Own pipeline goal number 3.",
+            "sourceName": "Lever"
+          },
+          {
+            "type": "hiring",
+            "category": "marketing",
+            "title": "Head of Demand Generation 4",
+            "excerpt": "Own pipeline goal number 4.",
+            "sourceName": "Lever"
+          },
+          {
+            "type": "hiring",
+            "category": "marketing",
+            "title": "Head of Demand Generation 5",
+            "excerpt": "Own pipeline goal number 5.",
+            "sourceName": "Lever"
+          },
+          {
+            "type": "hiring",
+            "category": "marketing",
+            "title": "Head of Demand Generation 6",
+            "excerpt": "Own pipeline goal number 6.",
+            "sourceName": "Lever"
+          }
+        ]
+      },
+      "expected": "You write the first cold email from Sam at Signal Desk to a person at Bolt Labs.\n\nWhat Signal Desk offers: an AI outbound platform for early-stage B2B teams: it watches for buying signals like sales hires and launches, drafts the first email, and runs the follow-up sequence.\n\nProof points you may use, word for word or close to it. These are the only claims about Signal Desk you may make:\n- Built for teams without a dedicated SDR\n- Every first email is approved by a person before it sends\n- Each draft cites the public signal it is based on\n\nWho you are writing to: the founder (name unknown; open with \"Hi there,\")\nTheir company: Bolt Labs\nWhat the company does: Not known.\n\nPublic signals about the company, strongest first:\n1. Marketing hire: Head of Demand Generation 1\n   Excerpt: Own pipeline goal number 1.\n   Source: Lever\n2. Marketing hire: Head of Demand Generation 2\n   Excerpt: Own pipeline goal number 2.\n   Source: Lever\n3. Marketing hire: Head of Demand Generation 3\n   Excerpt: Own pipeline goal number 3.\n   Source: Lever\n4. Marketing hire: Head of Demand Generation 4\n   Excerpt: Own pipeline goal number 4.\n   Source: Lever\n5. Marketing hire: Head of Demand Generation 5\n   Excerpt: Own pipeline goal number 5.\n   Source: Lever\n\nWrite three versions, one per angle:\n- signal: Lead with the strongest signal: name it in their words and connect it to the offer.\n- peer: Speak to what a team at their stage is dealing with, using only the listed proof points. Never name or invent other companies.\n- short: Three sentences at most: the signal, one line on the offer, the question.\n\nRules for every version:\n- At most 80 words in the body.\n- End the body with a question.\n- No sign-off (like \"Best,\") and no signature; they are added later.\n- Never use em dashes or en dashes.\n- Never use these phrases: \"revolutionize\", \"game-changer\", \"game changer\", \"cutting-edge\", \"synergy\", \"best-in-class\", \"unprecedented\", \"10x\", \"finds you well\", \"next level\", \"transform your business\", \"circle back\", \"touch base\".\n- Never invent customers, company names, numbers, results or case studies. Only use numbers that appear in the signals above.\n- Only describe Signal Desk with the offer and the proof points above.\n- In grounded_phrases, list the exact phrases you used from the signals (copied word for word from a signal's title or excerpt). Use at least one.\n\nReturn JSON only, with one entry per angle: {\"drafts\": [{\"angle\": \"signal\" | \"peer\" | \"short\", \"subject\": string, \"body\": string, \"grounded_phrases\": [string]}]}\n"
+    },
+    {
+      "name": "no contact and no signals",
+      "kind": "draft",
+      "facts": {
+        "companyName": "Quiet Inc",
+        "domain": "quiet.io",
+        "description": "Quiet makes quiet things.",
+        "contact": null,
+        "signals": []
+      },
+      "expected": "You write the first cold email from Sam at Signal Desk to a person at Quiet Inc.\n\nWhat Signal Desk offers: an AI outbound platform for early-stage B2B teams: it watches for buying signals like sales hires and launches, drafts the first email, and runs the follow-up sequence.\n\nProof points you may use, word for word or close to it. These are the only claims about Signal Desk you may make:\n- Built for teams without a dedicated SDR\n- Every first email is approved by a person before it sends\n- Each draft cites the public signal it is based on\n\nWho you are writing to: the founder (name unknown; open with \"Hi there,\")\nTheir company: Quiet Inc (quiet.io)\nWhat the company does: Quiet makes quiet things.\n\nPublic signals about the company, strongest first:\nNone found.\n\nWrite three versions, one per angle:\n- signal: Lead with the strongest signal: name it in their words and connect it to the offer.\n- peer: Speak to what a team at their stage is dealing with, using only the listed proof points. Never name or invent other companies.\n- short: Three sentences at most: the signal, one line on the offer, the question.\n\nRules for every version:\n- At most 80 words in the body.\n- End the body with a question.\n- No sign-off (like \"Best,\") and no signature; they are added later.\n- Never use em dashes or en dashes.\n- Never use these phrases: \"revolutionize\", \"game-changer\", \"game changer\", \"cutting-edge\", \"synergy\", \"best-in-class\", \"unprecedented\", \"10x\", \"finds you well\", \"next level\", \"transform your business\", \"circle back\", \"touch base\".\n- Never invent customers, company names, numbers, results or case studies. Only use numbers that appear in the signals above.\n- Only describe Signal Desk with the offer and the proof points above.\n- In grounded_phrases, list the exact phrases you used from the signals (copied word for word from a signal's title or excerpt). Use at least one.\n\nReturn JSON only, with one entry per angle: {\"drafts\": [{\"angle\": \"signal\" | \"peer\" | \"short\", \"subject\": string, \"body\": string, \"grounded_phrases\": [string]}]}\n"
+    },
+    {
+      "name": "raw baseline",
+      "kind": "raw",
+      "facts": {
+        "companyName": "Acme Corp",
+        "domain": "acme.dev",
+        "description": "Acme builds billing software.",
+        "contact": {
+          "name": "Jane Doe",
+          "title": "CEO",
+          "isPlaceholder": false
+        },
+        "signals": [
+          {
+            "type": "hiring",
+            "category": "sales",
+            "title": "Founding Account Executive",
+            "excerpt": null,
+            "sourceName": "Greenhouse"
+          }
+        ]
+      },
+      "expected": "Write a cold sales email from Sam at Signal Desk to Jane Doe, CEO at Acme Corp. Signal Desk offers an AI outbound platform for early-stage B2B teams: it watches for buying signals like sales hires and launches, drafts the first email, and runs the follow-up sequence.\n\nReturn JSON only: {\"drafts\": [{\"angle\": \"raw\", \"subject\": string, \"body\": string, \"grounded_phrases\": []}]}\n"
+    }
+  ]
+}
