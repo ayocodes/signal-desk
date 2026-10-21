@@ -453,8 +453,9 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Claude
 
-- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Give each list item a `scoreBand` from `shared/scoring.json` `scoreBands` (Strong 90+, Good 70+, Borderline 50+; filtered leads are "Filtered") plus the matching `ScoreBadge` `tier` (Strong → `hi`, Good → `md`, Borderline and Filtered → `lo`); ScoreBadge's built-in 75/50 cutoffs are only a fallback. The score stays a points total (no percentage): the word gives the quick read, the math stays visible. Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
-- [ ] **C3.2** `useLiveLeads()` hook (Supabase Realtime, falling back to polling). Check RLS by hand: the rep sees only their own leads, even through a direct query.
+- [ ] **C3.0** Second demo rep: `npm run seed` creates "Demo Rep 2" (real auth user, random password nobody uses, `rep2@example.com`) and splits `ready`/`filtered` leads between the reps deterministically (alternating in company-name order), so re-running gives the same split; enrolled and later leads are never reassigned. Lets the browser check show admin and rep seeing different lead sets.
+- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Give each list item a `scoreBand` from `shared/scoring.json` `scoreBands` (Strong 90+, Good 70+, Borderline 50+; filtered leads are "Filtered") plus the matching `ScoreBadge` `tier` (Strong → `hi`, Good → `md`, Borderline and Filtered → `lo`); ScoreBadge's built-in 75/50 cutoffs are only a fallback. The score stays a points total (no percentage): the word gives the quick read, the math stays visible. `lib/agent-config.ts` (`getAgentConfig(orgId)`, the TypeScript twin of the agent's `load_config`, plus `scoreBand()`). `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`, `ScoreBand`, `LeadCounts`). Pure mapping in `lib/leads-mapping.ts` (unit-tested: top signal is hiring, then launch, then funding, newest first; bands). Server-only data functions in `lib/data/leads.ts` (RLS applies): `listQueue({ tab, signalTypes })`, `leadCounts()`, `listFiltered({ limit })`, `getLead(id)`, and `listLeadsPage({ sort, dir, page })` (100 per page, sorted on the server; there are 1,000+ leads). Signals load in one query per page. No testing-library: components are tested with `react-dom/server`, as Flash already does.
+- [ ] **C3.2** Migration 005 adds `leads` to Realtime (which respects RLS). `lib/use-live-leads.ts`: `useLiveLeads()` subscribes, calls `router.refresh()` debounced by 2 s on changes, polls every 60 s when not live, refreshes when the tab becomes visible; returns `{ mode: "live" | "polling" }`. `npm run test:rls` gains per-rep checks: each rep reads only their own leads, signals and contacts; the admin reads all.
 
 ### Flash
 
@@ -487,9 +488,10 @@ Almost all of this phase is Claude's: it's the agent core.
 #### F3.2 Queue page (split view, list side)
 - **Starts after:** F3.1, C3.2
 - **Build:**
-  - `components/queue/QueueList.tsx`: tabs (Ready, Enrolled, Bounced, Replied) with counts from `leadCounts()`; signal filter chips; rows with ScoreBadge, company, contact, top signal and age; a collapsed "N filtered out" section with reasons from `listFilteredLeads()`.
+  - `app/(app)/queue/page.tsx` stays a **server component**: it reads `searchParams` and calls `listQueue`, `leadCounts` and `listFiltered` from `lib/data/leads.ts`, then passes the results as props. Read the bundled Next 16 docs on `searchParams` and Suspense first (Cache Components is on).
+  - `components/queue/QueueList.tsx` (client): tabs (Ready, Enrolled, Bounced, Replied) with counts; signal filter chips; rows with ScoreBadge (band word), company, contact, top signal and age; a collapsed "N filtered out" section with reasons (show the 50 returned and the total). Tab, chips and selection live in the URL (`?tab=`, `?signals=`, `?lead=`), so they survive a refresh.
   - `components/queue/SplitView.tsx`: list on the left, detail slot on the right, stacking on mobile.
-  - Wire both into `app/(app)/queue/page.tsx`. Use `useLiveLeads()`. The selected lead lives in the URL (`?lead=<id>`).
+  - A small client component calls `useLiveLeads()` from `lib/use-live-leads.ts` and shows its mode ("Live" / "Refreshing every minute").
 - **Touch only:** `components/queue/*`, `app/(app)/queue/*`
 - **Start:**
   ```bash
@@ -514,6 +516,8 @@ Almost all of this phase is Claude's: it's the agent core.
   - numbered SignalCards
   - a ScoreMath row
   - a BuyerCheck row
+  - the ICP reasons (e.g. "B2B tag, filed under Fintech")
+  - the contact as "Founder (placeholder)" with its test inbox address (mono), and the filtered reason when filtered
 
   Render it in the SplitView's detail slot.
 - **Touch only:** `components/queue/LeadDetail.tsx`, `app/(app)/queue/*`
@@ -536,8 +540,8 @@ Almost all of this phase is Claude's: it's the agent core.
 #### F3.4 Leads table page
 - **Starts after:** F3.1
 - **Build:**
-  - `components/ui/Table.tsx`: sortable, sticky header, 32px rows.
-  - `app/(app)/leads/page.tsx`: columns for company, contact, score, top signal, status, assigned rep and updated, using `listLeads`. Clicking a row opens `/queue?lead=<id>`.
+  - `components/ui/Table.tsx`: sticky header, 32px rows, sortable column headers that are **links** setting `?sort=&dir=` (sorting happens on the server), and a pager (`?page=`) showing "1-100 of 1,060".
+  - `app/(app)/leads/page.tsx` (server component): columns for company, contact, score (with band), top signal, status, assigned rep and updated, using `listLeadsPage({ sort, dir, page })`. Clicking a row opens `/queue?lead=<id>`.
 - **Touch only:** `components/ui/Table.tsx`, `components/ui/index.ts`, `app/(app)/leads/*`
 - **Start:**
   ```bash
@@ -582,7 +586,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Phase gate
 
-- [ ] **C3.3** Automated checks: `npm run check`, plus an RLS script that signs in as the rep and as the admin with the anon key. The rep must get only leads assigned to them; the admin must get all of the org's leads. Report the counts to the user.
+- [ ] **C3.3** Automated checks: `npm run check` and `npm run test:rls` (each rep reads only their own leads, signals and contacts; the admin reads all); the queue and leads pages rendered for the admin and for a rep return different lead counts; a rep gets nothing for the other rep's lead. Report the counts to the user.
 - [ ] **U3.1** In the browser, check PLAN.md Phase 3 "Done when":
   - As admin, then as rep: Queue and Leads show different lead sets; the rep sees only their assigned leads.
   - Open a lead: the signal cards, score math and buyer check show real data, and the source links work.
@@ -1049,6 +1053,48 @@ Rules move into the database per org, versioned. The agent already reads them on
   - As rep: Ops isn't in the nav, and `/ops` shows the 403 page.
   - Tell Claude what passed and what didn't.
 - [ ] **C6.4** After U6.2 passes: tick PLAN.md Phase 6, add a PROGRESS.md entry, commit.
+
+---
+
+## Stretch: AI-guided rules setup (after Phase 6)
+
+Only if everything before it works. Needs Phase 4.5. The user's spec is in PLAN.md.
+
+### Claude
+
+- [ ] **CS.1** `shared/prompts/rules_setup.md` (the five answers in, a rule set in the Phase 4.5 schema out, with a one-line "why" per rule). Admin-only `POST /api/agent-config/draft` (zod input, rate-limited per user, audit logged): one call through `lib/llm.ts`, validated with the shared schema, one retry with the validation errors if it fails. Returns `{ rules, why, coverageWarning }`; it never saves. Coverage: how much of the drafted ICP the YC dataset can cover (method decided in the phase plan). Client helper in `lib/api.ts`.
+
+### Flash
+
+#### FS.1 AI setup interview
+- **Starts after:** CS.1, F4.5.1
+- **Build:**
+  - "Set up with AI" button on `/settings/agent`; a page or panel with the five questions (plain labels, a short hint each), "Draft rules" with a loading state and an error state.
+  - The draft opens in the existing rules editor with AI-suggested values marked (an "AI suggested" tag, the "why" on hover or below the field). The admin can edit anything; Save works exactly as for a manual edit.
+  - The coverage warning, when present, shows as a clear banner above the editor.
+- **Touch only:** `components/agent-config/*`, `app/(app)/settings/agent/*` (pages only, not `layout.tsx`)
+- **Done when:** answers produce a marked draft in the editor; nothing is saved until Save; an out-of-scope ICP shows the warning; `npm run check` passes.
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/px-ai-setup  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add components/agent-config "app/(app)/settings/agent"  # only the Touch-only files
+  git commit -m "flash(stretch): AI setup interview"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/FS.1.md`, on the card's branch (only exists if Claude asked for changes)
+
+### Phase gate
+
+- [ ] **CS.2** Automated checks: `npm run check`; the draft route rejects non-admins, validates output with the shared schema, and never writes a config version. Report to the user.
+- [ ] **US.1** In the browser: answer the five questions for Cardinal's real ICP, review and save the draft; then try an out-of-scope ICP (e.g. dental clinics in Texas) and see the warning. Tell Claude what passed.
+- [ ] **CS.3** After US.1 passes: tick PLAN.md, add a PROGRESS.md entry, commit.
 
 ---
 

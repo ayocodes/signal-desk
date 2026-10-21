@@ -174,6 +174,21 @@ The agent's rules (ICP, signal types and weights, keyword lists, threshold, fres
 
 ---
 
+## Stretch: AI-guided rules setup (after Phase 6)
+
+A nice extra, not a core feature: built only if everything before it works. Needs Phase 4.5 (rules in the database, the shared schema, the editor).
+
+- [ ] In Settings, the admin clicks "Set up with AI" and answers five plain questions: what you sell; who buys it (company type and size); what makes a company ready to buy now; which roles you sell to; companies or industries to avoid. A fixed set of questions, not a chat that keeps asking follow-ups.
+- [ ] One Gemini call (two if the first output fails validation) turns the answers into a rule set in the editor's format (team size range, industries, which signals count and their weights, threshold), each rule with a one-line "why".
+- [ ] The draft opens in the normal rules editor with the AI-suggested values marked; the admin edits anything. Nothing changes until Save, which creates a new config version, audit logged like any other change.
+- [ ] Honest coverage warning when the ICP mostly falls outside what the agent can search: "Your ICP mostly falls outside what this agent can search (YC startups). You'd need another company source." (For example, dental clinics in Texas.)
+
+**Who builds what:** see "Stretch" in `docs/TASKS.md`.
+
+**Done when:** an admin answers the five questions, gets a validated draft with a reason per rule, edits one value, saves a new version; an out-of-scope ICP shows the coverage warning; nothing is saved without clicking Save.
+
+---
+
 ## Phase 7: Polish and ship
 
 - [ ] README: what it is, architecture diagram, how the agent works, what's real vs simulated and why, how to run locally, demo logins
