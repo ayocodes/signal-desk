@@ -440,12 +440,12 @@ Almost all of this phase is Claude's: it's the agent core.
   - print one filtered lead's reason
 
   Report the results to the user.
-- [ ] **U2.1** On GitHub, go to Actions → agent → "Run workflow". Confirm it finishes green, then run it a second time.
-- [ ] **U2.2** In the Supabase dashboard (Table Editor), check PLAN.md Phase 2 "Done when". Phase 2 has no app UI, so there's no admin/rep check.
+- [x] **U2.1** On GitHub, go to Actions → agent → "Run workflow". Confirm it finishes green, then run it a second time.
+- [x] **U2.2** In the Supabase dashboard (Table Editor), check PLAN.md Phase 2 "Done when". Phase 2 has no app UI, so there's no admin/rep check.
   - `companies`, `signals` and `leads` have real rows, and nothing was duplicated by the second run.
   - Open one lead with `status = filtered` and confirm its `filtered_reason` reads clearly.
   - Tell Claude what passed and what didn't.
-- [ ] **C2.12** After U2.1 and U2.2 pass: tick PLAN.md Phase 2, add a PROGRESS.md entry, commit.
+- [x] **C2.12** After U2.1 and U2.2 pass: tick PLAN.md Phase 2, add a PROGRESS.md entry, commit.
 
 ---
 

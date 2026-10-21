@@ -64,22 +64,22 @@ Then add the phase's extra notes (below each phase) if any.
 
 ## Phase 2: The agent (discover, signals, score)
 
-- [ ] `agent/` Python package with `pyproject.toml` or `requirements.txt`, typed with pydantic
-- [ ] `agent/db.py` using the service-role key; `agent/llm.py` provider interface (used in phase 4)
-- [ ] `shared/scoring.json`, `shared/hiring_keywords.json` created from ARCHITECTURE.md
-- [ ] **YC source:** first, fetch the community-maintained YC companies dataset (yc-oss, JSON on GitHub Pages) and print its fields. Report back what fields exist (batch, team size, industries, status, founders?) before writing the ICP filter. If it's unreachable, fall back to a hand-curated `shared/companies.seed.json` of 40 companies and tell me.
-- [ ] ICP filter with readable `icp_reasons`
-- [ ] **ATS discovery:** probe Greenhouse, Lever and Ashby public board endpoints with slug guesses; cap per run; store hits
-- [ ] **Hiring signals** from job boards with excerpt + job URL; classify sales/GTM roles; founding/first sales role bonus
-- [ ] **Launch signals** from HN Algolia search with the strict matching rule in ARCHITECTURE.md
-- [ ] **YC recency** as a weak funding signal
-- [ ] Fingerprint dedupe; companies' `jobs_fetched_at` refresh window
-- [ ] Scoring + `score_parts`; filtered leads with reasons; round-robin assignment to reps
-- [ ] **Contacts:** founder names if the dataset has them, else placeholder "Founder"; buyer check; test-inbox routing including the fixed bounce/complaint share
-- [ ] `agent_runs` + `audit_log` writes, per-step timings, error capture that doesn't crash the whole run
-- [ ] `--once` CLI and `--dry-run` (no DB writes, prints a summary)
-- [ ] pytest: scoring, keyword classification, HN matching rule, fingerprinting
-- [ ] `.github/workflows/agent.yml`: schedule `7,37 * * * *`, `workflow_dispatch`, Python setup with pip cache, secrets from repo settings, 15-minute timeout
+- [x] `agent/` Python package with `pyproject.toml` or `requirements.txt`, typed with pydantic
+- [x] `agent/db.py` using the service-role key; `agent/llm.py` provider interface (used in phase 4)
+- [x] `shared/scoring.json`, `shared/hiring_keywords.json` created from ARCHITECTURE.md
+- [x] **YC source:** first, fetch the community-maintained YC companies dataset (yc-oss, JSON on GitHub Pages) and print its fields. Report back what fields exist (batch, team size, industries, status, founders?) before writing the ICP filter. If it's unreachable, fall back to a hand-curated `shared/companies.seed.json` of 40 companies and tell me.
+- [x] ICP filter with readable `icp_reasons`
+- [x] **ATS discovery:** probe Greenhouse, Lever and Ashby public board endpoints with slug guesses; cap per run; store hits
+- [x] **Hiring signals** from job boards with excerpt + job URL; classify sales/GTM roles; founding/first sales role bonus
+- [x] **Launch signals** from HN Algolia search with the strict matching rule in ARCHITECTURE.md
+- [x] **YC recency** as a weak funding signal
+- [x] Fingerprint dedupe; companies' `jobs_fetched_at` refresh window
+- [x] Scoring + `score_parts`; filtered leads with reasons; round-robin assignment to reps
+- [x] **Contacts:** founder names if the dataset has them, else placeholder "Founder"; buyer check; test-inbox routing including the fixed bounce/complaint share
+- [x] `agent_runs` + `audit_log` writes, per-step timings, error capture that doesn't crash the whole run
+- [x] `--once` CLI and `--dry-run` (no DB writes, prints a summary)
+- [x] pytest: scoring, keyword classification, HN matching rule, fingerprinting
+- [x] `.github/workflows/agent.yml`: schedule `7,37 * * * *`, `workflow_dispatch`, Python setup with pip cache, secrets from repo settings, 15-minute timeout
 
 **Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 

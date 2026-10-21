@@ -4,11 +4,19 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 2 (agent). Claude cards C2.1 to C2.11 done; the agent has run 3 times on the real project.
-- Next step: user pushes (GitHub needs the workflow file), then U2.1 (run the workflow twice from Actions) and U2.2 (check tables in Supabase). Flash can do F2.1, F2.2, F2.3.
-- Blockers: none
+- Phase: 2 done (2026-10-21). Next: Phase 3, workspace UI (read-only queue, lead detail, leads table).
+- Next step: Claude plans Phase 3's C cards (plan mode, wait for "go").
+- Blockers: none. Ashby is checked only on local runs (`npm run agent:local`); GitHub runs check Greenhouse and Lever.
 
 ## Log
+
+### 2026-10-21: Phase 2 closed (U2.1, U2.2, C2.12)
+- Done: F2.1 (keywords, 78 cases; review removed `cro` and `performance marketing`, excluded `designer`), F2.2 (scoring/ICP example tests), F2.3 (agent README; review corrected 8 factual errors). GitHub runs green and idempotent; user checked the tables. Score bands (Strong 90+, Good 70+, Borderline 50+) added to the rules; the score stays a points total.
+- Decisions (and why):
+  - Ashby answers 403 to GitHub's runners: scheduled runs use `AGENT_JOB_BOARDS=greenhouse,lever`, local runs check all three, `companies.ats_checked` records per-site checks; nothing routes around the refusal.
+  - The user accepts Flash's edits in Antigravity right away and never rejects after its commit (written into TASKS.md).
+- Not done / known issues: user to decide whether senior performance marketing roles should count (currently not).
+- Next step (exact): plan Phase 3.
 
 ### 2026-10-21: Phase 2 build (C2.1 to C2.11) plus product changes
 - Done: Python agent (settings, polite HTTP client, db, run recorder, YC source, ICP, ATS discovery, hiring/launch/YC signals, scoring, contacts, leads, main, workflow), migration 003, 126 offline tests. Real runs: 1,060 companies/contacts/leads, re-runs add no duplicates. Repo variables DISCOVERY_PROBES_PER_RUN=150 and DRAFTS_PER_RUN=5 (the two "secrets" didn't exist on GitHub, so nothing was deleted).
