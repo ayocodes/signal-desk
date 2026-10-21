@@ -738,7 +738,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      lead_status_counts: {
+        Args: never
+        Returns: {
+          status: Database["public"]["Enums"]["lead_status"]
+          total: number
+        }[]
+      }
     }
     Enums: {
       actor_type: "agent" | "user"

@@ -44,6 +44,8 @@ export type LeadRow = {
     yc_batch: string | null;
     description: string | null;
     industries: string[];
+    /** Embedded in the same query (lib/data/leads.ts), filtered by RLS like any read. */
+    signals?: SignalRow[];
   } | null;
   contact: {
     name: string;

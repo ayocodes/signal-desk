@@ -18,13 +18,18 @@ import type {
   SortDir,
 } from "@/lib/types";
 
+// One query per page: each lead comes with its company, the company's signals, its contact
+// and its assignee. Embedded rows go through RLS like any other read.
+const SIGNAL_COLUMNS = "id, company_id, type, title, excerpt, source_name, source_url, occurred_at, detected_at, meta";
 const LEAD_COLUMNS = `
   id, status, score, score_parts, filtered_reason, updated_at,
-  company:companies(id, name, domain, icp_tier, icp_reasons, team_size, yc_batch, description, industries),
+  company:companies(
+    id, name, domain, icp_tier, icp_reasons, team_size, yc_batch, description, industries,
+    signals(${SIGNAL_COLUMNS})
+  ),
   contact:contacts(name, title, is_placeholder, send_address, buyer_status, buyer_reason),
   assignee:profiles(id, full_name)
 `;
-const SIGNAL_COLUMNS = "id, company_id, type, title, excerpt, source_name, source_url, occurred_at, detected_at, meta";
 
 const QUEUE_LIMIT = 200;
 const PAGE_SIZE = 100;
@@ -42,22 +47,8 @@ async function context() {
   return { supabase, config };
 }
 
-type Supabase = Awaited<ReturnType<typeof createSupabaseServerClient>>;
-
-/** Signals for the given companies in one query, grouped by company. */
-async function signalsFor(supabase: Supabase, companyIds: string[]): Promise<Map<string, SignalRow[]>> {
-  const grouped = new Map<string, SignalRow[]>();
-  if (companyIds.length === 0) return grouped;
-  const { data, error } = await supabase.from("signals").select(SIGNAL_COLUMNS).in("company_id", companyIds);
-  if (error) throw new Error(`Loading signals failed: ${error.message}`);
-  for (const signal of data as SignalRow[]) {
-    grouped.set(signal.company_id, [...(grouped.get(signal.company_id) ?? []), signal]);
-  }
-  return grouped;
-}
-
-function companyIds(rows: LeadRow[]): string[] {
-  return [...new Set(rows.flatMap((row) => (row.company ? [row.company.id] : [])))];
+function signalsOf(row: LeadRow): SignalRow[] {
+  return row.company?.signals ?? [];
 }
 
 /** One Queue tab, best score first. With signalTypes, only leads that have one of those signals. */
@@ -78,24 +69,21 @@ export async function listQueue({
     .limit(QUEUE_LIMIT);
   if (error) throw new Error(`Loading the ${tab} queue failed: ${error.message}`);
 
-  const rows = data as unknown as LeadRow[];
-  const signals = await signalsFor(supabase, companyIds(rows));
-  const items = rows.map((row) => toListItem(row, signals.get(row.company?.id ?? "") ?? [], config));
+  const items = (data as unknown as LeadRow[]).map((row) => toListItem(row, signalsOf(row), config));
   if (signalTypes.length === 0) return items;
   return items.filter((item) => item.signalTypes.some((type) => signalTypes.includes(type)));
 }
 
+/** Leads per Queue tab, in one query (a SQL function that runs as this user, so RLS applies). */
 export async function leadCounts(): Promise<LeadCounts> {
   const { supabase } = await context();
-  const statuses = ["ready", "enrolled", "bounced", "replied", "filtered"] as const;
-  const counts = await Promise.all(
-    statuses.map(async (status) => {
-      const { count, error } = await supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", status);
-      if (error) throw new Error(`Counting ${status} leads failed: ${error.message}`);
-      return [status, count ?? 0] as const;
-    }),
-  );
-  return Object.fromEntries(counts) as LeadCounts;
+  const { data, error } = await supabase.rpc("lead_status_counts");
+  if (error) throw new Error(`Counting leads failed: ${error.message}`);
+  const counts: LeadCounts = { ready: 0, enrolled: 0, bounced: 0, replied: 0, filtered: 0 };
+  for (const { status, total } of data) {
+    if (status in counts) counts[status as keyof LeadCounts] = Number(total);
+  }
+  return counts;
 }
 
 /** The filtered-out leads with their reasons, highest scores first, plus the total. */
@@ -132,8 +120,7 @@ export async function getLead(id: string): Promise<LeadDetail | null> {
   }
   if (!data) return null;
   const row = data as unknown as LeadRow;
-  const signals = await signalsFor(supabase, companyIds([row]));
-  return toDetail(row, signals.get(row.company?.id ?? "") ?? [], config);
+  return toDetail(row, signalsOf(row), config);
 }
 
 /** A page of the Leads table, sorted and paged in the database. */
@@ -158,9 +145,8 @@ export async function listLeadsPage({
   if (error) throw new Error(`Loading leads failed: ${error.message}`);
 
   const rows = data as unknown as LeadRow[];
-  const signals = await signalsFor(supabase, companyIds(rows));
   return {
-    rows: rows.map((row) => toListItem(row, signals.get(row.company?.id ?? "") ?? [], config)),
+    rows: rows.map((row) => toListItem(row, signalsOf(row), config)),
     total: count ?? rows.length,
     page: safePage,
     pageSize: PAGE_SIZE,
