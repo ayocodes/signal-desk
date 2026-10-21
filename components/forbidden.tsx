@@ -14,7 +14,7 @@ export function Forbidden() {
       </h1>
 
       <p className="text-meta text-muted max-w-sm mb-6 leading-relaxed">
-        Ops is for admins. Your leads are waiting in the queue.
+        This page is for admins. Your leads are waiting in the queue.
       </p>
 
       <Link href="/queue" className={buttonClassName({ variant: "secondary" })}>

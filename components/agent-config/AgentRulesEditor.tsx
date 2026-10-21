@@ -1137,7 +1137,8 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
                       };
                       setRules((prev) => ({ ...prev, freshness: next }));
                     }}
-                    className="h-8 w-18 text-meta font-mono"
+                    // Wide enough for "168" next to the browser's up/down arrows.
+                    className="h-8 w-24 shrink-0 text-meta font-mono"
                   />
                   <span className="text-muted">hours:</span>
                 </div>
