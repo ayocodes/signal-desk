@@ -641,7 +641,7 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
   git commit -m "flash(p4): email editor with live checks"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.1.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.2 Approve, regenerate, agent trace
@@ -686,7 +686,7 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
   git commit -m "flash(p4): more guardrail fixture cases"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.3.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.4 AI budget tile on Ops
@@ -706,7 +706,7 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
   git commit -m "flash(p4): AI budget tile on Ops"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.4.md`, on the card's branch (only exists if Claude asked for changes)
 
 ### You
