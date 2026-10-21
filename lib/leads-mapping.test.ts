@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { getAgentConfig, scoreBand } from "@/lib/agent-config";
-import { bySignalStrength, toDetail, toListItem, toSignalView, type LeadRow, type SignalRow } from "@/lib/leads-mapping";
+import {
+  bySignalStrength,
+  latestDrafts,
+  toDetail,
+  toListItem,
+  toSignalView,
+  type DraftRow,
+  type LeadRow,
+  type SignalRow,
+} from "@/lib/leads-mapping";
 
 const config = await getAgentConfig("test-org");
 
@@ -112,5 +121,33 @@ describe("toListItem / toDetail", () => {
 
   it("ignores malformed score parts instead of crashing", () => {
     expect(toListItem({ ...lead, score_parts: [["ok", 1], "bad", [2, "x"]] }, [], config).scoreParts).toEqual([["ok", 1]]);
+  });
+});
+
+
+describe("latestDrafts", () => {
+  const row = (angle: DraftRow["angle"], createdAt: string, subject: string = angle): DraftRow => ({
+    id: `${angle}-${createdAt}`, angle, subject, body: "b", grounded_phrases: ["x"],
+    guardrail_results: [{ check: "angle", status: "pass", message: "ok" }, { bogus: true }],
+    passed: true, model: "m", tokens_in: 1, tokens_out: 2, prompt: "p",
+    trace: { promptHash: "h", source: "agent", signals: [], attempts: [], chosenAttempt: 1 },
+    created_at: createdAt, creator: null,
+  });
+
+  it("keeps the newest draft per angle, in editor order", () => {
+    const views = latestDrafts([
+      row("short", "2026-10-21T10:00:00Z"),
+      row("signal", "2026-10-21T09:00:00Z", "old"),
+      row("signal", "2026-10-21T11:00:00Z", "new"),
+      row("peer", "2026-10-21T10:00:00Z"),
+    ]);
+    expect(views.map((v) => `${v.angle}:${v.subject}`)).toEqual(["signal:new", "peer:peer", "short:short"]);
+  });
+
+  it("drops malformed check entries and reads the trace", () => {
+    const [view] = latestDrafts([row("signal", "2026-10-21T10:00:00Z")]);
+    expect(view.checks).toEqual([{ check: "angle", status: "pass", message: "ok" }]);
+    expect(view.trace?.promptHash).toBe("h");
+    expect(view.createdBy).toBeNull();
   });
 });

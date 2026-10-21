@@ -20,7 +20,7 @@ export type PromptFacts = {
 const UNFILLED = /\{\{\w+\}\}/g;
 
 /** The same words the UI uses (components/leads/SignalCard.tsx signalLabel). */
-function signalLabel(signal: PromptFacts["signals"][number]): string {
+export function signalLabel(signal: Pick<PromptFacts["signals"][number], "type" | "category">): string {
   if (signal.type === "hiring") return signal.category === "marketing" ? "Marketing hire" : "Hiring";
   if (signal.type === "launch") return "Launch";
   return "YC recent";

@@ -7,6 +7,10 @@ parseServerEnv(process.env);
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // The draft route reads the prompt templates from disk; make sure Vercel ships them.
+  outputFileTracingIncludes: {
+    "/api/leads/**": ["./shared/prompts/**/*"],
+  },
   experimental: {
     // Enables forbidden() and app/forbidden.tsx, so reps get a real 403 on admin pages.
     authInterrupts: true,

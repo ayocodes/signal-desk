@@ -1,5 +1,6 @@
 // UI shapes for leads. Components take these as props; they never see raw database rows.
 import type { Database } from "@/lib/database.types";
+import type { CheckResult, GuardrailRules } from "@/lib/guardrails";
 
 export type LeadStatus = Database["public"]["Enums"]["lead_status"];
 export type SignalType = Database["public"]["Enums"]["signal_type"];
@@ -90,4 +91,66 @@ export type LeadsPage = {
   pageSize: number;
   sort: LeadsSort;
   dir: SortDir;
+};
+
+// Drafts and the email editor (Phase 4) ---------------------------------------------------
+
+export type DraftAngle = Database["public"]["Enums"]["draft_angle"];
+/** Editor order. "raw" is shown as "Unconstrained" and can never be approved. */
+export const DRAFT_ANGLES: DraftAngle[] = ["signal", "peer", "short", "raw"];
+
+export type DraftTraceAttempt = {
+  attempt: number;
+  model: string | null;
+  tokensIn: number | null;
+  tokensOut: number | null;
+  ms: number | null;
+  error: string | null;
+  /** Checks that failed per angle on this attempt, e.g. { peer: ["claims"] }. */
+  failedChecks: Record<string, string[]>;
+};
+
+/** How a draft was made: shown in the "Agent trace" collapsible. */
+export type DraftTrace = {
+  source: "agent" | "regenerate" | "unconstrained";
+  promptHash: string;
+  /** The signals the prompt listed, strongest first. */
+  signals: { label: string; title: string }[];
+  attempts: DraftTraceAttempt[];
+  chosenAttempt: number;
+  /** Agent drafts: one call wrote all three angles, so the tokens are shared. */
+  tokensSharedByAngles?: boolean;
+};
+
+export type DraftView = {
+  id: string;
+  angle: DraftAngle;
+  subject: string;
+  body: string;
+  groundedPhrases: string[];
+  /** Guardrail results stored when the draft was made. The editor re-runs them live. */
+  checks: CheckResult[];
+  passed: boolean;
+  model: string | null;
+  tokensIn: number | null;
+  tokensOut: number | null;
+  /** The exact prompt sent to the model ("Prompt sent to the model"). */
+  prompt: string | null;
+  trace: DraftTrace | null;
+  createdAt: string;
+  /** Who regenerated it; null for agent drafts. */
+  createdBy: { id: string; name: string } | null;
+};
+
+/** LLM calls today (UTC) against LLM_DAILY_BUDGET. The agent stops at agentLimit. */
+export type LlmBudget = { used: number; limit: number; agentLimit: number };
+
+/** Everything the email editor needs besides the lead itself. */
+export type DraftWorkspace = {
+  /** The latest draft per angle, in DRAFT_ANGLES order. Unconstrained appears once generated. */
+  drafts: DraftView[];
+  sender: { name: string; company: string; fromAddress: string };
+  /** Pass to runGuardrails() for the live checks. */
+  guardrailRules: GuardrailRules;
+  llmBudget: LlmBudget;
 };

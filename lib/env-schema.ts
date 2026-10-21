@@ -45,6 +45,7 @@ const SERVER_KEYS = [
   "GEMINI_MODEL",
   "GROQ_API_KEY",
   "GROQ_MODEL",
+  "LLM_DAILY_BUDGET",
   "RESEND_API_KEY",
   "RESEND_FROM",
   "RESEND_WEBHOOK_SECRET",
@@ -69,6 +70,8 @@ const serverSchema = publicSchema.extend({
   GEMINI_MODEL: z.string().optional(),
   GROQ_API_KEY: z.string().optional(),
   GROQ_MODEL: z.string().optional(),
+  // LLM requests per UTC day for agent and web app together (the model's free-tier limit).
+  LLM_DAILY_BUDGET: z.string().regex(/^\d+$/, { error: "must be a whole number" }).transform(Number),
   RESEND_API_KEY: z.string(),
   RESEND_FROM: z.string(),
   RESEND_WEBHOOK_SECRET: z.string().optional(),
@@ -97,7 +100,7 @@ export type PublicEnv = {
 
 export type ServerEnv = PublicEnv & {
   supabaseServiceRoleKey: string;
-  llm: { provider: "gemini" | "groq"; apiKey: string; model: string };
+  llm: { provider: "gemini" | "groq"; apiKey: string; model: string; dailyBudget: number };
   resend: {
     apiKey: string;
     from: string;
@@ -131,8 +134,8 @@ export function parseServerEnv(source: Source): ServerEnv {
   // Non-null is safe: missingProviderKeys() rejected a missing key or model for the selected provider.
   const llm =
     v.LLM_PROVIDER === "gemini"
-      ? { provider: v.LLM_PROVIDER, apiKey: v.GEMINI_API_KEY!, model: v.GEMINI_MODEL! }
-      : { provider: v.LLM_PROVIDER, apiKey: v.GROQ_API_KEY!, model: v.GROQ_MODEL! };
+      ? { provider: v.LLM_PROVIDER, apiKey: v.GEMINI_API_KEY!, model: v.GEMINI_MODEL!, dailyBudget: v.LLM_DAILY_BUDGET }
+      : { provider: v.LLM_PROVIDER, apiKey: v.GROQ_API_KEY!, model: v.GROQ_MODEL!, dailyBudget: v.LLM_DAILY_BUDGET };
 
   return {
     supabaseUrl: v.NEXT_PUBLIC_SUPABASE_URL,

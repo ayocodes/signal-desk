@@ -8,6 +8,7 @@ const valid = {
   LLM_PROVIDER: "gemini",
   GEMINI_API_KEY: "gemini-key",
   GEMINI_MODEL: "gemini-model",
+  LLM_DAILY_BUDGET: "20",
   RESEND_API_KEY: "resend-key",
   RESEND_FROM: "onboarding@resend.dev",
   DEMO_ADMIN_EMAIL: "admin@example.com",
@@ -27,9 +28,20 @@ function problemsFor(source: Record<string, string | undefined>): string[] {
 }
 
 describe("parseServerEnv", () => {
+  it("requires LLM_DAILY_BUDGET as a whole number", () => {
+    expect(parseServerEnv(valid).llm.dailyBudget).toBe(20);
+    expect(problemsFor({ ...valid, LLM_DAILY_BUDGET: undefined })).toEqual(["Missing environment variable LLM_DAILY_BUDGET"]);
+    expect(problemsFor({ ...valid, LLM_DAILY_BUDGET: "lots" })).toEqual([
+      "Invalid environment variable LLM_DAILY_BUDGET: must be a whole number",
+    ]);
+    expect(problemsFor({ ...valid, LLM_DAILY_BUDGET: "2.5" })).toEqual([
+      "Invalid environment variable LLM_DAILY_BUDGET: must be a whole number",
+    ]);
+  });
+
   it("accepts a complete gemini config and leaves optional features off", () => {
     const env = parseServerEnv(valid);
-    expect(env.llm).toEqual({ provider: "gemini", apiKey: "gemini-key", model: "gemini-model" });
+    expect(env.llm).toEqual({ provider: "gemini", apiKey: "gemini-key", model: "gemini-model", dailyBudget: 20 });
     expect(env.resend.webhookSecret).toBeNull();
     expect(env.githubDispatch).toBeNull();
   });
@@ -52,7 +64,7 @@ describe("parseServerEnv", () => {
 
   it("does not require the other provider's values", () => {
     const env = parseServerEnv({ ...valid, LLM_PROVIDER: "groq", GROQ_API_KEY: "k", GROQ_MODEL: "m", GEMINI_API_KEY: "" });
-    expect(env.llm).toEqual({ provider: "groq", apiKey: "k", model: "m" });
+    expect(env.llm).toEqual({ provider: "groq", apiKey: "k", model: "m", dailyBudget: 20 });
   });
 
   it("lists every problem at once, including provider keys", () => {

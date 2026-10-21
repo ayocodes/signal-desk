@@ -42,6 +42,10 @@ export async function proxy(request: NextRequest) {
     return result;
   };
 
+  // API calls get a 401 they can handle; a redirect would hand fetch() the login page's HTML.
+  if (!userId && path.startsWith("/api/")) {
+    return finish(NextResponse.json({ error: { code: "unauthorized", message: "Sign in again." } }, { status: 401 }));
+  }
   if (!userId && !PUBLIC_PATHS.has(path)) {
     return finish(NextResponse.redirect(new URL("/login", request.url)));
   }
