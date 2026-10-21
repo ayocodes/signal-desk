@@ -31,6 +31,8 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
    - Read the latest round in that file and fix every note, changing only the "Touch only" files. Never edit the review file.
    - Run the same Finish commands, but with the commit message `flash(pN): address review on <slug>`.
 
+**For the user, in Antigravity:** when Flash reports its branch name, click **Accept all** right away. The work is already committed on Flash's branch, so accepting changes nothing on disk. Never click Reject or undo after that: Flash has switched back to `main`, so a revert would land on `main` as stray changes. If you don't like the work, tell Claude, who handles it with review notes.
+
 **Prompt to paste into Antigravity** (change the card id):
 
 ```
