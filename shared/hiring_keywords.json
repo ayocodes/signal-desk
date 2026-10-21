@@ -31,8 +31,7 @@
       "growth director",
       "revenue",
       "revops",
-      "outbound",
-      "cro"
+      "outbound"
     ],
     "marketing": [
       "head of marketing",
@@ -50,8 +49,7 @@
       "demand generation",
       "demand gen",
       "growth marketing",
-      "growth marketer",
-      "performance marketing"
+      "growth marketer"
     ]
   },
   "categoryExclude": {
@@ -81,7 +79,8 @@
     "engineering",
     "developer",
     "salesforce",
-    "intern"
+    "intern",
+    "designer"
   ],
   "excludeExceptions": [
     "gtm engineer",

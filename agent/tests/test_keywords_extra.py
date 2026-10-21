@@ -27,7 +27,6 @@ EXTRA_CLASSIFICATION_CASES: list[tuple[str, str | None]] = [
     ("Head of Revenue", "gtm"),
     ("VP of Revenue", "gtm"),
     ("Chief Revenue Officer", "gtm"),
-    ("CRO", "gtm"),
     ("RevOps Lead", "gtm"),
     ("Head of RevOps", "gtm"),
     ("Revenue Operations Manager", "gtm"),
@@ -54,8 +53,6 @@ EXTRA_CLASSIFICATION_CASES: list[tuple[str, str | None]] = [
     ("Senior Growth Marketer", "marketing"),
     ("Head of Growth Marketing", "marketing"),
     ("Director of Growth Marketing", "marketing"),
-    ("Head of Performance Marketing", "marketing"),
-    ("Performance Marketing Lead", "marketing"),
     # Excluded marketing roles (junior, coordinator, associate, content, social media, product marketing, brand)
     ("Marketing Coordinator", None),
     ("Junior Marketing Associate", None),
@@ -83,6 +80,12 @@ EXTRA_CLASSIFICATION_CASES: list[tuple[str, str | None]] = [
     ("Solutions Architect", None),
     ("Aerospace Flight Controller", None),
     ("Sundae Maker", None),
+    # Ambiguous abbreviations and out-of-scope roles (Claude's review of F2.1)
+    ("CRO Specialist", None),  # conversion rate optimization
+    ("CRO Manager (Clinical Research)", None),  # clinical research organization
+    ("AE Motion Designer", None),  # After Effects
+    ("Head of Performance Marketing", None),  # outside the user's marketing scope
+    ("Performance Marketing Specialist", None),
 ]
 
 
