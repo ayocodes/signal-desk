@@ -43,7 +43,8 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
       setConfirmingVersion(null);
       setIsReverting(false);
       router.replace(`/settings/agent?applying=${res.data.version}&apply=${res.data.apply}`);
-      router.refresh();
+      // No router.refresh(): the new URL already loads fresh data, and a refresh fired at the
+      // same moment can cancel that navigation.
     } catch {
       setErrorMessage("Couldn't reach the server. Check your connection.");
       setIsReverting(false);
