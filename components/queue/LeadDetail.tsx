@@ -125,18 +125,18 @@ export function LeadDetail({ lead, className, ...props }: LeadDetailProps) {
       {/* Buyer check and contact inbox */}
       <div className="flex flex-col gap-3 rounded-panel border border-border bg-surface p-4">
         <span className="text-label uppercase tracking-wider font-semibold text-muted">
-          Contact &amp; Buyer Check
+          Contact and buyer check
         </span>
         <BuyerCheck contact={contact} />
         {contact && (
           <div className="flex flex-wrap items-baseline gap-2 pt-2 border-t border-border/60 text-meta">
             <span className="text-muted">Send address:</span>
-            <span className="font-mono text-text bg-surface-2 px-2 py-0.5 rounded-sm border border-border">
+            <span className="font-mono text-text bg-surface-2 px-2 py-0.5 rounded-control border border-border">
               {contact.sendAddress}
             </span>
             {isPlaceholderContact && (
               <span className="text-subtle italic">
-                (Test inbox routed deterministically per hard rule 3)
+                (a test inbox: we never email real people)
               </span>
             )}
           </div>
