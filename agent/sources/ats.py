@@ -29,6 +29,19 @@ GENERIC_TRAILING = {"ai", "labs", "hq", "technologies", "tech", "app", "io", "da
 MAX_GUESSES = 4
 
 
+class BoardHostUnavailable(Exception):
+    """A job-board site refused us (401/403, or 429/5xx after retries): skip it for this run."""
+
+    def __init__(self, ats: Ats, status: int) -> None:
+        self.ats = ats
+        self.status = status
+        super().__init__(f"{ATS_LABEL[ats]} answered {status}")
+
+
+# 404/410 mean "no board for this token"; these mean "the site won't answer us right now".
+UNAVAILABLE_STATUSES = {401, 403, 429}
+
+
 @dataclass(frozen=True)
 class Job:
     id: str
@@ -166,13 +179,19 @@ def parse_jobs(ats: Ats, payload: Any) -> tuple[Job, ...]:
 
 
 def fetch_board(client: PoliteClient, ats: Ats, token: str) -> Board | None:
-    """The board with its jobs, or None if this token has no board on this ATS."""
+    """The board with its jobs, or None if this token has no board on this ATS.
+
+    Raises BoardHostUnavailable when the site refuses or fails, so the caller can skip that
+    site instead of recording "no board".
+    """
     try:
         response = client.get(board_url(ats, token))
     except DisallowedByRobots:
         return None
     if response.status_code in (404, 410):
         return None
+    if response.status_code in UNAVAILABLE_STATUSES or response.status_code >= 500:
+        raise BoardHostUnavailable(ats, response.status_code)
     response.raise_for_status()
     try:
         payload = response.json()
@@ -186,16 +205,31 @@ def fetch_board(client: PoliteClient, ats: Ats, token: str) -> Board | None:
     return Board(ats, token, parse_jobs(ats, payload))
 
 
-def probe_company(client: PoliteClient, name: str, domain: str | None) -> Board | None:
+@dataclass
+class ProbeResult:
+    board: Board | None
+    # False when a site was skipped (unavailable), so "no board" isn't proven yet.
+    complete: bool
+
+
+def probe_company(client: PoliteClient, name: str, domain: str | None, unavailable: dict[Ats, int]) -> ProbeResult:
     """Tries each slug guess on each ATS, stopping at the first board found.
 
-    Network errors (httpx.HTTPError) propagate, so the caller can retry the company next run
-    instead of recording "no board".
+    Sites in `unavailable` (site -> status it answered) are skipped. A site that refuses us
+    during the probe is added to it (shared across the run, so one blocked site doesn't burn the request budget).
+    Network errors (httpx.HTTPError) propagate, so the caller can retry the company later.
     """
     for token in slug_guesses(name, domain):
         for ats in ATS_ORDER:
-            board = fetch_board(client, ats, token)
+            if ats in unavailable:
+                continue
+            try:
+                board = fetch_board(client, ats, token)
+            except BoardHostUnavailable as refused:
+                unavailable[refused.ats] = refused.status
+                print(f"{refused}; skipping {ATS_LABEL[refused.ats]} for the rest of this run.", flush=True)
+                continue
             if board is not None:
-                return board
-    return None
+                return ProbeResult(board, complete=True)
+    return ProbeResult(None, complete=not unavailable)
 

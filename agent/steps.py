@@ -120,17 +120,24 @@ def probe_job_boards(ctx: Context) -> None:
 
     budget_start = ctx.client.request_count
     keywords = ctx.config.keywords
+    unavailable: dict[ats.Ats, int] = {}  # job-board site -> status it refused us with, this run
     for row in pending:
         if ctx.client.request_count - budget_start >= ctx.settings.discovery_probes_per_run:
             break
+        if len(unavailable) == len(ats.ATS_ORDER):
+            break  # every site refused us; nothing more to learn this run
         try:
-            board = ats.probe_company(ctx.client, row["name"], row["domain"])
+            result = ats.probe_company(ctx.client, row["name"], row["domain"], unavailable)
         except httpx.HTTPError as error:
             # Network trouble: leave it unprobed so the next run tries again.
             ctx.run.count("probe_errors")
-            print(f"Probe failed for {row['domain']}: {type(error).__name__}", flush=True)
+            print(f"Probe failed for {row['domain']}: {type(error).__name__}: {error}", flush=True)
             continue
 
+        board = result.board
+        if board is None and not result.complete:
+            ctx.run.count("probes_incomplete")  # a site was skipped: try this company again later
+            continue
         ctx.run.count("companies_probed")
         update: dict[str, Any] = {"ats_probed_at": ctx.now.isoformat()}
         if board is not None:
@@ -141,6 +148,13 @@ def probe_job_boards(ctx: Context) -> None:
         ctx.db.update("companies", update, id=row["id"])
 
     ctx.run.count("probe_requests", ctx.client.request_count - budget_start)
+    if unavailable:
+        # Not silent: a refused site shows up in agent_runs.errors and the log.
+        ctx.run.errors.append({
+            "step": "probe_job_boards",
+            "message": "Job-board sites refused requests this run: "
+            + ", ".join(f"{ats.ATS_LABEL[site]} ({status})" for site, status in sorted(unavailable.items())),
+        })
 
 
 def refresh_hiring(ctx: Context) -> None:
@@ -156,6 +170,10 @@ def refresh_hiring(ctx: Context) -> None:
     for row in due[:MAX_BOARD_REFRESHES]:
         try:
             board = ats.fetch_board(ctx.client, row["ats_type"], row["ats_token"])
+        except ats.BoardHostUnavailable as refused:
+            ctx.run.count("refresh_errors")
+            print(f"Job refresh skipped for {row['domain']}: {refused}", flush=True)
+            continue
         except httpx.HTTPError as error:
             ctx.run.count("refresh_errors")
             print(f"Job refresh failed for {row['domain']}: {type(error).__name__}", flush=True)

@@ -95,8 +95,9 @@ def test_probe_stops_at_the_first_board_found() -> None:
         return httpx.Response(404)
 
     with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
-        board = probe_company(client, "Trigger.dev", "trigger.dev")
+        result = probe_company(client, "Trigger.dev", "trigger.dev", {})
 
+    board = result.board
     assert board is not None and (board.ats, board.token) == ("ashby", "triggerdev")
     assert requested == ["api.ashbyhq.com/posting-api/job-board/triggerdev"]  # first guess, first ATS
 
@@ -147,3 +148,42 @@ def test_marketing_signals_are_named_marketing_hire() -> None:
     rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").keywords, NOW)
     assert rows[0]["title"] == "Marketing hire: Marketing Lead"
     assert rows[0]["meta"]["category"] == "marketing"
+
+
+def test_a_site_that_refuses_us_is_skipped_and_the_probe_is_incomplete() -> None:
+    requested: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        requested.append(request.url.host)
+        if request.url.host == "api.ashbyhq.com":
+            return httpx.Response(403)  # e.g. the site blocks datacenter addresses
+        return httpx.Response(404)
+
+    unavailable: dict = {}
+    with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
+        first = probe_company(client, "Drillbit", "drillbit.com", unavailable)
+        second = probe_company(client, "Chima", "withchima.com", unavailable)
+
+    assert unavailable == {"ashby": 403}
+    assert (first.board, first.complete) == (None, False)  # not proven "no board": retry later
+    assert second.complete is False
+    assert requested.count("api.ashbyhq.com") == 1  # asked once, then skipped for the run
+
+
+def test_a_board_on_another_site_is_still_found_when_one_site_refuses() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/robots.txt":
+            return httpx.Response(404)
+        if request.url.host == "api.ashbyhq.com":
+            return httpx.Response(401)
+        if request.url.host == "boards-api.greenhouse.io" and "/drillbit/" in request.url.path:
+            return httpx.Response(200, json={"jobs": []})
+        return httpx.Response(404)
+
+    with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
+        result = probe_company(client, "Drillbit", "drillbit.com", {})
+
+    assert result.board is not None and result.board.ats == "greenhouse"
+    assert result.complete is True
