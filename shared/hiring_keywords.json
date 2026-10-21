@@ -2,6 +2,8 @@
   "categories": {
     "sales": [
       "account executive",
+      "account exec",
+      "ae",
       "sales",
       "sdr",
       "bdr",
@@ -11,7 +13,11 @@
       "vp of sales",
       "vp sales",
       "sales lead",
-      "sales manager"
+      "sales manager",
+      "sales director",
+      "director of sales",
+      "inside sales",
+      "outside sales"
     ],
     "gtm": [
       "go-to-market",
@@ -19,14 +25,20 @@
       "gtm",
       "growth lead",
       "head of growth",
+      "vp of growth",
+      "vp growth",
+      "director of growth",
+      "growth director",
       "revenue",
       "revops",
-      "outbound"
+      "outbound",
+      "cro"
     ],
     "marketing": [
       "head of marketing",
       "vp of marketing",
       "vp marketing",
+      "vice president of marketing",
       "director of marketing",
       "marketing director",
       "marketing lead",
@@ -38,7 +50,8 @@
       "demand generation",
       "demand gen",
       "growth marketing",
-      "growth marketer"
+      "growth marketer",
+      "performance marketing"
     ]
   },
   "categoryExclude": {
@@ -58,6 +71,8 @@
     "founding",
     "first sales",
     "first account executive",
+    "first ae",
+    "first account exec",
     "first gtm",
     "first marketing"
   ],
