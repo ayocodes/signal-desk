@@ -108,6 +108,22 @@ async function checkLeadsPerRep(rep: SupabaseClient, admin: SupabaseClient, repI
   );
 }
 
+// Approving and reserving LLM calls must go through the server routes, which re-run the
+// guardrails and the budget rules; a member calling the database functions directly is refused.
+async function checkServerOnlyFunctions(rep: SupabaseClient, repId: string | undefined): Promise<void> {
+  const zero = "00000000-0000-0000-0000-000000000000";
+  const { error: approveError } = await rep.rpc("approve_lead", {
+    p_actor: repId ?? zero, p_lead: zero, p_draft: zero, p_subject: "x", p_body: "x", p_steps: [],
+  });
+  check("rep can't call approve_lead directly", approveError?.code === "42501", approveError ? `blocked (${approveError.code})` : "call succeeded");
+  const { error: reserveError } = await rep.rpc("reserve_llm_call", {
+    p_org: zero, p_source: "regenerate", p_actor: repId ?? zero, p_lead: zero, p_daily_limit: 1000,
+  });
+  check("rep can't reserve LLM calls directly", reserveError?.code === "42501", reserveError ? `blocked (${reserveError.code})` : "call succeeded");
+  const { data: used, error: usedError } = await rep.rpc("llm_calls_today");
+  check("rep can read today's LLM call count", !usedError && typeof used === "number", usedError ? `error ${usedError.code}` : `${used} today`);
+}
+
 async function main(): Promise<void> {
   // Logged out: the anon role has no table privileges at all.
   const anon = anonClient();
@@ -118,7 +134,7 @@ async function main(): Promise<void> {
   const { data: repUser } = await rep.auth.getUser();
   const repId = repUser.user?.id;
 
-  for (const table of ["mailboxes", "agent_runs", "audit_log"]) {
+  for (const table of ["mailboxes", "agent_runs", "audit_log", "llm_calls"]) {
     const n = await rowCount(rep, table);
     check(`rep reads 0 rows from ${table}`, n === 0, `got ${n}`);
   }
@@ -157,6 +173,7 @@ async function main(): Promise<void> {
   check("admin reads all 3 profiles in the org", adminProfiles === 3, `got ${adminProfiles}`);
 
   await checkLeadsPerRep(rep, admin, repId);
+  await checkServerOnlyFunctions(rep, repId);
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}  (${r.detail})`);
   const failed = results.filter((r) => !r.ok).length;

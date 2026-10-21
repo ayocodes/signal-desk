@@ -242,56 +242,82 @@ export type Database = {
           angle: Database["public"]["Enums"]["draft_angle"]
           body: string
           created_at: string
+          created_by: string | null
           grounded_phrases: Json
           guardrail_results: Json
           id: string
           lead_id: string
+          llm_call_id: string | null
           model: string | null
           org_id: string
           passed: boolean
+          prompt: string | null
           prompt_hash: string | null
           subject: string
           tokens_in: number | null
           tokens_out: number | null
+          trace: Json
         }
         Insert: {
           angle: Database["public"]["Enums"]["draft_angle"]
           body: string
           created_at?: string
+          created_by?: string | null
           grounded_phrases?: Json
           guardrail_results?: Json
           id?: string
           lead_id: string
+          llm_call_id?: string | null
           model?: string | null
           org_id: string
           passed?: boolean
+          prompt?: string | null
           prompt_hash?: string | null
           subject: string
           tokens_in?: number | null
           tokens_out?: number | null
+          trace?: Json
         }
         Update: {
           angle?: Database["public"]["Enums"]["draft_angle"]
           body?: string
           created_at?: string
+          created_by?: string | null
           grounded_phrases?: Json
           guardrail_results?: Json
           id?: string
           lead_id?: string
+          llm_call_id?: string | null
           model?: string | null
           org_id?: string
           passed?: boolean
+          prompt?: string | null
           prompt_hash?: string | null
           subject?: string
           tokens_in?: number | null
           tokens_out?: number | null
+          trace?: Json
         }
         Relationships: [
+          {
+            foreignKeyName: "drafts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "drafts_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drafts_llm_call_id_fkey"
+            columns: ["llm_call_id"]
+            isOneToOne: false
+            referencedRelation: "llm_calls"
             referencedColumns: ["id"]
           },
           {
@@ -415,6 +441,70 @@ export type Database = {
           },
           {
             foreignKeyName: "leads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      llm_calls: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          error: string | null
+          id: string
+          lead_id: string | null
+          model: string | null
+          ok: boolean | null
+          org_id: string
+          source: Database["public"]["Enums"]["llm_call_source"]
+          tokens_in: number | null
+          tokens_out: number | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          model?: string | null
+          ok?: boolean | null
+          org_id: string
+          source: Database["public"]["Enums"]["llm_call_source"]
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          model?: string | null
+          ok?: boolean | null
+          org_id?: string
+          source?: Database["public"]["Enums"]["llm_call_source"]
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "llm_calls_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "llm_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "llm_calls_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -738,11 +828,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_lead: {
+        Args: {
+          p_actor: string
+          p_body: string
+          p_draft: string
+          p_lead: string
+          p_steps: Json
+          p_subject: string
+        }
+        Returns: string
+      }
       lead_status_counts: {
         Args: never
         Returns: {
           status: Database["public"]["Enums"]["lead_status"]
           total: number
+        }[]
+      }
+      llm_calls_today: { Args: never; Returns: number }
+      reserve_llm_call: {
+        Args: {
+          p_actor: string
+          p_actor_hourly_limit?: number
+          p_daily_limit: number
+          p_lead: string
+          p_org: string
+          p_source: Database["public"]["Enums"]["llm_call_source"]
+        }
+        Returns: {
+          call_id: string
+          refusal: string
         }[]
       }
     }
@@ -762,6 +878,7 @@ export type Database = {
         | "replied"
         | "halted"
         | "completed"
+      llm_call_source: "agent" | "regenerate" | "unconstrained"
       mailbox_status: "healthy" | "near_cap" | "paused" | "held"
       sequence_status: "active" | "paused" | "halted" | "completed"
       signal_type: "hiring" | "launch" | "funding"
@@ -909,6 +1026,7 @@ export const Constants = {
         "halted",
         "completed",
       ],
+      llm_call_source: ["agent", "regenerate", "unconstrained"],
       mailbox_status: ["healthy", "near_cap", "paused", "held"],
       sequence_status: ["active", "paused", "halted", "completed"],
       signal_type: ["hiring", "launch", "funding"],
