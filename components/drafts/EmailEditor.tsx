@@ -280,7 +280,8 @@ export function EmailEditor({
         } else {
           router.push(pathname);
         }
-        router.refresh();
+        // No router.refresh() here: pushing a new URL already loads fresh server data, and a
+        // refresh fired at the same moment can cancel the push (Safari then reloads the page).
       } else {
         setIsApproving(false);
         const err = res.error;
@@ -373,7 +374,8 @@ export function EmailEditor({
             size="sm"
             aria-label="Regenerate draft"
             onClick={handleRegenerate}
-            disabled={isBusy || isApproving}
+            // Unconstrained is generated once and stored; regenerating returns the same draft.
+            disabled={isBusy || isApproving || currentAngle === "raw"}
           >
             {isRegenerating ? (
               <>
@@ -507,6 +509,7 @@ export function EmailEditor({
                   </span>
                 </div>
 
+                {/* Wraps instead of truncating: the grounding message names the phrases found. */}
                 <span
                   className={cn(
                     "text-label font-mono text-right min-w-0 break-words",
@@ -624,7 +627,10 @@ export function EmailEditor({
                   </span>
                   <div className="flex flex-col gap-2">
                     {currentDraft.trace.attempts.map((att) => {
-                      const failedKeys = Object.keys(att.failedChecks);
+                      // The agent records every angle, passing ones with an empty list.
+                      const failed = Object.entries(att.failedChecks).filter(
+                        ([, checks]) => checks.length > 0
+                      );
                       return (
                         <div
                           key={att.attempt}
@@ -654,10 +660,10 @@ export function EmailEditor({
                             <p className="text-meta text-bad">{att.error}</p>
                           )}
 
-                          {failedKeys.length > 0 && (
+                          {failed.length > 0 && (
                             <div className="text-label text-warn">
                               <span>Failed checks: </span>
-                              {Object.entries(att.failedChecks).map(
+                              {failed.map(
                                 ([angleKey, checks]) => (
                                   <span
                                     key={angleKey}

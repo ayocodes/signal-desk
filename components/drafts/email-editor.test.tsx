@@ -312,4 +312,44 @@ describe("EmailEditor component", () => {
     expect(html).toContain("No agent trace recorded for this draft.");
     expect(html).toContain("No prompt recorded for this draft.");
   });
+
+  it("lists only the angles that actually failed in the agent trace", () => {
+    const base = sampleWorkspace.drafts[0];
+    const traced: DraftWorkspace = {
+      ...sampleWorkspace,
+      drafts: [
+        {
+          ...base,
+          trace: {
+            ...base.trace!,
+            attempts: [{ ...base.trace!.attempts[0], failedChecks: { signal: [], peer: ["claims"], short: [] } }],
+          },
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<EmailEditor lead={sampleLead} workspace={traced} />);
+    expect(html).toContain("[peer: claims]");
+    expect(html).not.toContain("[signal: ]");
+
+    const clean: DraftWorkspace = {
+      ...sampleWorkspace,
+      drafts: [
+        {
+          ...base,
+          trace: { ...base.trace!, attempts: [{ ...base.trace!.attempts[0], failedChecks: { signal: [], peer: [] } }] },
+        },
+      ],
+    };
+    expect(renderToStaticMarkup(<EmailEditor lead={sampleLead} workspace={clean} />)).not.toContain("Failed checks");
+  });
+
+  it("disables Regenerate on Unconstrained (it is generated once and stored)", () => {
+    const rawOnly: DraftWorkspace = {
+      ...sampleWorkspace,
+      drafts: [{ ...sampleWorkspace.drafts[0], id: "draft-raw", angle: "raw" }],
+    };
+    const html = renderToStaticMarkup(<EmailEditor lead={sampleLead} workspace={rawOnly} />);
+    const regenerate = html.match(/<button[^>]*aria-label="Regenerate draft"[^>]*>/)?.[0] ?? "";
+    expect(regenerate).toMatch(/\sdisabled([=>\s]|$)/);
+  });
 });
