@@ -50,6 +50,7 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
         with run.step(name):
             step(ctx)
     run.stats["http_requests"] = client.request_count
+    run.stats["drafts_per_run"] = settings.drafts_per_run  # a setting, recorded so Ops can show it
     run.config_version = ctx.config.version
     run.job_boards = settings.job_boards
     run.finish()

@@ -10,7 +10,7 @@ import type { Database } from "@/lib/database.types";
 import { publicEnv } from "@/lib/env.public";
 
 const PUBLIC_PATHS = new Set(["/login"]);
-const ADMIN_PREFIXES = ["/ops"];
+const ADMIN_PREFIXES = ["/ops", "/settings/agent"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });

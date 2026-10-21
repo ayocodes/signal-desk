@@ -1,6 +1,7 @@
 // UI shapes for leads. Components take these as props; they never see raw database rows.
 import type { Database } from "@/lib/database.types";
 import type { CheckResult, GuardrailRules } from "@/lib/guardrails";
+import type { RulesDoc } from "@/lib/rules";
 
 export type LeadStatus = Database["public"]["Enums"]["lead_status"];
 export type SignalType = Database["public"]["Enums"]["signal_type"];
@@ -156,4 +157,45 @@ export type DraftWorkspace = {
   /** Pass to runGuardrails() for the live checks. */
   guardrailRules: GuardrailRules;
   llmBudget: LlmBudget;
+};
+
+// Agent rules (Phase 4.5) -----------------------------------------------------------------
+
+/** The org's current rules, for the editor and the "What our agent looks for" page. */
+export type CurrentRules = {
+  /** 0 when the org runs on the defaults (no saved version, or the saved one is invalid). */
+  version: number;
+  rules: RulesDoc;
+  savedBy: { id: string; name: string } | null;
+  savedAt: string | null;
+  /** Why the defaults are shown instead of a saved version, if they are. */
+  problem: string | null;
+  /** Always banned in emails; shown locked next to the org's extra phrases. */
+  builtInBannedPhrases: string[];
+  /** The most points any lead could score under these rules (the threshold can't exceed it). */
+  maxPossibleScore: number;
+};
+
+/** One saved version, newest first in listConfigVersions(). */
+export type RulesVersion = {
+  version: number;
+  savedBy: { id: string; name: string } | null;
+  savedAt: string;
+  /** Readable change lines, e.g. "Threshold 50 → 55". */
+  changeSummary: string[];
+  isCurrent: boolean;
+};
+
+/** "N leads in the queue at this threshold, was M" (from stored scores). */
+export type ThresholdPreview = { threshold: number; wouldBeReady: number; readyNow: number };
+
+/** Deploy settings for drafting, shown read-only in Ops. */
+export type LlmPacing = {
+  /** From the latest agent run (the DRAFTS_PER_RUN variable on GitHub); null before the first run. */
+  draftsPerRun: number | null;
+  /** Share of the daily budget the agent may use, e.g. 0.8. */
+  agentShare: number;
+  maxRetriesPerLead: number;
+  minSecondsBetweenCalls: number;
+  regeneratePerUserPerHour: number;
 };
