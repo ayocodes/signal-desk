@@ -16,6 +16,8 @@ from typing import Literal
 from pydantic import BaseModel, ValidationError, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from agent.sources.ats import ATS_ORDER, Ats
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # The selected provider's key and model are required; the other provider's are optional.
@@ -62,6 +64,9 @@ class _RawEnv(BaseSettings):
     AGENT_USER_AGENT: str | None = None
     DRAFTS_PER_RUN: str | None = None
     DISCOVERY_PROBES_PER_RUN: str | None = None
+    # Which job-board sites this run checks, comma-separated. Unset means all of them.
+    # The GitHub workflow sets "greenhouse,lever": Ashby refuses GitHub's runners (403).
+    AGENT_JOB_BOARDS: str | None = None
     # Set by GitHub Actions ("schedule", "workflow_dispatch"); absent locally.
     GITHUB_EVENT_NAME: str | None = None
 
@@ -90,6 +95,7 @@ class Settings(BaseModel):
     user_agent: str
     drafts_per_run: int
     discovery_probes_per_run: int
+    job_boards: tuple[Ats, ...]  # in probe order
     trigger: str
 
 
@@ -104,6 +110,17 @@ def _whole_number(raw: str | None, name: str, default: int, problems: list[str])
     if value < 0:
         problems.append(f"Invalid environment variable {name}: must not be negative")
     return value
+
+
+def _job_boards(raw: str | None, problems: list[str]) -> tuple[Ats, ...]:
+    if raw is None:
+        return ATS_ORDER
+    wanted = {part.strip().lower() for part in raw.split(",") if part.strip()}
+    unknown = wanted - set(ATS_ORDER)
+    if unknown or not wanted:
+        problems.append(f"Invalid environment variable AGENT_JOB_BOARDS: use {', '.join(sorted(ATS_ORDER))}, comma-separated")
+        return ATS_ORDER
+    return tuple(site for site in ATS_ORDER if site in wanted)
 
 
 def settings_from_env(raw: _RawEnv) -> Settings:
@@ -128,6 +145,7 @@ def settings_from_env(raw: _RawEnv) -> Settings:
 
     drafts = _whole_number(values["DRAFTS_PER_RUN"], "DRAFTS_PER_RUN", 5, problems)
     probes = _whole_number(values["DISCOVERY_PROBES_PER_RUN"], "DISCOVERY_PROBES_PER_RUN", 40, problems)
+    job_boards = _job_boards(values["AGENT_JOB_BOARDS"], problems)
 
     if problems:
         raise SettingsError(problems)
@@ -142,6 +160,7 @@ def settings_from_env(raw: _RawEnv) -> Settings:
         user_agent=values["AGENT_USER_AGENT"].strip(),
         drafts_per_run=drafts,
         discovery_probes_per_run=probes,
+        job_boards=job_boards,
         trigger=(values["GITHUB_EVENT_NAME"] or "local").strip(),
     )
 

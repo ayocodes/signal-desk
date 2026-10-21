@@ -111,6 +111,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          ats_checked: Json
           ats_probed_at: string | null
           ats_token: string | null
           ats_type: Database["public"]["Enums"]["ats_type"] | null
@@ -131,6 +132,7 @@ export type Database = {
           yc_slug: string | null
         }
         Insert: {
+          ats_checked?: Json
           ats_probed_at?: string | null
           ats_token?: string | null
           ats_type?: Database["public"]["Enums"]["ats_type"] | null
@@ -151,6 +153,7 @@ export type Database = {
           yc_slug?: string | null
         }
         Update: {
+          ats_checked?: Json
           ats_probed_at?: string | null
           ats_token?: string | null
           ats_type?: Database["public"]["Enums"]["ats_type"] | null

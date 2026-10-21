@@ -6,7 +6,7 @@ import pytest
 from agent.config import load_config
 from agent.http_client import PoliteClient
 from agent.signals import classify_title, excerpt_for, hiring_fingerprint, hiring_signals
-from agent.sources.ats import html_to_text, parse_jobs, probe_company, slug_guesses
+from agent.sources.ats import ATS_ORDER, html_to_text, parse_jobs, probe_company, slug_guesses
 
 NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)
 
@@ -95,7 +95,7 @@ def test_probe_stops_at_the_first_board_found() -> None:
         return httpx.Response(404)
 
     with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
-        result = probe_company(client, "Trigger.dev", "trigger.dev", {})
+        result = probe_company(client, "Trigger.dev", "trigger.dev", ATS_ORDER, {})
 
     board = result.board
     assert board is not None and (board.ats, board.token) == ("ashby", "triggerdev")
@@ -163,12 +163,13 @@ def test_a_site_that_refuses_us_is_skipped_and_the_probe_is_incomplete() -> None
 
     unavailable: dict = {}
     with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
-        first = probe_company(client, "Drillbit", "drillbit.com", unavailable)
-        second = probe_company(client, "Chima", "withchima.com", unavailable)
+        first = probe_company(client, "Drillbit", "drillbit.com", ATS_ORDER, unavailable)
+        second = probe_company(client, "Chima", "withchima.com", ATS_ORDER, unavailable)
 
     assert unavailable == {"ashby": 403}
-    assert (first.board, first.complete) == (None, False)  # not proven "no board": retry later
-    assert second.complete is False
+    assert first.board is None
+    assert first.checked == {"greenhouse", "lever"}  # Ashby isn't proven "no board": check later
+    assert second.checked == {"greenhouse", "lever"}
     assert requested.count("api.ashbyhq.com") == 1  # asked once, then skipped for the run
 
 
@@ -183,7 +184,21 @@ def test_a_board_on_another_site_is_still_found_when_one_site_refuses() -> None:
         return httpx.Response(404)
 
     with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
-        result = probe_company(client, "Drillbit", "drillbit.com", {})
+        result = probe_company(client, "Drillbit", "drillbit.com", ATS_ORDER, {})
 
     assert result.board is not None and result.board.ats == "greenhouse"
-    assert result.complete is True
+
+
+def test_only_the_runs_sites_are_asked() -> None:
+    hosts: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path != "/robots.txt":
+            hosts.append(request.url.host)
+        return httpx.Response(404)
+
+    with PoliteClient("t", transport=httpx.MockTransport(handler), sleep=lambda _: None) as client:
+        result = probe_company(client, "Drillbit", "drillbit.com", ("greenhouse", "lever"), {})
+
+    assert "api.ashbyhq.com" not in hosts  # a GitHub run never contacts Ashby
+    assert result.checked == {"greenhouse", "lever"}

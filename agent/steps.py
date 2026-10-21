@@ -108,15 +108,24 @@ def _probe_order(row: Row) -> tuple[int, int, int, str]:
     )
 
 
+def _unchecked_sites(row: Row, sites: tuple[ats.Ats, ...]) -> tuple[ats.Ats, ...]:
+    checked = row.get("ats_checked") or {}
+    return tuple(site for site in sites if site not in checked)
+
+
 def probe_job_boards(ctx: Context) -> None:
-    """Finds public job boards for companies not probed yet, within the per-run request budget."""
-    pending = [
-        row
-        for row in companies(ctx, "id,name,domain,icp_tier,yc_is_hiring,team_size,ats_probed_at")
-        if row["ats_probed_at"] is None
-    ]
+    """Finds public job boards within the per-run request budget, on this run's sites only.
+
+    GitHub runs check Greenhouse and Lever (Ashby refuses GitHub's runners with a 403);
+    local runs also check Ashby. Each company remembers which sites were checked and when.
+    """
+    enabled = ctx.settings.job_boards
+    tracked = companies(ctx, "id,name,domain,icp_tier,yc_is_hiring,team_size,ats_type,ats_probed_at,ats_checked")
+    no_board = [row for row in tracked if row["ats_type"] is None and row["ats_probed_at"] is None]
+    pending = [row for row in no_board if _unchecked_sites(row, enabled)]
     pending.sort(key=_probe_order)
     ctx.run.count("probe_queue", len(pending))
+    ctx.run.count("ashby_unchecked", sum(1 for row in no_board if "ashby" not in (row.get("ats_checked") or {})))
 
     budget_start = ctx.client.request_count
     keywords = ctx.config.keywords
@@ -124,24 +133,33 @@ def probe_job_boards(ctx: Context) -> None:
     for row in pending:
         if ctx.client.request_count - budget_start >= ctx.settings.discovery_probes_per_run:
             break
-        if len(unavailable) == len(ats.ATS_ORDER):
-            break  # every site refused us; nothing more to learn this run
+        sites = tuple(site for site in _unchecked_sites(row, enabled) if site not in unavailable)
+        if not sites:
+            if len(unavailable) == len(enabled):
+                break  # every site this run may use refused us; nothing more to learn
+            continue
         try:
-            result = ats.probe_company(ctx.client, row["name"], row["domain"], unavailable)
+            result = ats.probe_company(ctx.client, row["name"], row["domain"], sites, unavailable)
         except httpx.HTTPError as error:
-            # Network trouble: leave it unprobed so the next run tries again.
+            # Network trouble: leave it as it was so the next run tries again.
             ctx.run.count("probe_errors")
             print(f"Probe failed for {row['domain']}: {type(error).__name__}: {error}", flush=True)
             continue
 
         board = result.board
-        if board is None and not result.complete:
-            ctx.run.count("probes_incomplete")  # a site was skipped: try this company again later
+        if board is None and not result.checked:
+            ctx.run.count("probes_incomplete")  # every site refused mid-probe: try again later
             continue
+        checked = {**(row.get("ats_checked") or {}), **{site: ctx.now.isoformat() for site in result.checked}}
+        update: dict[str, Any] = {"ats_checked": checked}
         ctx.run.count("companies_probed")
-        update: dict[str, Any] = {"ats_probed_at": ctx.now.isoformat()}
+        if board is None and set(ats.ATS_ORDER) <= set(checked):
+            update["ats_probed_at"] = ctx.now.isoformat()  # every site checked: no public board
         if board is not None:
-            update |= {"ats_type": board.ats, "ats_token": board.token, "jobs_fetched_at": ctx.now.isoformat()}
+            update |= {
+                "ats_type": board.ats, "ats_token": board.token,
+                "ats_probed_at": ctx.now.isoformat(), "jobs_fetched_at": ctx.now.isoformat(),
+            }
             ctx.run.count("boards_found")
             ctx.run.audit("company.ats_found", "company", row["id"], ats=board.ats, token=board.token, jobs=len(board.jobs))
             save_signals(ctx, hiring_signals(ctx.org_id, row["id"], board.ats, board.jobs, keywords, ctx.now))
@@ -167,6 +185,9 @@ def refresh_hiring(ctx: Context) -> None:
         and (row["jobs_fetched_at"] is None or datetime.fromisoformat(row["jobs_fetched_at"]) < ctx.now - window)
     ]
     keywords = ctx.config.keywords
+    skipped = [row for row in due if row["ats_type"] not in ctx.settings.job_boards]
+    ctx.run.count("refresh_skipped_site", len(skipped))  # e.g. Ashby boards on a GitHub run
+    due = [row for row in due if row["ats_type"] in ctx.settings.job_boards]
     for row in due[:MAX_BOARD_REFRESHES]:
         try:
             board = ats.fetch_board(ctx.client, row["ats_type"], row["ats_token"])

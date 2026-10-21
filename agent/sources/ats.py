@@ -208,19 +208,22 @@ def fetch_board(client: PoliteClient, ats: Ats, token: str) -> Board | None:
 @dataclass
 class ProbeResult:
     board: Board | None
-    # False when a site was skipped (unavailable), so "no board" isn't proven yet.
-    complete: bool
+    # Sites where every guess got a clear answer (no refusal). Without a board, these are
+    # proven "no board here"; others must be checked again later.
+    checked: frozenset[Ats]
 
 
-def probe_company(client: PoliteClient, name: str, domain: str | None, unavailable: dict[Ats, int]) -> ProbeResult:
-    """Tries each slug guess on each ATS, stopping at the first board found.
+def probe_company(
+    client: PoliteClient, name: str, domain: str | None, sites: tuple[Ats, ...], unavailable: dict[Ats, int]
+) -> ProbeResult:
+    """Tries each slug guess on each of `sites`, stopping at the first board found.
 
     Sites in `unavailable` (site -> status it answered) are skipped. A site that refuses us
-    during the probe is added to it (shared across the run, so one blocked site doesn't burn the request budget).
-    Network errors (httpx.HTTPError) propagate, so the caller can retry the company later.
+    during the probe is added to it (shared across the run, so one blocked site doesn't burn
+    the request budget). Network errors (httpx.HTTPError) propagate, so the caller can retry.
     """
     for token in slug_guesses(name, domain):
-        for ats in ATS_ORDER:
+        for ats in sites:
             if ats in unavailable:
                 continue
             try:
@@ -230,6 +233,6 @@ def probe_company(client: PoliteClient, name: str, domain: str | None, unavailab
                 print(f"{refused}; skipping {ATS_LABEL[refused.ats]} for the rest of this run.", flush=True)
                 continue
             if board is not None:
-                return ProbeResult(board, complete=True)
-    return ProbeResult(None, complete=not unavailable)
+                return ProbeResult(board, checked=frozenset({ats}))
+    return ProbeResult(None, checked=frozenset(site for site in sites if site not in unavailable))
 

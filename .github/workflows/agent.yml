@@ -57,6 +57,9 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM: ${{ secrets.RESEND_FROM }}
           AGENT_USER_AGENT: ${{ secrets.AGENT_USER_AGENT }}
+          # Ashby answers 403 to GitHub's runners, so scheduled runs check Greenhouse and Lever
+          # only; Ashby is checked by local runs (npm run agent:local). We never route around it.
+          AGENT_JOB_BOARDS: greenhouse,lever
           # Optional repository variables (Settings > Secrets and variables > Actions > Variables).
           # Unset means the agent's defaults: 40 probes and 5 drafts per tick.
           DISCOVERY_PROBES_PER_RUN: ${{ vars.DISCOVERY_PROBES_PER_RUN }}

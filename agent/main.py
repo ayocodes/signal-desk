@@ -46,12 +46,13 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
             step(ctx)
     run.stats["http_requests"] = client.request_count
     run.config_version = ctx.config.version
+    run.job_boards = settings.job_boards
     run.finish()
     return run
 
 
 def print_summary(org: dict, run: RunRecorder, db: Database) -> None:  # type: ignore[type-arg]
-    print(f"\n== {org['name']} ({run.trigger}, rules: {run.config_version}) ==")
+    print(f"\n== {org['name']} ({run.trigger}, rules: {run.config_version}, job boards: {', '.join(run.job_boards)}) ==")
     print("stats:   " + json.dumps(dict(sorted(run.stats.items()))))
     print("step ms: " + json.dumps(run.step_ms))
     if run.errors:

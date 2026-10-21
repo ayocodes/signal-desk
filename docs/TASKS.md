@@ -411,7 +411,8 @@ Almost all of this phase is Claude's: it's the agent core.
 
 #### F2.3 Agent README
 - **Starts after:** C2.10
-- **Build:** `agent/README.md`. Cover what one tick does (step by step, from `main.py`), each module in one line, how to run `--once` and `--dry-run` locally, which env vars it reads, and the politeness rules. Read the code; don't guess.
+- **Build:** `agent/README.md`. Cover what one tick does (step by step, from `main.py`), each module in one line, how to run it locally (`npm run agent:local`, `npm run agent:local:dry`), which env vars it reads, and the politeness rules. Read the code; don't guess.
+  - Include a section **"Why Ashby is checked only on local runs"**: Ashby's public job-board API answers 403 to requests from GitHub's runners, while the same requests from a normal connection get normal answers. So the GitHub workflow sets `AGENT_JOB_BOARDS=greenhouse,lever`, local runs check all three, and each company records which sites were checked and when (`companies.ats_checked`). State plainly that the agent never tries to work around a refusal (no proxies, no other servers, no disguised requests): a site that refuses is skipped for the rest of the run and reported in `agent_runs.errors`.
 - **Touch only:** `agent/README.md`
 - **Start:**
   ```bash
@@ -954,6 +955,7 @@ Rules move into the database per org, versioned. The agent already reads them on
   - `getReplyRateBySignal()`
   - `getMailboxHealth()`
   - `getEngineStats()` (p50/p95, leads per run, tokens per lead, error rate, drafts blocked)
+  - `getBoardCoverage()`: "Ashby checked for X of Y companies, last local run <time>" (from `companies.ats_checked` and the latest `agent_runs` row with trigger `local`), plus the same for Greenhouse and Lever
   - `listAuditLog({ actorType, action })`
 
   Simulated-derived numbers carry a `simulated: true` flag.
@@ -991,7 +993,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 - **Starts after:** F6.1
 - **Build:** in `components/ops/`:
   - `MailboxHealthTable`: auth (SPF, DMARC, DKIM), a sent/cap bar, bounce %, complaint %, and a status Pill with every pause reason.
-  - `EnginePanel`: last run, p50/p95, leads per run, tokens per lead, error rate, drafts blocked.
+  - `EnginePanel`: last run, p50/p95, leads per run, tokens per lead, error rate, drafts blocked, and job-board coverage from `getBoardCoverage()` (e.g. "Ashby checked for 120 of 1,060 companies, last local run 2 hours ago", with a note that Ashby is checked only on local runs).
   - `AuditLogStream`: filters for agent/user and action type, mono timestamps.
 - **Touch only:** `components/ops/*`
 - **Start:**

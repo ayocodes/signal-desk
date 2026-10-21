@@ -76,3 +76,14 @@ def test_reads_the_github_trigger_and_custom_caps() -> None:
     settings = build(GITHUB_EVENT_NAME="schedule", DISCOVERY_PROBES_PER_RUN="120")
     assert settings.trigger == "schedule"
     assert settings.discovery_probes_per_run == 120
+
+
+def test_job_boards_default_to_all_sites_and_accept_a_subset() -> None:
+    assert build().job_boards == ("ashby", "greenhouse", "lever")
+    assert build(AGENT_JOB_BOARDS="lever, Greenhouse").job_boards == ("greenhouse", "lever")
+
+
+def test_job_boards_reject_unknown_sites() -> None:
+    assert problems(AGENT_JOB_BOARDS="greenhouse,workday") == [
+        "Invalid environment variable AGENT_JOB_BOARDS: use ashby, greenhouse, lever, comma-separated"
+    ]
