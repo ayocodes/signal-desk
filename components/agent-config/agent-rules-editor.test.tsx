@@ -101,4 +101,21 @@ describe("AgentRulesEditor", () => {
     const html = renderToStaticMarkup(<AgentRulesEditor config={{ ...sampleConfig, version: 0 }} />);
     expect(html).toContain("Agent rules, defaults");
   });
+
+  it("renders version history section when versions are provided", () => {
+    const versions = [
+      {
+        version: 1,
+        savedBy: null,
+        savedAt: "2026-10-21T10:00:00Z",
+        changeSummary: [],
+        isCurrent: true,
+      },
+    ];
+    const html = renderToStaticMarkup(
+      <AgentRulesEditor config={sampleConfig} versions={versions} />
+    );
+    expect(html).toContain("Version history");
+    expect(html).toContain("First version, from the defaults");
+  });
 });

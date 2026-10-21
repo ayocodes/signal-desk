@@ -26,10 +26,12 @@ import {
   type HiringCategoryRule,
   type RulesDoc,
 } from "@/lib/rules";
-import type { CurrentRules, ThresholdPreview } from "@/lib/types";
+import type { CurrentRules, RulesVersion, ThresholdPreview } from "@/lib/types";
+import { VersionHistory } from "./VersionHistory";
 
 export interface AgentRulesEditorProps {
   config: CurrentRules;
+  versions?: RulesVersion[];
 }
 
 export function formatRuleError(code: string): string {
@@ -157,7 +159,7 @@ function ChipListEditor({
   );
 }
 
-export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
+export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
   const router = useRouter();
   const initialRules = React.useMemo(
     () => structuredClone(config.rules),
@@ -1426,6 +1428,9 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
           </div>
         </div>
       </div>
+
+      {/* Version history */}
+      {versions && <VersionHistory versions={versions} />}
     </div>
   );
 }
