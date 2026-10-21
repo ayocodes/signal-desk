@@ -4,11 +4,16 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4.5 in progress. Claude cards C4.5.1 to C4.5.4 done; Flash cards F4.5.1, F4.5.3, F4.5.4, F4.5.6 can start (F4.5.2 after F4.5.1).
-- Next step (exact): Flash builds the cards; Claude reviews each; then C4.5.6 gate, U4.5.1 browser check, C4.5.7 close.
+- Phase: 4.5 built; automated gate (C4.5.6) passed. Waiting on the user's browser check (U4.5.1), then C4.5.7 closes the phase.
+- Next step (exact): user runs U4.5.1 (TASKS.md); then tick PLAN Phase 4.5, PROGRESS entry, commit. Next phase: 5 (sending, webhooks, deliverability).
 - Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-21: Phase 4.5 Flash cards merged; gate C4.5.6 passed
+- Done: F4.5.4 (32 more config cases, 68 total, both validators agree), F4.5.6 (LLM pacing tile), F4.5.1 (rules editor), F4.5.3 ("What our agent looks for" page), F4.5.2 (version history and revert). Review fixes: every validation error is visible (list items, a summary above the form), unique ids for new categories, sentence-case headings, threshold and freshness sentences computed from the rules, the editor resets when a new version arrives.
+- Gate: 351 web tests, 365 agent tests, 24 RLS checks; earlier real runs proved re-scoring under a new version, the preview matching the run, enrolled leads untouched, and revert.
+- Next step (exact): see Current state.
 
 ### 2026-10-21: Phase 4.5 Claude cards (C4.5.1 to C4.5.4)
 - Done: the rules document with hand-written validators in Python and TypeScript agreeing on 36 shared cases (C4.5.1); migration 008 (`agent_configs`, `save_agent_config()`, `leads.config_version`, `threshold_preview()`), version 1 seeded, 24 RLS checks (C4.5.2); the agent and web read each org's newest version, ordered switchable hiring categories, re-classification from stored job titles, enrolled leads frozen (C4.5.3); admin routes, data functions, readable change lines, admin guard (C4.5.4). 299 web tests, 365 agent tests.

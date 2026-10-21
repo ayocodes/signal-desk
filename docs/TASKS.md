@@ -799,7 +799,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p4.5): version history and revert"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.2.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.5.3 "What our agent looks for" page
@@ -872,7 +872,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 ### Phase gate
 
-- [ ] **C4.5.6** Automated checks: `npm run check` and `.venv/bin/python -m pytest agent/tests` (both validators agree on every fixture; every existing keyword test passes unchanged); RLS: a rep reads the rules but can't save a version; an agent run after a threshold change re-scores `ready`/`filtered` leads, records the new `config_version`, and leaves enrolled leads alone; turning Paid acquisition hire on scores a matching title; a revert restores the scores. Report the results to the user.
+- [x] **C4.5.6** Automated checks: `npm run check` and `.venv/bin/python -m pytest agent/tests` (both validators agree on every fixture; every existing keyword test passes unchanged); RLS: a rep reads the rules but can't save a version; an agent run after a threshold change re-scores `ready`/`filtered` leads, records the new `config_version`, and leaves enrolled leads alone; turning Paid acquisition hire on scores a matching title; a revert restores the scores. Report the results to the user.
 - [ ] **U4.5.1** In the browser, check PLAN.md Phase 4.5 "Done when":
   - As admin: change the threshold (watch the preview line) and one category's points, save, and see the change in the history with your name.
   - Run the agent (Actions → Run workflow); the queue reflects the new rules.
