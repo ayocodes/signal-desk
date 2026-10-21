@@ -20,6 +20,24 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  {
+    // The agent's rules are read only through lib/agent-config.ts (twin of agent/config.py
+    // load_config), so Phase 4.5 can move them into the database without touching callers.
+    ignores: ["lib/agent-config.ts", "scripts/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/shared/scoring.json", "**/shared/hiring_keywords.json"],
+              message: "Read the agent's rules through getAgentConfig(orgId) in lib/agent-config.ts.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
