@@ -4,11 +4,20 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4 in progress. Claude cards C4.0 to C4.5 done; Flash cards F4.1 to F4.4 are ready to start (F4.3 any time; F4.2 after F4.1).
-- Next step (exact): user sets `LLM_DAILY_BUDGET=20` and `GEMINI_MODEL=gemini-3.8-flash` in Vercel (U4.1) before pushing (the build validates env); Flash builds F4.1 to F4.4; Claude reviews each; then C4.6 gate, U4.2 browser check on Vercel, C4.7 close.
-- Blockers: none. Today's real model RPD for gemini-3.8-flash not confirmed yet; the budget stays at 20 until the user reads it in AI Studio.
+- Phase: 4 done (2026-10-21). **Cut line reached: the project can be shown in an application from here.** Next: Phase 4.5, configurable agent (rules per org in the database, versioned, admin editor).
+- Next step: Claude plans Phase 4.5's C cards (plan mode, wait for "go").
+- Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20 until the user reads it in AI Studio (Rate Limit page, "See more" or "All models").
 
 ## Log
+
+### 2026-10-21: Phase 4 closed (F4.1 to F4.4, U4.1, C4.6, U4.2, C4.7)
+- Done: Flash F4.1 (editor, live checks), F4.2 (approve with Cmd+Enter, regenerate, agent trace, prompt), F4.3 (27 more fixture cases, 60 total, both languages agree), F4.4 (Ops budget tile), each reviewed and merged. Review fixes: the editor reset per lead (it kept the previous lead's drafts), check messages wrap, no router.refresh() racing the next-lead push, the trace lists only failed angles, Regenerate off on Unconstrained.
+- Gate: 247 web tests, 317 agent tests, 20 RLS checks. A GitHub Actions run (workflow_dispatch) drafted 4 leads, 12 drafts, all passing, in 6 calls, and stopped at the agent's share (16 of 20). The user tested the full flow on localhost (approved FurtherAI); on the live Vercel URL Claude checked over HTTP: the editor renders for admin and rep, a rep gets 403 on Ops and 404 on another rep's lead, signed-out API calls get 401, a body without its signal phrase gets 422 (grounding), the Ops tile reads the budget.
+- Decisions (and why):
+  - Google's 503 ("high demand") is common on gemini-3.8-flash: one retry after 5 s inside the reserved call; a lead that still fails is skipped and picked up by a later run.
+  - A Safari reload loop on localhost after several branches merged at once was stale dev state; restarting `npm run dev` fixed it. Restart the dev server after merging several branches.
+- Not done / known issues: the RPD for gemini-3.8-flash; the Groq fallback is a stub.
+- Next step (exact): plan Phase 4.5.
 
 ### 2026-10-21: Phase 4 Claude cards (C4.1 to C4.5)
 - Done: shared outreach/prompts/fixtures (C4.1); guardrails and prompt rendering in Python and TypeScript agreeing on 33 + 4 shared cases (C4.2); migration 007 with `llm_calls`, `reserve_llm_call()`, `llm_calls_today()`, `approve_lead()` and 4 new RLS checks, 20 total (C4.3); agent drafting step (C4.4); draft and approve routes, `lib/llm.ts`, draft workspace data, client helpers, 13 route tests (C4.5). 203 web tests, 290 agent tests.

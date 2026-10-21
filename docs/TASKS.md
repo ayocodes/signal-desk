@@ -711,18 +711,18 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
 
 ### You
 
-- [ ] **U4.1** In Vercel, check that every required variable from `lib/env.ts` is set (same names as `.env.example`), including the new `LLM_DAILY_BUDGET=20`. Push `main` and wait for the deploy to go green.
+- [x] **U4.1** In Vercel, check that every required variable from `lib/env.ts` is set (same names as `.env.example`), including the new `LLM_DAILY_BUDGET=20`. Push `main` and wait for the deploy to go green.
 
 ### Phase gate
 
-- [ ] **C4.6** Automated checks:
+- [x] **C4.6** Automated checks:
   - `npm run check` and `.venv/bin/python -m pytest agent/tests`; both guardrail suites agree on every shared fixture, and both prompt renderers match.
   - Route tests: the approve route rejects the `raw` angle, a draft whose grounding check fails, and another rep's lead; a second approve gets 409.
   - `npm run test:rls`: a rep can't read `llm_calls` or call `approve_lead` / `reserve_llm_call` directly.
   - One `--once` run creates drafts for at least one ready lead and stays inside the agent's share of the budget.
 
   Report the results to the user.
-- [ ] **U4.2** On the live Vercel URL, as admin and then as rep, check PLAN.md Phase 4 "Done when":
+- [x] **U4.2** On the live Vercel URL, as admin and then as rep, check PLAN.md Phase 4 "Done when":
   - A lead from the latest run has a draft for each angle (Signal, Peer, Short).
   - Deleting the signal phrase from the body fails the grounding check and disables "Approve and enroll".
   - Opening Unconstrained generates it once; it's flagged and can't be approved.
@@ -730,7 +730,7 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
   - The rep can approve only their own leads.
   - Ops shows AI calls used today out of 20.
   - Tell Claude what passed and what didn't.
-- [ ] **C4.7** After U4.2 passes: tick PLAN.md Phase 4, add a PROGRESS.md entry, commit. **Cut line: you can apply from here.**
+- [x] **C4.7** After U4.2 passes: tick PLAN.md Phase 4, add a PROGRESS.md entry, commit. **Cut line: you can apply from here.**
 
 ---
 
