@@ -329,9 +329,9 @@ export function EmailEditor({
             return (
               <li
                 key={checkRes.check}
-                className="flex items-center justify-between p-2.5 gap-3"
+                className="flex items-start justify-between p-2.5 gap-3"
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 shrink-0">
                   {isPass && (
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-good/15 text-good shrink-0">
                       <Check className="h-2.5 w-2.5 stroke-[3]" />
@@ -352,9 +352,10 @@ export function EmailEditor({
                   </span>
                 </div>
 
+                {/* Wraps instead of truncating: the grounding message names the phrases found. */}
                 <span
                   className={cn(
-                    "text-label font-mono text-right shrink-0 max-w-[65%] truncate",
+                    "text-label font-mono text-right min-w-0 break-words",
                     isPass && "text-muted",
                     isWarn && "text-warn font-medium",
                     isFail && "text-bad font-semibold"

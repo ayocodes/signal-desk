@@ -203,7 +203,13 @@ export function LeadDetail({
 
       {/* Email editor (for ready leads) */}
       {lead.status === "ready" && workspace && (
-        <EmailEditor lead={lead} workspace={workspace} />
+        // The editor keeps its text in state; a new key (another lead, or new drafts after a
+        // refresh) starts it fresh instead of showing the previous lead's drafts.
+        <EmailEditor
+          key={`${lead.id}:${workspace.drafts.map((d) => d.id).join(",")}`}
+          lead={lead}
+          workspace={workspace}
+        />
       )}
     </div>
   );
