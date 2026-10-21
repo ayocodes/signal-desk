@@ -27,6 +27,8 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
   const [isReverting, setIsReverting] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
+  const nextVersion = (versions[0]?.version ?? 0) + 1;
+
   const handleRevert = async (version: number) => {
     setIsReverting(true);
     setErrorMessage(null);
@@ -37,9 +39,10 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
         setIsReverting(false);
         return;
       }
-      showToast(`Reverted: saved as version ${res.data.version}`, { tone: "good" });
+      showToast(`Restored version ${version} as version ${res.data.version}`, { tone: "good" });
       setConfirmingVersion(null);
       setIsReverting(false);
+      router.replace(`/settings/agent?applying=${res.data.version}&apply=${res.data.apply}`);
       router.refresh();
     } catch {
       setErrorMessage("Couldn't reach the server. Check your connection.");
@@ -55,7 +58,7 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
           <h2 className="text-section font-semibold text-text">Version history</h2>
         </div>
         <p className="text-meta text-muted">
-          Every saved configuration for your workspace. Reverting to a prior version creates a new version with those settings.
+          Every saved configuration for your workspace. Restoring a prior version creates a new version with those settings.
         </p>
       </div>
 
@@ -68,12 +71,19 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="font-semibold text-body text-text font-mono">
-                    Version {ver.version}
+                    {ver.restoredFrom
+                      ? `Version ${ver.version}, restored from version ${ver.restoredFrom}`
+                      : `Version ${ver.version}`}
                   </span>
                   {ver.isCurrent && (
                     <Pill tone="accent" dot={false}>
                       Current
                     </Pill>
+                  )}
+                  {ver.isCurrent && ver.sameRulesAs && (
+                    <span className="text-meta text-muted font-mono">
+                      Same rules as version {ver.sameRulesAs}
+                    </span>
                   )}
                   <span className="text-meta text-muted">
                     by {ver.savedBy ? ver.savedBy.name : "Seeded"}
@@ -92,7 +102,7 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
                       setErrorMessage(null);
                     }}
                   >
-                    Revert to this version
+                    Restore these rules
                   </Button>
                 )}
               </div>
@@ -117,7 +127,7 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
                 <div className="mt-2 rounded-control border border-border bg-surface-2/60 p-3 flex flex-col gap-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-meta font-medium text-text">
-                      Revert to version {ver.version}? This saves a new version.
+                      Restore version {ver.version}&apos;s rules? This saves them as version {nextVersion}.
                     </p>
                     <div className="flex items-center gap-2">
                       <Button
@@ -129,7 +139,7 @@ export function VersionHistory({ versions }: VersionHistoryProps) {
                         {isReverting ? (
                           <>
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span>Reverting...</span>
+                            <span>Restoring...</span>
                           </>
                         ) : (
                           <span>Confirm</span>

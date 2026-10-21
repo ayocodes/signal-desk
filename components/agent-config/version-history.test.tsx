@@ -9,27 +9,31 @@ vi.mock("@/lib/api", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), replace: vi.fn() }),
 }));
 
 describe("VersionHistory component", () => {
   const sampleVersions: RulesVersion[] = [
     {
-      version: 2,
+      version: 5,
       savedBy: { id: "u-1", name: "Alice Admin" },
       savedAt: "2026-10-21T12:00:00Z",
       changeSummary: [
         "Threshold 50 → 55",
         "Sales hire points 25 → 30",
       ],
-      isCurrent: true, restoredFrom: null, sameRulesAs: null,
+      isCurrent: true,
+      restoredFrom: 3,
+      sameRulesAs: 3,
     },
     {
       version: 1,
       savedBy: null,
       savedAt: "2026-10-21T10:00:00Z",
       changeSummary: [],
-      isCurrent: false, restoredFrom: null, sameRulesAs: null,
+      isCurrent: false,
+      restoredFrom: null,
+      sameRulesAs: null,
     },
   ];
 
@@ -39,7 +43,7 @@ describe("VersionHistory component", () => {
     );
 
     expect(html).toContain("Version history");
-    expect(html).toContain("Version 2");
+    expect(html).toContain("Version 5, restored from version 3");
     expect(html).toContain("Version 1");
     expect(html).toContain("by Alice Admin");
     expect(html).toContain("by Seeded");
@@ -47,14 +51,15 @@ describe("VersionHistory component", () => {
     expect(html).toContain("2026-10-21 10:00 UTC");
   });
 
-  it("marks the current version and shows no revert button on it", () => {
+  it("marks the current version, shows same rules note, and shows no restore button on it", () => {
     const html = renderToStaticMarkup(
       <VersionHistory versions={sampleVersions} />
     );
 
     expect(html).toContain("Current");
-    // Version 1 has a revert button, but version 2 (current) does not have one
-    expect(html).toContain("Revert to this version");
+    expect(html).toContain("Same rules as version 3");
+    // Version 1 has a restore button, but version 5 (current) does not have one
+    expect(html).toContain("Restore these rules");
   });
 
   it("shows first version defaults message for version 1", () => {

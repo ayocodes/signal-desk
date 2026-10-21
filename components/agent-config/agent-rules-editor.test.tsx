@@ -33,6 +33,7 @@ describe("AgentRulesEditor", () => {
     );
 
     expect(html).toContain("Agent rules, version 1");
+    expect(html).toContain("Reset to defaults");
     expect(html).toContain("Save new version");
     expect(html).toContain("Discard changes");
     expect(html).toContain("Ideal customer profile (ICP)");
@@ -44,14 +45,13 @@ describe("AgentRulesEditor", () => {
     expect(html).toContain("Email guardrails");
   });
 
-  it("shows 30-minute notice on sections but not on threshold", () => {
+  it("shows applies-to-queue notice on sections but not on threshold", () => {
     const html = renderToStaticMarkup(
       <AgentRulesEditor config={sampleConfig} />
     );
 
-    expect(html).toContain(
-      "Effect shows after the next agent run (every 30 min)"
-    );
+    expect(html).toContain("Applies to the queue after saving");
+    expect(html).not.toContain("Effect shows after the next agent run");
   });
 
   it("explains that category order matters and the first match wins", () => {
@@ -109,7 +109,9 @@ describe("AgentRulesEditor", () => {
         savedBy: null,
         savedAt: "2026-10-21T10:00:00Z",
         changeSummary: [],
-        isCurrent: true, restoredFrom: null, sameRulesAs: null,
+        isCurrent: true,
+        restoredFrom: null,
+        sameRulesAs: null,
       },
     ];
     const html = renderToStaticMarkup(
@@ -117,5 +119,29 @@ describe("AgentRulesEditor", () => {
     );
     expect(html).toContain("Version history");
     expect(html).toContain("First version, from the defaults");
+  });
+
+  it("renders applying changes status line when applying version is dispatched", () => {
+    const html = renderToStaticMarkup(
+      <AgentRulesEditor
+        config={sampleConfig}
+        initialApplyingVersion={2}
+        initialApplyStart="dispatched"
+      />
+    );
+    expect(html).toContain("Applying your changes...");
+  });
+
+  it("renders deferred/failed apply message when apply was deferred", () => {
+    const html = renderToStaticMarkup(
+      <AgentRulesEditor
+        config={sampleConfig}
+        initialApplyingVersion={2}
+        initialApplyStart="deferred"
+      />
+    );
+    expect(html).toContain(
+      "Couldn&#x27;t apply right now. Your changes are saved and will apply on the next scheduled run."
+    );
   });
 });
