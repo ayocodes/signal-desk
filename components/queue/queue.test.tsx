@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { FilteredLead, LeadCounts, LeadListItem } from "@/lib/types";
 import { LiveStatus, QueueList, SplitView } from "./index";
+import { isTypingInInput, setSelectedLeadContext, getSelectedLeadContext } from "./lead-context";
 
 // Mock next/navigation for client component render testing
 vi.mock("next/navigation", () => ({
@@ -139,7 +140,7 @@ describe("Queue components", () => {
       expect(html).toContain("All signals");
       expect(html).toContain("Hiring");
       expect(html).toContain("Launch");
-      expect(html).toContain("YC recent");
+      expect(html).toContain("Funding");
     });
 
     it("renders lead rows with score, band word, company, contact, top signal and age", () => {
@@ -164,7 +165,7 @@ describe("Queue components", () => {
       expect(html).toContain('aria-current="true"');
     });
 
-    it("renders empty state when leads list is empty", () => {
+    it("renders empty state for ready tab", () => {
       const html = renderToStaticMarkup(
         <QueueList
           leads={[]}
@@ -175,8 +176,68 @@ describe("Queue components", () => {
         />
       );
 
-      expect(html).toContain("Queue cleared");
-      expect(html).toContain("New leads appear here as the agent finds signals.");
+      expect(html).toContain("No leads ready for review");
+      expect(html).toContain("New leads appear here as the agent discovers companies");
+    });
+
+    it("renders empty state for enrolled tab", () => {
+      const html = renderToStaticMarkup(
+        <QueueList
+          leads={[]}
+          counts={mockCounts}
+          filtered={mockFiltered}
+          currentTab="enrolled"
+          currentSignals={[]}
+        />
+      );
+
+      expect(html).toContain("No enrolled leads");
+      expect(html).toContain("Leads appear here after you approve and enroll them");
+    });
+
+    it("renders empty state for bounced tab", () => {
+      const html = renderToStaticMarkup(
+        <QueueList
+          leads={[]}
+          counts={mockCounts}
+          filtered={mockFiltered}
+          currentTab="bounced"
+          currentSignals={[]}
+        />
+      );
+
+      expect(html).toContain("No bounced emails");
+      expect(html).toContain("Leads with email delivery failures appear here");
+    });
+
+    it("renders empty state for replied tab", () => {
+      const html = renderToStaticMarkup(
+        <QueueList
+          leads={[]}
+          counts={mockCounts}
+          filtered={mockFiltered}
+          currentTab="replied"
+          currentSignals={[]}
+        />
+      );
+
+      expect(html).toContain("No replies yet");
+      expect(html).toContain("When a prospect replies to an outreach email");
+    });
+
+    it("renders empty state when signal filter matches nothing", () => {
+      const html = renderToStaticMarkup(
+        <QueueList
+          leads={[]}
+          counts={mockCounts}
+          filtered={mockFiltered}
+          currentTab="ready"
+          currentSignals={["funding"]}
+        />
+      );
+
+      expect(html).toContain("No matching leads");
+      expect(html).toContain("Show all signals");
     });
 
     it("renders collapsed filtered out section with total and item reasons", () => {
@@ -195,6 +256,54 @@ describe("Queue components", () => {
       expect(html).toContain("filtered.co");
       expect(html).toContain("Score 40, under 50: no buying signals yet");
       expect(html).toContain("and 43 more with lower scores");
+    });
+  });
+
+  describe("lead-context and keyboard helpers", () => {
+    it("isTypingInInput detects form controls and contenteditable elements", () => {
+      expect(isTypingInInput(null)).toBe(false);
+      expect(isTypingInInput({} as EventTarget)).toBe(false);
+      expect(isTypingInInput({ tagName: "DIV" } as unknown as EventTarget)).toBe(false);
+      expect(isTypingInInput({ tagName: "BUTTON" } as unknown as EventTarget)).toBe(false);
+
+      expect(isTypingInInput({ tagName: "INPUT" } as unknown as EventTarget)).toBe(true);
+      expect(isTypingInInput({ tagName: "TEXTAREA" } as unknown as EventTarget)).toBe(true);
+      expect(isTypingInInput({ tagName: "SELECT" } as unknown as EventTarget)).toBe(true);
+
+      expect(
+        isTypingInInput({
+          tagName: "DIV",
+          getAttribute: (attr: string) => (attr === "role" ? "textbox" : null),
+        } as unknown as EventTarget)
+      ).toBe(true);
+
+      expect(
+        isTypingInInput({
+          tagName: "DIV",
+          isContentEditable: true,
+        } as unknown as EventTarget)
+      ).toBe(true);
+    });
+
+    it("setSelectedLeadContext and getSelectedLeadContext manage active lead for Command Palette", () => {
+      setSelectedLeadContext({
+        id: "lead-abc",
+        domain: "acme.inc",
+        companyName: "Acme",
+        nextLeadId: "lead-xyz",
+        nextLeadHref: "/queue?lead=lead-xyz",
+      });
+
+      expect(getSelectedLeadContext()).toEqual({
+        id: "lead-abc",
+        domain: "acme.inc",
+        companyName: "Acme",
+        nextLeadId: "lead-xyz",
+        nextLeadHref: "/queue?lead=lead-xyz",
+      });
+
+      setSelectedLeadContext(null);
+      expect(getSelectedLeadContext()).toBeNull();
     });
   });
 });

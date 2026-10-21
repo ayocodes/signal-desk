@@ -2,12 +2,25 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { ChevronDown } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  Filter,
+  Inbox,
+  MessageSquare,
+  Send,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/components/ui/utils";
-import { formatSignalAge, signalLabel } from "@/components/leads/SignalCard";
+import { formatSignalAge } from "@/components/leads/SignalCard";
+import {
+  isTypingInInput,
+  setSelectedLeadContext,
+} from "@/components/queue/lead-context";
 import type {
   FilteredLead,
   LeadCounts,
@@ -36,7 +49,7 @@ const TAB_CONFIG: { id: QueueTab; label: string }[] = [
 const SIGNAL_OPTIONS: { id: SignalType; label: string }[] = [
   { id: "hiring", label: "Hiring" },
   { id: "launch", label: "Launch" },
-  { id: "funding", label: "YC recent" },
+  { id: "funding", label: "Funding" },
 ];
 
 export function QueueList({
@@ -68,6 +81,69 @@ export function QueueList({
     },
     [pathname, router]
   );
+
+  // Sync selected lead to global context for CommandPalette actions
+  React.useEffect(() => {
+    const selectedIndex = leads.findIndex((l) => l.id === selectedLeadId);
+    const currentLead = selectedIndex >= 0 ? leads[selectedIndex] : null;
+    const nextLead =
+      selectedIndex >= 0 && selectedIndex < leads.length - 1
+        ? leads[selectedIndex + 1]
+        : null;
+
+    if (currentLead) {
+      const params = new URLSearchParams();
+      if (currentTab !== "ready") params.set("tab", currentTab);
+      if (currentSignals.length > 0) params.set("signals", currentSignals.join(","));
+      if (nextLead) params.set("lead", nextLead.id);
+      const qs = params.toString();
+
+      setSelectedLeadContext({
+        id: currentLead.id,
+        domain: currentLead.company.domain,
+        companyName: currentLead.company.name,
+        nextLeadId: nextLead?.id,
+        nextLeadHref: nextLead ? `${pathname}?${qs}` : undefined,
+      });
+    } else {
+      setSelectedLeadContext(null);
+    }
+
+    return () => {
+      setSelectedLeadContext(null);
+    };
+  }, [leads, selectedLeadId, currentTab, currentSignals, pathname]);
+
+  // J / K keyboard navigation (ignored while typing in an input)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTypingInInput(e.target)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === "j" || e.key === "J") {
+        if (leads.length === 0) return;
+        e.preventDefault();
+        const currentIndex = leads.findIndex((l) => l.id === selectedLeadId);
+        if (currentIndex === -1) {
+          navigate(currentTab, currentSignals, leads[0].id);
+        } else if (currentIndex < leads.length - 1) {
+          navigate(currentTab, currentSignals, leads[currentIndex + 1].id);
+        }
+      } else if (e.key === "k" || e.key === "K") {
+        if (leads.length === 0) return;
+        e.preventDefault();
+        const currentIndex = leads.findIndex((l) => l.id === selectedLeadId);
+        if (currentIndex === -1) {
+          navigate(currentTab, currentSignals, leads[0].id);
+        } else if (currentIndex > 0) {
+          navigate(currentTab, currentSignals, leads[currentIndex - 1].id);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [leads, selectedLeadId, currentTab, currentSignals, navigate]);
 
   const tabItems: TabItem[] = TAB_CONFIG.map((t) => ({
     id: t.id,
@@ -139,17 +215,43 @@ export function QueueList({
       {/* List items */}
       <div className="flex-1 overflow-y-auto">
         {leads.length === 0 ? (
-          <div className="p-8 text-center text-muted">
-            <p className="text-body font-medium text-text">
-              {currentTab === "ready"
-                ? "Queue cleared"
-                : `No ${currentTab} leads`}
-            </p>
-            <p className="text-meta text-subtle mt-1">
-              {currentTab === "ready"
-                ? "New leads appear here as the agent finds signals."
-                : `Leads in ${currentTab} status will appear here.`}
-            </p>
+          <div className="p-6">
+            {currentSignals.length > 0 ? (
+              <EmptyState
+                icon={Filter}
+                title="No matching leads"
+                body={`No leads in the ${currentTab} queue match the active signal filters.`}
+                action={
+                  <Button variant="secondary" size="sm" onClick={handleClearSignals}>
+                    Show all signals
+                  </Button>
+                }
+              />
+            ) : currentTab === "ready" ? (
+              <EmptyState
+                icon={Inbox}
+                title="No leads ready for review"
+                body="New leads appear here as the agent discovers companies and detects buying signals. Once scored and grounded, you can review and enroll them."
+              />
+            ) : currentTab === "enrolled" ? (
+              <EmptyState
+                icon={Send}
+                title="No enrolled leads"
+                body="Leads appear here after you approve and enroll them from the Ready queue. Multi-step sequences will begin sending emails according to their schedule."
+              />
+            ) : currentTab === "bounced" ? (
+              <EmptyState
+                icon={AlertCircle}
+                title="No bounced emails"
+                body="Leads with email delivery failures appear here. You can correct the recipient address and approve a retry to recover the sequence."
+              />
+            ) : (
+              <EmptyState
+                icon={MessageSquare}
+                title="No replies yet"
+                body="When a prospect replies to an outreach email, the sequence halts automatically and the lead appears here for follow-up."
+              />
+            )}
           </div>
         ) : (
           <ul className="divide-y divide-border/60" role="list">
@@ -207,7 +309,7 @@ export function QueueList({
                             active={false}
                             className="text-label py-0 px-1 font-mono uppercase tracking-wider shrink-0"
                           >
-                            {signalLabel(topSig)}
+                            {topSig.type}
                           </Tag>
                           <span className="truncate text-text">{topSig.title}</span>
                           {extraSignals > 0 && (

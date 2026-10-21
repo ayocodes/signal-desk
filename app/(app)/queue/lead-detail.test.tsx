@@ -2,6 +2,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { LeadDetail } from "@/components/queue/LeadDetail";
+import QueueLoading from "./loading";
+import QueueError from "./error";
 import type { LeadDetail as LeadDetailType } from "@/lib/types";
 
 describe("LeadDetail component", () => {
@@ -144,4 +146,24 @@ describe("LeadDetail component", () => {
     expect(html).toContain("Score 40, under 50: no buying signals yet");
     expect(html).toContain("Filtered"); // StatusPill
   });
+
+  describe("QueueLoading", () => {
+    it("renders split view skeleton with tabs, chips, and list rows", () => {
+      const html = renderToStaticMarkup(<QueueLoading />);
+      expect(html).toContain('aria-busy="true"');
+      expect(html).toContain("animate-pulse");
+    });
+  });
+
+  describe("QueueError", () => {
+    it("renders error state with description and retry button", () => {
+      const html = renderToStaticMarkup(
+        <QueueError error={new Error("Database connection failed")} reset={() => {}} />
+      );
+      expect(html).toContain("Failed to load outbound queue");
+      expect(html).toContain("Database connection failed");
+      expect(html).toContain("Try again");
+    });
+  });
 });
+
