@@ -1,0 +1,54 @@
+# Re-scores one org's leads with its newest rules, started by the web app when an admin saves,
+# restores or resets the rules (lib/rescore.ts). No scraping and no LLM calls: only scoring.
+name: rescore
+
+on:
+  workflow_dispatch:
+    inputs:
+      org_id:
+        description: "Organization id (uuid)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One re-score per org at a time; another waits instead of overlapping (GitHub keeps at most
+# one waiting, and the running one already loops to pick up newer saves).
+concurrency:
+  group: rescore-${{ inputs.org_id }}
+  cancel-in-progress: false
+
+jobs:
+  rescore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: agent/requirements.txt
+
+      - name: Install the agent
+        run: pip install -r agent/requirements.txt
+
+      - name: Re-score the org's leads
+        # The org id goes through an env variable, never pasted into the command, so input
+        # can't inject shell; the agent also refuses anything that isn't a uuid.
+        run: python -m agent.main --rescore --org "$ORG_ID"
+        env:
+          ORG_ID: ${{ inputs.org_id }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL: ${{ secrets.GROQ_MODEL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_FROM: ${{ secrets.RESEND_FROM }}
+          AGENT_USER_AGENT: ${{ secrets.AGENT_USER_AGENT }}
+          LLM_DAILY_BUDGET: ${{ vars.LLM_DAILY_BUDGET }}

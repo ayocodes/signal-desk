@@ -19,5 +19,5 @@ export async function POST(request: Request) {
   }
   const result = await saveRules(profile, body.data.rules);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-  return NextResponse.json({ version: result.data.version });
+  return NextResponse.json(result.data);
 }

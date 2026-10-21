@@ -1,7 +1,9 @@
 """One agent tick.
 
-    python -m agent.main --once        run one tick (what GitHub Actions does every 30 minutes)
-    python -m agent.main --dry-run     same reads and network calls, but no database writes
+    python -m agent.main --once                  run one tick (what GitHub Actions does every 30 minutes)
+    python -m agent.main --dry-run               same reads and network calls, but no database writes
+    python -m agent.main --rescore --org <uuid>  only re-score one org's leads with its newest rules
+                                                 (started when an admin saves rules: rescore.yml)
 
 Each organization gets its own run: an agent_runs row, its steps in order, an audit trail.
 A failing side source (HN, a job board) is recorded and the tick continues; only the core
@@ -13,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import uuid
 from collections.abc import Callable
 
 from agent import drafting, steps
@@ -57,6 +60,34 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
     return run
 
 
+# A save made while a re-score runs is picked up by looping, at most this many times.
+MAX_RESCORE_ROUNDS = 3
+
+
+def rescore_org(settings, db: Database, org: dict) -> RunRecorder:  # type: ignore[no-untyped-def,type-arg]
+    """Re-scores one org's leads with its newest rules: no fetching, no drafting. Loops while a
+    newer rules version was saved during the run, so that save applies without another run."""
+    run = RunRecorder(db, org["id"], "rescore")
+    run.start()
+    done: int | None = None
+    for round_number in range(1, MAX_RESCORE_ROUNDS + 1):
+        config = load_config(org["id"], db)
+        if config.version == done:
+            break
+        if config.problem:
+            run.errors.append({"step": "load_config", "message": config.problem})
+        ctx = steps.Context(
+            settings=settings, db=db, client=None, run=run, org_id=org["id"], now=utc_now(),  # type: ignore[arg-type]
+            config=config,
+        )
+        with run.step("score_leads" if round_number == 1 else f"score_leads_{round_number}"):
+            steps.score_leads(ctx)
+        done = config.version
+        run.config_version = config.version
+    run.finish()
+    return run
+
+
 def print_summary(org: dict, run: RunRecorder, db: Database) -> None:  # type: ignore[type-arg]
     print(f"\n== {org['name']} ({run.trigger}, rules: {run.config_version}, job boards: {', '.join(run.job_boards)}) ==")
     print("stats:   " + json.dumps(dict(sorted(run.stats.items()))))
@@ -71,7 +102,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m agent.main", description="Run one Signal Desk agent tick.")
     parser.add_argument("--once", action="store_true", help="run one tick (the default)")
     parser.add_argument("--dry-run", action="store_true", help="read and fetch, but write nothing to the database")
+    parser.add_argument("--rescore", action="store_true", help="only re-score leads with the org's newest rules")
+    parser.add_argument("--org", help="the organization id to re-score (with --rescore)")
     args = parser.parse_args(argv)
+    if args.rescore:
+        try:
+            org_id = str(uuid.UUID(args.org or ""))
+        except ValueError:
+            print("--rescore needs --org <organization uuid>", file=sys.stderr)
+            return 2
 
     try:
         settings = load_settings()
@@ -80,6 +119,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     db = Database.from_settings(settings, dry_run=args.dry_run)
+    if args.rescore:
+        orgs = db.select_all("organizations", "id,name", id=org_id)
+        if not orgs:
+            print(f"No organization {org_id}", file=sys.stderr)
+            return 2
+        run = rescore_org(settings, db, orgs[0])
+        print_summary(orgs[0], run, db)
+        return 1 if any(error["step"].startswith("score_leads") for error in run.errors) else 0
+
     organizations = db.select_all("organizations", "id,name")
     failed_core = False
     with PoliteClient(settings.user_agent) as client:

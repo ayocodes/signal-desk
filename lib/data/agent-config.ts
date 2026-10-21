@@ -32,11 +32,22 @@ type VersionRow = {
   version: number;
   rules: unknown;
   change_summary: unknown;
+  restored_from: number | null;
   created_at: string;
   saver: { id: string; full_name: string } | null;
 };
 
-const VERSION_COLUMNS = "version, rules, change_summary, created_at, saver:profiles(id, full_name)";
+const VERSION_COLUMNS = "version, rules, change_summary, restored_from, created_at, saver:profiles(id, full_name)";
+
+/** JSON with object keys sorted, so two equal rule sets compare equal as text. */
+function canonical(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
 
 function savedBy(row: VersionRow): { id: string; name: string } | null {
   return row.saver ? { id: row.saver.id, name: row.saver.full_name } : null;
@@ -78,13 +89,26 @@ export async function listConfigVersions(): Promise<RulesVersion[]> {
     .order("version", { ascending: false });
   if (error) throw new Error(`Loading rule versions failed: ${error.message}`);
   const rows = data as unknown as VersionRow[];
-  return rows.map((row, index) => ({
-    version: row.version,
-    savedBy: savedBy(row),
-    savedAt: row.created_at,
-    changeSummary: Array.isArray(row.change_summary) ? row.change_summary.filter((l): l is string => typeof l === "string") : [],
-    isCurrent: index === 0,
-  }));
+  // The earliest version with each exact rule set ("Same rules as version 3").
+  const firstWith = new Map<string, number>();
+  for (const row of [...rows].reverse()) {
+    const key = canonical(row.rules);
+    if (!firstWith.has(key)) firstWith.set(key, row.version);
+  }
+  return rows.map((row, index) => {
+    const first = firstWith.get(canonical(row.rules));
+    return {
+      version: row.version,
+      savedBy: savedBy(row),
+      savedAt: row.created_at,
+      changeSummary: Array.isArray(row.change_summary)
+        ? row.change_summary.filter((l): l is string => typeof l === "string")
+        : [],
+      isCurrent: index === 0,
+      restoredFrom: row.restored_from,
+      sameRulesAs: first !== undefined && first !== row.version ? first : null,
+    };
+  });
 }
 
 /** One saved version's rules (for a revert), or null if this org has no such version. */

@@ -22,14 +22,14 @@ describe("VersionHistory component", () => {
         "Threshold 50 → 55",
         "Sales hire points 25 → 30",
       ],
-      isCurrent: true,
+      isCurrent: true, restoredFrom: null, sameRulesAs: null,
     },
     {
       version: 1,
       savedBy: null,
       savedAt: "2026-10-21T10:00:00Z",
       changeSummary: [],
-      isCurrent: false,
+      isCurrent: false, restoredFrom: null, sameRulesAs: null,
     },
   ];
 

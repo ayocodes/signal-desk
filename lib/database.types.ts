@@ -21,6 +21,7 @@ export type Database = {
           created_by: string | null
           id: string
           org_id: string
+          restored_from: number | null
           rules: Json
           version: number
         }
@@ -30,6 +31,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           org_id: string
+          restored_from?: number | null
           rules: Json
           version: number
         }
@@ -39,6 +41,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           org_id?: string
+          restored_from?: number | null
           rules?: Json
           version?: number
         }
@@ -61,6 +64,7 @@ export type Database = {
       }
       agent_runs: {
         Row: {
+          config_version: number | null
           created_at: string
           errors: Json
           finished_at: string | null
@@ -72,6 +76,7 @@ export type Database = {
           trigger: string
         }
         Insert: {
+          config_version?: number | null
           created_at?: string
           errors?: Json
           finished_at?: string | null
@@ -83,6 +88,7 @@ export type Database = {
           trigger: string
         }
         Update: {
+          config_version?: number | null
           created_at?: string
           errors?: Json
           finished_at?: string | null
@@ -910,7 +916,7 @@ export type Database = {
         }[]
       }
       save_agent_config: {
-        Args: { p_rules: Json; p_summary: Json }
+        Args: { p_restored_from?: number; p_rules: Json; p_summary: Json }
         Returns: number
       }
       threshold_preview: {

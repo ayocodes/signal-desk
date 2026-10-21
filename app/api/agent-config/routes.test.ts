@@ -10,14 +10,22 @@ const mocks = vi.hoisted(() => ({
   getConfigVersion: vi.fn(),
   thresholdPreview: vi.fn(),
   rpc: vi.fn(),
+  startRescore: vi.fn(),
+  currentRules: null as unknown,
+  applyState: vi.fn(),
 }));
+
+vi.mock("@/lib/rescore", () => ({ startRescore: mocks.startRescore, applyState: mocks.applyState }));
 
 vi.mock("@/lib/auth", () => ({ getProfile: mocks.getProfile }));
 vi.mock("@/lib/supabase/server", () => ({ createSupabaseServerClient: async () => ({ rpc: mocks.rpc }) }));
 vi.mock("@/lib/data/agent-config", async () => {
   const { defaultConfig: defaults } = await import("@/lib/agent-config");
   return {
-    getAgentConfig: async () => ({ ...defaults(), version: 1 }),
+    getAgentConfig: async () => {
+      const config = defaults();
+      return { ...config, version: 1, rules: mocks.currentRules ?? config.rules };
+    },
     getConfigVersion: mocks.getConfigVersion,
     thresholdPreview: mocks.thresholdPreview,
   };
@@ -26,6 +34,8 @@ vi.mock("@/lib/data/agent-config", async () => {
 const { POST: save } = await import("@/app/api/agent-config/route");
 const { POST: revert } = await import("@/app/api/agent-config/revert/route");
 const { GET: preview } = await import("@/app/api/agent-config/preview/route");
+const { POST: reset } = await import("@/app/api/agent-config/reset/route");
+const { GET: applyStatusRoute } = await import("@/app/api/agent-config/apply-status/route");
 
 const ADMIN = { id: "admin-1", orgId: "org-1", fullName: "Demo Admin", email: "a@example.com", role: "admin", theme: "system" };
 const REP = { ...ADMIN, id: "rep-1", role: "rep" };
@@ -41,17 +51,21 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.getProfile.mockResolvedValue(ADMIN);
   mocks.rpc.mockResolvedValue({ data: 2, error: null });
+  mocks.startRescore.mockResolvedValue("dispatched");
+  mocks.currentRules = null;
 });
 
 describe("POST /api/agent-config", () => {
   it("saves a valid change with readable change lines", async () => {
     const response = await save(post({ rules: withThreshold(DEFAULT_RULES, 55) }));
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ version: 2 });
+    expect(await response.json()).toEqual({ version: 2, apply: "dispatched" });
     expect(mocks.rpc).toHaveBeenCalledWith("save_agent_config", {
       p_rules: withThreshold(DEFAULT_RULES, 55),
       p_summary: ["Threshold 50 → 55", "Score bands Strong 90, Good 70, Borderline 50 → Strong 90, Good 70, Borderline 55"],
+      p_restored_from: undefined,
     });
+    expect(mocks.startRescore).toHaveBeenCalledWith(ADMIN, 2);
   });
 
   it("refuses reps before touching the database", async () => {
@@ -86,7 +100,8 @@ describe("POST /api/agent-config/revert", () => {
     mocks.getConfigVersion.mockResolvedValue(withThreshold(DEFAULT_RULES, 60));
     const response = await revert(post({ version: 1 }));
     expect(response.status).toBe(200);
-    expect(mocks.rpc.mock.calls[0][1].p_summary[0]).toBe("Reverted to version 1");
+    expect(mocks.rpc.mock.calls[0][1].p_summary[0]).toBe("Restored from version 1");
+    expect(mocks.rpc.mock.calls[0][1].p_restored_from).toBe(1);
   });
 
   it("is a 404 for a version that doesn't exist", async () => {
@@ -111,5 +126,40 @@ describe("GET /api/agent-config/preview", () => {
     for (const t of ["0", "abc", "50.5", "501"]) {
       expect((await preview(new Request(`http://localhost/api/agent-config/preview?threshold=${t}`))).status).toBe(400);
     }
+  });
+});
+
+describe("POST /api/agent-config/reset", () => {
+  it("saves the defaults as a new version and starts a re-score", async () => {
+    mocks.currentRules = withThreshold(DEFAULT_RULES, 60);
+    mocks.startRescore.mockResolvedValue("joined");
+    const response = await reset();
+    expect(await response.json()).toEqual({ version: 2, apply: "joined" });
+    expect(mocks.rpc.mock.calls[0][1].p_rules).toEqual(DEFAULT_RULES);
+    expect(mocks.rpc.mock.calls[0][1].p_summary[0]).toBe("Reset to defaults");
+  });
+
+  it("does nothing when the rules are already the defaults", async () => {
+    const response = await reset();
+    expect(response.status).toBe(400);
+    expect((await response.json()).error.code).toBe("no_changes");
+  });
+
+  it("is admins only", async () => {
+    mocks.getProfile.mockResolvedValue(REP);
+    expect((await reset()).status).toBe(403);
+  });
+});
+
+describe("GET /api/agent-config/apply-status", () => {
+  it("returns the state for a version", async () => {
+    mocks.applyState.mockResolvedValue("applied");
+    const response = await applyStatusRoute(new Request("http://localhost/api/agent-config/apply-status?version=3"));
+    expect(await response.json()).toEqual({ state: "applied" });
+    expect(mocks.applyState).toHaveBeenCalledWith("org-1", 3);
+  });
+
+  it("needs a version", async () => {
+    expect((await applyStatusRoute(new Request("http://localhost/api/agent-config/apply-status"))).status).toBe(400);
   });
 });

@@ -3,7 +3,7 @@
 // can show as is (for example the daily budget being used up).
 import type { CheckResult } from "@/lib/guardrails";
 import type { RuleError, RulesDoc } from "@/lib/rules";
-import type { DraftAngle, DraftView, ThresholdPreview } from "@/lib/types";
+import type { ApplyStart, ApplyState, DraftAngle, DraftView, ThresholdPreview } from "@/lib/types";
 
 export type ApiErrorCode =
   | "unauthorized"
@@ -64,14 +64,31 @@ export function approveLead(
   return post(`/api/leads/${leadId}/approve`, input, (json) => ({ sequenceId: json.sequenceId as string }));
 }
 
+/** A saved rules version, and whether a re-score started to apply it now (see ApplyStart). */
+export type SavedRules = { version: number; apply: ApplyStart };
+const savedRules = (json: Record<string, unknown>): SavedRules => ({
+  version: json.version as number,
+  apply: json.apply as ApplyStart,
+});
+
 /** Save the edited rules as the next version (admins only). */
-export function saveAgentConfig(rules: RulesDoc): Promise<ApiResult<{ version: number }>> {
-  return post("/api/agent-config", { rules }, (json) => ({ version: json.version as number }));
+export function saveAgentConfig(rules: RulesDoc): Promise<ApiResult<SavedRules>> {
+  return post("/api/agent-config", { rules }, savedRules);
 }
 
-/** Copy an old version in as the next one (admins only). */
-export function revertAgentConfig(version: number): Promise<ApiResult<{ version: number }>> {
-  return post("/api/agent-config/revert", { version }, (json) => ({ version: json.version as number }));
+/** Restore an old version's rules as the next version (admins only). */
+export function revertAgentConfig(version: number): Promise<ApiResult<SavedRules>> {
+  return post("/api/agent-config/revert", { version }, savedRules);
+}
+
+/** Put every rule back to the defaults as the next version (admins only). */
+export function resetAgentConfig(): Promise<ApiResult<SavedRules>> {
+  return post("/api/agent-config/reset", {}, savedRules);
+}
+
+/** Whether a saved version has reached the leads yet: poll while "applying" (admins only). */
+export function applyStatus(version: number): Promise<ApiResult<ApplyState>> {
+  return request(`/api/agent-config/apply-status?version=${version}`, { method: "GET" }, (json) => json.state as ApplyState);
 }
 
 /** How many leads a threshold would put in the queue, from stored scores (admins only). */

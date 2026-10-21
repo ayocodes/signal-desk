@@ -184,7 +184,20 @@ export type RulesVersion = {
   /** Readable change lines, e.g. "Threshold 50 → 55". */
   changeSummary: string[];
   isCurrent: boolean;
+  /** Set when this version restored an older one's rules. */
+  restoredFrom: number | null;
+  /** The earliest older version with exactly the same rules, if any. */
+  sameRulesAs: number | null;
 };
+
+/** What happened to "apply this change now" when rules were saved (lib/rescore.ts):
+ *  dispatched a re-score run, joined one already queued or running, deferred by the 2-minute
+ *  cooldown, or failed (no token, or GitHub refused). Deferred and failed mean the change
+ *  applies on the next scheduled run instead. */
+export type ApplyStart = "dispatched" | "joined" | "deferred" | "failed";
+
+/** Whether a saved rules version has reached the leads yet. */
+export type ApplyState = "applying" | "applied" | "failed";
 
 /** "N leads in the queue at this threshold, was M" (from stored scores). */
 export type ThresholdPreview = { threshold: number; wouldBeReady: number; readyNow: number };

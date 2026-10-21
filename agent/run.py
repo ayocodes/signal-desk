@@ -84,6 +84,8 @@ class RunRecorder:
                     "stats": self.stats,
                     "step_ms": self.step_ms,
                     "errors": self.errors,
+                    # The rules version this run scored with (the editor's "Applied" check).
+                    "config_version": self.config_version,
                 },
                 id=self.run_id,
             )

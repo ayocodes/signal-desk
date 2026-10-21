@@ -17,5 +17,5 @@ export async function POST(request: Request) {
   if (!body.success) return NextResponse.json({ error: { code: "invalid", message: "Send a version number." } }, { status: 400 });
   const result = await revertRules(profile, body.data.version);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-  return NextResponse.json({ version: result.data.version });
+  return NextResponse.json(result.data);
 }

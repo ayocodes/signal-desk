@@ -109,7 +109,7 @@ describe("AgentRulesEditor", () => {
         savedBy: null,
         savedAt: "2026-10-21T10:00:00Z",
         changeSummary: [],
-        isCurrent: true,
+        isCurrent: true, restoredFrom: null, sameRulesAs: null,
       },
     ];
     const html = renderToStaticMarkup(
