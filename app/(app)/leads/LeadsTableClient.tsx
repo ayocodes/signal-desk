@@ -61,17 +61,22 @@ export function LeadsTableClient({ data, sort, dir }: LeadsTableClientProps) {
     };
   }, [selectedLead, selectedIndex, data.rows]);
 
-  // J / K keyboard navigation in Leads table
+  // The table scrolls inside its own box: keep the selected row visible as it moves.
+  React.useEffect(() => {
+    document.querySelector(`[data-row-index="${selectedIndex}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [selectedIndex]);
+
+  // J / K or arrow keys move the selection in the Leads table
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isTypingInInput(e.target)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-      if (e.key === "j" || e.key === "J") {
+      if (e.key === "j" || e.key === "J" || e.key === "ArrowDown") {
         if (data.rows.length === 0) return;
         e.preventDefault();
         setSelectedIndex((prev) => Math.min(prev + 1, data.rows.length - 1));
-      } else if (e.key === "k" || e.key === "K") {
+      } else if (e.key === "k" || e.key === "K" || e.key === "ArrowUp") {
         if (data.rows.length === 0) return;
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
@@ -138,6 +143,7 @@ export function LeadsTableClient({ data, sort, dir }: LeadsTableClientProps) {
               key={lead.id}
               href={leadQueueHref}
               selected={isSelected}
+              data-row-index={idx}
               onClick={() => setSelectedIndex(idx)}
             >
               {/* Company */}

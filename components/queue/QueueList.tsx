@@ -114,13 +114,13 @@ export function QueueList({
     };
   }, [leads, selectedLeadId, currentTab, currentSignals, pathname]);
 
-  // J / K keyboard navigation (ignored while typing in an input)
+  // J / K or arrow keys move the selection (ignored while typing in an input)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isTypingInInput(e.target)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-      if (e.key === "j" || e.key === "J") {
+      if (e.key === "j" || e.key === "J" || e.key === "ArrowDown") {
         if (leads.length === 0) return;
         e.preventDefault();
         const currentIndex = leads.findIndex((l) => l.id === selectedLeadId);
@@ -129,7 +129,7 @@ export function QueueList({
         } else if (currentIndex < leads.length - 1) {
           navigate(currentTab, currentSignals, leads[currentIndex + 1].id);
         }
-      } else if (e.key === "k" || e.key === "K") {
+      } else if (e.key === "k" || e.key === "K" || e.key === "ArrowUp") {
         if (leads.length === 0) return;
         e.preventDefault();
         const currentIndex = leads.findIndex((l) => l.id === selectedLeadId);
@@ -144,6 +144,14 @@ export function QueueList({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [leads, selectedLeadId, currentTab, currentSignals, navigate]);
+
+  // The list scrolls inside its own column: keep the selected row visible as it moves.
+  React.useEffect(() => {
+    if (!selectedLeadId) return;
+    document
+      .querySelector(`[data-lead-id="${CSS.escape(selectedLeadId)}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedLeadId]);
 
   const tabItems: TabItem[] = TAB_CONFIG.map((t) => ({
     id: t.id,
@@ -264,6 +272,7 @@ export function QueueList({
                 <li key={lead.id}>
                   <button
                     type="button"
+                    data-lead-id={lead.id}
                     onClick={() => handleSelectLead(lead.id)}
                     aria-current={isSelected ? "true" : undefined}
                     className={cn(

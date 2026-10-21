@@ -10,7 +10,9 @@ export function SplitView({ list, detail, className, ...props }: SplitViewProps)
   return (
     <div
       className={cn(
-        "flex flex-col lg:flex-row h-full min-h-[calc(100vh-theme(spacing.16))] w-full border border-border rounded-panel bg-surface overflow-hidden",
+        // On wide screens the split view fills the window below the top bar; the list and the
+        // detail each scroll on their own, so the detail stays in view (and centered when empty).
+        "flex flex-col lg:flex-row w-full lg:h-[calc(100dvh-9rem)] border border-border rounded-panel bg-surface overflow-hidden",
         className
       )}
       {...props}
