@@ -4,7 +4,9 @@ import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/components/ui/utils";
 import type { SignalView } from "@/lib/types";
 
-export function formatSignalAge(occurredAt: string, now: Date | number = Date.now()): string {
+// `now` comes from the page (read once per request, after connection()), so the server and the
+// browser show the same age and nothing reads the clock while Next prerenders.
+export function formatSignalAge(occurredAt: string, now: Date | number): string {
   const occurred = new Date(occurredAt).getTime();
   const current = typeof now === "number" ? now : now.getTime();
   const diffHours = Math.max(0, Math.floor((current - occurred) / (1000 * 60 * 60)));
@@ -29,7 +31,7 @@ export interface SignalCardProps extends React.HTMLAttributes<HTMLDivElement> {
   signal: SignalView;
   number?: number;
   index?: number;
-  now?: Date | number;
+  now: Date | number;
 }
 
 export function SignalCard({

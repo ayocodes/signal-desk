@@ -5,6 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 import { QueueList } from "@/components/queue/QueueList";
 import type { LeadListItem } from "@/lib/types";
 
+// A fixed request time, so relative ages ("6h ago") are deterministic.
+const TEST_NOW = Date.parse("2026-10-21T12:00:00Z");
+
+
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/queue" }));
 
 const lead: LeadListItem = {
@@ -34,7 +38,7 @@ const lead: LeadListItem = {
 
 describe("signal words match the score math everywhere", () => {
   const html = renderToStaticMarkup(
-    <QueueList
+    <QueueList now={TEST_NOW}
       leads={[lead]}
       counts={{ ready: 1, enrolled: 0, bounced: 0, replied: 0, filtered: 0 }}
       filtered={{ items: [], total: 0 }}

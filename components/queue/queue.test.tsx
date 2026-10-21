@@ -5,6 +5,10 @@ import type { FilteredLead, LeadCounts, LeadListItem } from "@/lib/types";
 import { LiveStatus, QueueList, SplitView } from "./index";
 import { isTypingInInput, setSelectedLeadContext, getSelectedLeadContext } from "./lead-context";
 
+// A fixed request time, so relative ages ("6h ago") are deterministic.
+const TEST_NOW = Date.parse("2026-10-21T12:00:00Z");
+
+
 // Mock next/navigation for client component render testing
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -96,18 +100,18 @@ describe("Queue components", () => {
           excerpt: "Build outbound",
           sourceName: "Ashby",
           sourceUrl: "https://ashby.com",
-          occurredAt: new Date(Date.now() - 3600000 * 4).toISOString(), // 4h ago
+          occurredAt: new Date(TEST_NOW - 3600000 * 4).toISOString(), // 4h ago
         },
         signalTypes: ["hiring", "launch"],
-        newestSignalAt: new Date().toISOString(),
+        newestSignalAt: new Date(TEST_NOW).toISOString(),
         assignee: { id: "p-1", name: "Demo Rep" },
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(TEST_NOW).toISOString(),
       },
     ];
 
     it("renders tabs with counts and labels", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={mockLeads}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -128,7 +132,7 @@ describe("Queue components", () => {
 
     it("renders signal filter chips with active states", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={mockLeads}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -145,7 +149,7 @@ describe("Queue components", () => {
 
     it("renders lead rows with score, band word, company, contact, top signal and age", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={mockLeads}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -167,7 +171,7 @@ describe("Queue components", () => {
 
     it("renders empty state for ready tab", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={[]}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -182,7 +186,7 @@ describe("Queue components", () => {
 
     it("renders empty state for enrolled tab", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={[]}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -197,7 +201,7 @@ describe("Queue components", () => {
 
     it("renders empty state for bounced tab", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={[]}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -212,7 +216,7 @@ describe("Queue components", () => {
 
     it("renders empty state for replied tab", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={[]}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -227,7 +231,7 @@ describe("Queue components", () => {
 
     it("renders empty state when signal filter matches nothing", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={[]}
           counts={mockCounts}
           filtered={mockFiltered}
@@ -242,7 +246,7 @@ describe("Queue components", () => {
 
     it("renders collapsed filtered out section with total and item reasons", () => {
       const html = renderToStaticMarkup(
-        <QueueList
+        <QueueList now={TEST_NOW}
           leads={mockLeads}
           counts={mockCounts}
           filtered={mockFiltered}

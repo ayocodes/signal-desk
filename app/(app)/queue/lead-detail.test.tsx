@@ -6,6 +6,10 @@ import QueueLoading from "./loading";
 import QueueError from "./error";
 import type { LeadDetail as LeadDetailType } from "@/lib/types";
 
+// A fixed request time, so relative ages ("6h ago") are deterministic.
+const TEST_NOW = Date.parse("2026-10-21T12:00:00Z");
+
+
 describe("LeadDetail component", () => {
   const sampleLead: LeadDetailType = {
     id: "lead-123",
@@ -51,7 +55,7 @@ describe("LeadDetail component", () => {
       excerpt: "Build our outbound motion from scratch",
       sourceName: "Ashby job board",
       sourceUrl: "https://jobs.ashbyhq.com/ledgerline/1",
-      occurredAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+      occurredAt: new Date(TEST_NOW - 3600000 * 6).toISOString(),
     },
     signals: [
       {
@@ -62,7 +66,7 @@ describe("LeadDetail component", () => {
         excerpt: "Build our outbound motion from scratch",
         sourceName: "Ashby job board",
         sourceUrl: "https://jobs.ashbyhq.com/ledgerline/1",
-        occurredAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+        occurredAt: new Date(TEST_NOW - 3600000 * 6).toISOString(),
       },
       {
         id: "sig-2",
@@ -72,18 +76,18 @@ describe("LeadDetail component", () => {
         excerpt: "AP automation for finance teams",
         sourceName: "Hacker News",
         sourceUrl: "https://news.ycombinator.com/item?id=123",
-        occurredAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+        occurredAt: new Date(TEST_NOW - 3600000 * 48).toISOString(),
       },
     ],
     signalTypes: ["hiring", "launch"],
-    newestSignalAt: new Date().toISOString(),
+    newestSignalAt: new Date(TEST_NOW).toISOString(),
     assignee: { id: "rep-1", name: "Demo Rep" },
-    updatedAt: new Date().toISOString(),
+    updatedAt: new Date(TEST_NOW).toISOString(),
     filteredReason: null,
   };
 
   it("renders header with company name, contact, domain in mono, and StatusPill", () => {
-    const html = renderToStaticMarkup(<LeadDetail lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
 
     expect(html).toContain("Ledgerline");
     expect(html).toContain("ledgerline.co");
@@ -96,7 +100,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders ScoreMath breakdown row with parts and total", () => {
-    const html = renderToStaticMarkup(<LeadDetail lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
 
     expect(html).toContain("ICP match");
     expect(html).toContain("40");
@@ -107,7 +111,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders BuyerCheck row and contact with mono test inbox address", () => {
-    const html = renderToStaticMarkup(<LeadDetail lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
 
     expect(html).toContain("Buyer verified");
     expect(html).toContain("Founder at a 12-person team usually runs outbound");
@@ -115,7 +119,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders ICP reasons", () => {
-    const html = renderToStaticMarkup(<LeadDetail lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
 
     expect(html).toContain("ICP criteria");
     expect(html).toContain("B2B industry (Sales)");
@@ -124,7 +128,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders numbered SignalCards", () => {
-    const html = renderToStaticMarkup(<LeadDetail lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
 
     expect(html).toContain("#1");
     expect(html).toContain("Founding Account Executive");
@@ -140,7 +144,7 @@ describe("LeadDetail component", () => {
       filteredReason: "Score 40, under 50: no buying signals yet",
     };
 
-    const html = renderToStaticMarkup(<LeadDetail lead={filteredLead} />);
+    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={filteredLead} />);
 
     expect(html).toContain("Filtered reason");
     expect(html).toContain("Score 40, under 50: no buying signals yet");

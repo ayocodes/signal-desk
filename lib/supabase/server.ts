@@ -3,10 +3,15 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import type { Database } from "@/lib/database.types";
 import { env } from "@/lib/env";
 
 export async function createSupabaseServerClient() {
+  // Everything read through this client belongs to one signed-in user, so it is request-time
+  // work, never prerendered. connection() says so to Next before supabase-js checks the
+  // session's expiry with Date.now(), which Next otherwise reports as a prerender error.
+  await connection();
   const cookieStore = await cookies();
 
   return createServerClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {

@@ -1,4 +1,5 @@
 import { listQueue, leadCounts, listFiltered, getLead } from "@/lib/data/leads";
+import { requestTime } from "@/lib/request-time";
 import { QueueList, SplitView, LiveStatus } from "@/components/queue";
 import { LeadDetail } from "@/components/queue/LeadDetail";
 import type { QueueTab, SignalType } from "@/lib/types";
@@ -14,6 +15,8 @@ interface QueuePageProps {
 
 export default async function QueuePage({ searchParams }: QueuePageProps) {
   const params = await searchParams;
+  // One clock reading for the whole page, taken at request time (see lib/request-time.ts).
+  const now = await requestTime();
 
   const currentTab: QueueTab =
     typeof params.tab === "string" && (QUEUE_TABS as readonly string[]).includes(params.tab)
@@ -53,11 +56,12 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
             currentTab={currentTab}
             currentSignals={currentSignals}
             selectedLeadId={selectedLeadId}
+            now={now}
           />
         }
         detail={
           selectedLead ? (
-            <LeadDetail lead={selectedLead} />
+            <LeadDetail lead={selectedLead} now={now} />
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted min-h-[300px]">
               <p className="text-body font-medium text-text">

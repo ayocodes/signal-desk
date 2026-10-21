@@ -12,6 +12,10 @@ import {
   StatusPill,
 } from "./index";
 
+// A fixed request time, so relative ages ("6h ago") are deterministic.
+const TEST_NOW = Date.parse("2026-10-21T12:00:00Z");
+
+
 describe("Lead display components", () => {
   describe("ScoreMath", () => {
     it("renders ScorePart[] formatted with plus signs, equals, total in ScoreBadge and band word", () => {
@@ -275,9 +279,9 @@ describe("SignalCard labels and quoting (review of F3.1)", () => {
   });
 
   it("quotes hiring excerpts only, since launch and YC excerpts are our own summaries", () => {
-    expect(renderToStaticMarkup(<SignalCard signal={base} />)).toContain("“Own the sales cycle.”");
+    expect(renderToStaticMarkup(<SignalCard  now={TEST_NOW}signal={base} />)).toContain("“Own the sales cycle.”");
     const launch = renderToStaticMarkup(
-      <SignalCard signal={{ ...base, type: "launch", category: null, excerpt: "Show HN post with 42 points." }} />,
+      <SignalCard  now={TEST_NOW}signal={{ ...base, type: "launch", category: null, excerpt: "Show HN post with 42 points." }} />,
     );
     expect(launch).not.toContain("“");
     expect(launch).toContain("Show HN post with 42 points.");

@@ -1,5 +1,6 @@
 import { Users } from "lucide-react";
 import { listLeadsPage } from "@/lib/data/leads";
+import { requestTime } from "@/lib/request-time";
 import { EmptyState, TablePager } from "@/components/ui";
 import { LeadsTableClient } from "./LeadsTableClient";
 import type { LeadsSort, SortDir } from "@/lib/types";
@@ -16,6 +17,8 @@ const VALID_SORTS: readonly LeadsSort[] = ["score", "company", "status", "update
 
 export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   const params = await searchParams;
+  // One clock reading for the whole page, taken at request time (see lib/request-time.ts).
+  const now = await requestTime();
 
   const sort: LeadsSort =
     typeof params.sort === "string" && (VALID_SORTS as readonly string[]).includes(params.sort)
@@ -56,7 +59,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
         />
       </div>
 
-      <LeadsTableClient data={data} sort={sort} dir={dir} />
+      <LeadsTableClient data={data} sort={sort} dir={dir} now={now} />
 
       <div className="flex items-center justify-between px-2 py-1 text-meta text-muted">
         <span>

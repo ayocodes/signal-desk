@@ -11,9 +11,11 @@ import type { LeadDetail as LeadDetailType } from "@/lib/types";
 
 export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   lead: LeadDetailType;
+  /** The request time from the page, for relative ages. */
+  now: number;
 }
 
-export function LeadDetail({ lead, className, ...props }: LeadDetailProps) {
+export function LeadDetail({ lead, now, className, ...props }: LeadDetailProps) {
   const company = lead.company;
   const contact = lead.contact;
   const isPlaceholderContact = contact?.isPlaceholder ?? false;
@@ -183,6 +185,7 @@ export function LeadDetail({ lead, className, ...props }: LeadDetailProps) {
                 key={signal.id}
                 signal={signal}
                 number={idx + 1}
+                now={now}
               />
             ))}
           </div>

@@ -36,6 +36,8 @@ export interface QueueListProps {
   currentTab: QueueTab;
   currentSignals: SignalType[];
   selectedLeadId?: string;
+  /** The request time from the page, for relative ages. */
+  now: number;
   className?: string;
 }
 
@@ -59,6 +61,7 @@ export function QueueList({
   currentTab,
   currentSignals,
   selectedLeadId,
+  now,
   className,
 }: QueueListProps) {
   const router = useRouter();
@@ -299,7 +302,7 @@ export function QueueList({
                         </span>
                         {topSig && (
                           <span className="text-meta font-mono text-muted shrink-0">
-                            {formatSignalAge(topSig.occurredAt)}
+                            {formatSignalAge(topSig.occurredAt, now)}
                           </span>
                         )}
                       </div>

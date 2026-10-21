@@ -24,11 +24,13 @@ import type { LeadsPage, LeadsSort, SortDir } from "@/lib/types";
 
 export interface LeadsTableClientProps {
   data: LeadsPage;
+  /** The request time from the page, for relative ages. */
+  now: number;
   sort: LeadsSort;
   dir: SortDir;
 }
 
-export function LeadsTableClient({ data, sort, dir }: LeadsTableClientProps) {
+export function LeadsTableClient({ data, sort, dir, now }: LeadsTableClientProps) {
   const router = useRouter();
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
 
@@ -202,7 +204,7 @@ export function LeadsTableClient({ data, sort, dir }: LeadsTableClientProps) {
                       </span>
                     )}
                     <span className="text-muted font-mono text-label shrink-0">
-                      · {formatSignalAge(topSig.occurredAt)}
+                      · {formatSignalAge(topSig.occurredAt, now)}
                     </span>
                   </div>
                 ) : (
@@ -226,7 +228,7 @@ export function LeadsTableClient({ data, sort, dir }: LeadsTableClientProps) {
 
               {/* Updated */}
               <TableCell className="text-muted font-mono text-label tabular-nums">
-                {formatSignalAge(lead.updatedAt)}
+                {formatSignalAge(lead.updatedAt, now)}
               </TableCell>
             </TableRow>
           );
