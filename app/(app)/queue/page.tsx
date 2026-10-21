@@ -1,5 +1,6 @@
-import { listQueue, leadCounts, listFiltered } from "@/lib/data/leads";
+import { listQueue, leadCounts, listFiltered, getLead } from "@/lib/data/leads";
 import { QueueList, SplitView, LiveStatus } from "@/components/queue";
+import { LeadDetail } from "@/components/queue/LeadDetail";
 import type { QueueTab, SignalType } from "@/lib/types";
 import { QUEUE_TABS } from "@/lib/types";
 
@@ -29,10 +30,11 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
 
   const selectedLeadId = typeof params.lead === "string" ? params.lead : undefined;
 
-  const [leads, counts, filtered] = await Promise.all([
+  const [leads, counts, filtered, selectedLead] = await Promise.all([
     listQueue({ tab: currentTab, signalTypes: currentSignals }),
     leadCounts(),
     listFiltered({ limit: 50 }),
+    selectedLeadId ? getLead(selectedLeadId) : Promise.resolve(null),
   ]);
 
   return (
@@ -43,37 +45,33 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
       </div>
 
       <SplitView
-          list={
-            <QueueList
-              leads={leads}
-              counts={counts}
-              filtered={filtered}
-              currentTab={currentTab}
-              currentSignals={currentSignals}
-              selectedLeadId={selectedLeadId}
-            />
-          }
-          detail={
-            selectedLeadId ? (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted">
-                <div className="rounded-panel border border-border bg-surface p-6 max-w-sm">
-                  <p className="text-body font-medium text-text">Lead Selected</p>
-                  <p className="text-meta text-subtle mt-1 font-mono truncate">{selectedLeadId}</p>
-                  <p className="text-meta text-muted mt-3">
-                    Full lead detail arrives in card F3.3.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted">
-                <p className="text-body font-medium text-text">Select a lead</p>
-                <p className="text-meta text-subtle mt-1">
-                  Choose a lead from the queue list to inspect buying signals and score breakdown.
-                </p>
-              </div>
-            )
-          }
-        />
+        list={
+          <QueueList
+            leads={leads}
+            counts={counts}
+            filtered={filtered}
+            currentTab={currentTab}
+            currentSignals={currentSignals}
+            selectedLeadId={selectedLeadId}
+          />
+        }
+        detail={
+          selectedLead ? (
+            <LeadDetail lead={selectedLead} />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted min-h-[300px]">
+              <p className="text-body font-medium text-text">
+                {selectedLeadId ? "Lead not found" : "Select a lead"}
+              </p>
+              <p className="text-meta text-subtle mt-1">
+                {selectedLeadId
+                  ? "This lead may have been deleted or is not visible to your account."
+                  : "Choose a lead from the queue list to inspect buying signals and score breakdown."}
+              </p>
+            </div>
+          )
+        }
+      />
     </div>
   );
 }
