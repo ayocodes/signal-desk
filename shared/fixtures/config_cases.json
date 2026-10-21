@@ -1,0 +1,600 @@
+{
+  "_about": "Rules-document cases. agent/tests/test_rules.py and lib/rules.test.ts apply each case's ops to shared/defaults/rules.json and must return exactly these errors (sorted by path, then code). Ops: set (dotted path, list indexes allowed), delete, replace (the whole document).",
+  "cases": [
+    {
+      "name": "the defaults are valid",
+      "ops": [],
+      "errors": []
+    },
+    {
+      "name": "raising the threshold with the lowest band is valid",
+      "ops": [
+        {
+          "op": "set",
+          "path": "threshold",
+          "value": 55
+        },
+        {
+          "op": "set",
+          "path": "scoreBands.2.min",
+          "value": 55
+        }
+      ],
+      "errors": []
+    },
+    {
+      "name": "turning Paid acquisition hire on is valid",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.2.enabled",
+          "value": true
+        }
+      ],
+      "errors": []
+    },
+    {
+      "name": "threshold of 0",
+      "ops": [
+        {
+          "op": "set",
+          "path": "threshold",
+          "value": 0
+        }
+      ],
+      "errors": [
+        {
+          "path": "threshold",
+          "code": "out_of_range"
+        }
+      ]
+    },
+    {
+      "name": "threshold above the highest possible score",
+      "ops": [
+        {
+          "op": "set",
+          "path": "threshold",
+          "value": 200
+        },
+        {
+          "op": "set",
+          "path": "scoreBands.2.min",
+          "value": 200
+        }
+      ],
+      "errors": [
+        {
+          "path": "scoreBands",
+          "code": "not_descending"
+        },
+        {
+          "path": "threshold",
+          "code": "above_max_score"
+        }
+      ]
+    },
+    {
+      "name": "lowest band doesn't equal the threshold",
+      "ops": [
+        {
+          "op": "set",
+          "path": "scoreBands.2.min",
+          "value": 45
+        }
+      ],
+      "errors": [
+        {
+          "path": "scoreBands",
+          "code": "lowest_band_not_threshold"
+        }
+      ]
+    },
+    {
+      "name": "bands out of order",
+      "ops": [
+        {
+          "op": "set",
+          "path": "scoreBands.0.min",
+          "value": 70
+        },
+        {
+          "op": "set",
+          "path": "scoreBands.1.min",
+          "value": 90
+        }
+      ],
+      "errors": [
+        {
+          "path": "scoreBands",
+          "code": "not_descending"
+        }
+      ]
+    },
+    {
+      "name": "duplicate band labels",
+      "ops": [
+        {
+          "op": "set",
+          "path": "scoreBands.1.label",
+          "value": "strong"
+        }
+      ],
+      "errors": [
+        {
+          "path": "scoreBands",
+          "code": "duplicate"
+        }
+      ]
+    },
+    {
+      "name": "team size min above max",
+      "ops": [
+        {
+          "op": "set",
+          "path": "icp.teamSizeMin",
+          "value": 80
+        }
+      ],
+      "errors": [
+        {
+          "path": "icp.teamSizeMin",
+          "code": "min_above_max"
+        }
+      ]
+    },
+    {
+      "name": "negative team size",
+      "ops": [
+        {
+          "op": "set",
+          "path": "partial.teamSizeMin",
+          "value": -1
+        }
+      ],
+      "errors": [
+        {
+          "path": "partial.teamSizeMin",
+          "code": "out_of_range"
+        }
+      ]
+    },
+    {
+      "name": "freshness steps out of order",
+      "ops": [
+        {
+          "op": "set",
+          "path": "freshness.0.maxHours",
+          "value": 100
+        }
+      ],
+      "errors": [
+        {
+          "path": "freshness",
+          "code": "not_ascending"
+        }
+      ]
+    },
+    {
+      "name": "a proof point with a number",
+      "ops": [
+        {
+          "op": "set",
+          "path": "outreach.proofPoints.0",
+          "value": "Used by 40 teams"
+        }
+      ],
+      "errors": [
+        {
+          "path": "outreach.proofPoints.0",
+          "code": "has_digit"
+        }
+      ]
+    },
+    {
+      "name": "max body words of 39",
+      "ops": [
+        {
+          "op": "set",
+          "path": "guardrails.maxBodyWords",
+          "value": 39
+        }
+      ],
+      "errors": [
+        {
+          "path": "guardrails.maxBodyWords",
+          "code": "out_of_range"
+        }
+      ]
+    },
+    {
+      "name": "max body words of 151",
+      "ops": [
+        {
+          "op": "set",
+          "path": "guardrails.maxBodyWords",
+          "value": 151
+        }
+      ],
+      "errors": [
+        {
+          "path": "guardrails.maxBodyWords",
+          "code": "out_of_range"
+        }
+      ]
+    },
+    {
+      "name": "a duplicate keyword, any case",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.1.keywords.1",
+          "value": "Account Executive"
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories.1.keywords.1",
+          "code": "duplicate"
+        }
+      ]
+    },
+    {
+      "name": "a category with no keywords",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.0.keywords",
+          "value": []
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories.0.keywords",
+          "code": "too_few"
+        }
+      ]
+    },
+    {
+      "name": "duplicate category ids",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.2.id",
+          "value": "sales"
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories.2.id",
+          "code": "duplicate"
+        }
+      ]
+    },
+    {
+      "name": "duplicate category names",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.2.name",
+          "value": "sales HIRE"
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories.2.name",
+          "code": "duplicate"
+        }
+      ]
+    },
+    {
+      "name": "a category id with spaces",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.0.id",
+          "value": "Marketing Hire"
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories.0.id",
+          "code": "bad_id"
+        }
+      ]
+    },
+    {
+      "name": "no categories at all",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories",
+          "value": []
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories",
+          "code": "too_few"
+        }
+      ]
+    },
+    {
+      "name": "an unknown top-level field",
+      "ops": [
+        {
+          "op": "set",
+          "path": "color",
+          "value": "blue"
+        }
+      ],
+      "errors": [
+        {
+          "path": "color",
+          "code": "unknown_field"
+        }
+      ]
+    },
+    {
+      "name": "an unknown field in a category",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.0.color",
+          "value": "blue"
+        }
+      ],
+      "errors": [
+        {
+          "path": "hiring.categories.0.color",
+          "code": "unknown_field"
+        }
+      ]
+    },
+    {
+      "name": "a missing field",
+      "ops": [
+        {
+          "op": "delete",
+          "path": "threshold"
+        }
+      ],
+      "errors": [
+        {
+          "path": "threshold",
+          "code": "missing"
+        }
+      ]
+    },
+    {
+      "name": "a number sent as text",
+      "ops": [
+        {
+          "op": "set",
+          "path": "threshold",
+          "value": "50"
+        }
+      ],
+      "errors": [
+        {
+          "path": "threshold",
+          "code": "wrong_type"
+        }
+      ]
+    },
+    {
+      "name": "true is not a number of points",
+      "ops": [
+        {
+          "op": "set",
+          "path": "signals.launch.points",
+          "value": true
+        }
+      ],
+      "errors": [
+        {
+          "path": "signals.launch.points",
+          "code": "wrong_type"
+        }
+      ]
+    },
+    {
+      "name": "every signal source off",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.0.enabled",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "hiring.categories.1.enabled",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "signals.launch.enabled",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "signals.ycRecent.enabled",
+          "value": false
+        }
+      ],
+      "errors": [
+        {
+          "path": "signals",
+          "code": "no_strong_signal_source"
+        }
+      ]
+    },
+    {
+      "name": "only the weak YC recent signal on",
+      "ops": [
+        {
+          "op": "set",
+          "path": "hiring.categories.0.enabled",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "hiring.categories.1.enabled",
+          "value": false
+        },
+        {
+          "op": "set",
+          "path": "signals.launch.enabled",
+          "value": false
+        }
+      ],
+      "errors": [
+        {
+          "path": "signals",
+          "code": "no_strong_signal_source"
+        }
+      ]
+    },
+    {
+      "name": "an unknown weak signal type",
+      "ops": [
+        {
+          "op": "set",
+          "path": "weakSignalTypes",
+          "value": [
+            "funding",
+            "email"
+          ]
+        }
+      ],
+      "errors": [
+        {
+          "path": "weakSignalTypes.1",
+          "code": "not_allowed"
+        }
+      ]
+    },
+    {
+      "name": "an unknown YC status",
+      "ops": [
+        {
+          "op": "set",
+          "path": "icp.status",
+          "value": "Dead"
+        }
+      ],
+      "errors": [
+        {
+          "path": "icp.status",
+          "code": "not_allowed"
+        }
+      ]
+    },
+    {
+      "name": "a blank sender name",
+      "ops": [
+        {
+          "op": "set",
+          "path": "outreach.senderName",
+          "value": "   "
+        }
+      ],
+      "errors": [
+        {
+          "path": "outreach.senderName",
+          "code": "empty"
+        }
+      ]
+    },
+    {
+      "name": "an offer that is too short",
+      "ops": [
+        {
+          "op": "set",
+          "path": "outreach.offer",
+          "value": "Hi"
+        }
+      ],
+      "errors": [
+        {
+          "path": "outreach.offer",
+          "code": "out_of_range"
+        }
+      ]
+    },
+    {
+      "name": "a duplicate extra banned phrase",
+      "ops": [
+        {
+          "op": "set",
+          "path": "guardrails.extraBannedPhrases",
+          "value": [
+            "quick win",
+            "Quick  Win"
+          ]
+        }
+      ],
+      "errors": [
+        {
+          "path": "guardrails.extraBannedPhrases.1",
+          "code": "duplicate"
+        }
+      ]
+    },
+    {
+      "name": "a fractional number",
+      "ops": [
+        {
+          "op": "set",
+          "path": "threshold",
+          "value": 50.5
+        }
+      ],
+      "errors": [
+        {
+          "path": "threshold",
+          "code": "wrong_type"
+        }
+      ]
+    },
+    {
+      "name": "structure errors stop the cross-field checks",
+      "ops": [
+        {
+          "op": "set",
+          "path": "threshold",
+          "value": "x"
+        },
+        {
+          "op": "set",
+          "path": "icp.teamSizeMin",
+          "value": 80
+        }
+      ],
+      "errors": [
+        {
+          "path": "threshold",
+          "code": "wrong_type"
+        }
+      ]
+    },
+    {
+      "name": "not an object at all",
+      "ops": [
+        {
+          "op": "replace",
+          "value": [
+            1,
+            2
+          ]
+        }
+      ],
+      "errors": [
+        {
+          "path": "",
+          "code": "wrong_type"
+        }
+      ]
+    }
+  ]
+}

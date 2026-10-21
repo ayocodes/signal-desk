@@ -1,0 +1,201 @@
+{
+  "icp": {
+    "status": "Active",
+    "b2b": true,
+    "teamSizeMin": 5,
+    "teamSizeMax": 60,
+    "maxBatchAgeYears": 3,
+    "points": {
+      "full": 40,
+      "partial": 20
+    }
+  },
+  "partial": {
+    "teamSizeMin": 3,
+    "teamSizeMax": 100,
+    "maxBatchAgeYears": 5
+  },
+  "hiring": {
+    "categories": [
+      {
+        "id": "marketing",
+        "name": "Marketing hire",
+        "enabled": true,
+        "points": 20,
+        "foundingBonus": 0,
+        "keywords": [
+          "head of marketing",
+          "vp of marketing",
+          "vp marketing",
+          "vice president of marketing",
+          "director of marketing",
+          "marketing director",
+          "marketing lead",
+          "lead marketing",
+          "chief marketing officer",
+          "cmo",
+          "founding marketing",
+          "first marketing",
+          "demand generation",
+          "demand gen",
+          "growth marketing",
+          "growth marketer"
+        ],
+        "exclusions": [
+          "coordinator",
+          "associate",
+          "content writer",
+          "social media",
+          "product marketing",
+          "brand",
+          "performance marketing",
+          "paid acquisition",
+          "paid media"
+        ]
+      },
+      {
+        "id": "sales",
+        "name": "Sales hire",
+        "enabled": true,
+        "points": 30,
+        "foundingBonus": 5,
+        "keywords": [
+          "account executive",
+          "account exec",
+          "ae",
+          "sales",
+          "sdr",
+          "bdr",
+          "sales development",
+          "business development",
+          "head of sales",
+          "vp of sales",
+          "vp sales",
+          "sales lead",
+          "sales manager",
+          "sales director",
+          "director of sales",
+          "inside sales",
+          "outside sales",
+          "go-to-market",
+          "go to market",
+          "gtm",
+          "growth lead",
+          "head of growth",
+          "vp of growth",
+          "vp growth",
+          "director of growth",
+          "growth director",
+          "revenue",
+          "revops",
+          "outbound"
+        ],
+        "exclusions": [
+          "performance marketing",
+          "paid acquisition",
+          "paid media"
+        ]
+      },
+      {
+        "id": "paid_acquisition",
+        "name": "Paid acquisition hire",
+        "enabled": false,
+        "points": 10,
+        "foundingBonus": 0,
+        "keywords": [
+          "performance marketing",
+          "paid acquisition",
+          "paid media"
+        ],
+        "exclusions": []
+      }
+    ],
+    "founding": [
+      "founding",
+      "first sales",
+      "first account executive",
+      "first ae",
+      "first account exec",
+      "first gtm",
+      "first marketing"
+    ],
+    "exclude": [
+      "engineer",
+      "engineering",
+      "developer",
+      "salesforce",
+      "intern",
+      "designer"
+    ],
+    "excludeExceptions": [
+      "gtm engineer",
+      "go-to-market engineer",
+      "sales development"
+    ]
+  },
+  "signals": {
+    "launch": {
+      "enabled": true,
+      "points": 18
+    },
+    "ycRecent": {
+      "enabled": true,
+      "points": 10
+    }
+  },
+  "threshold": 50,
+  "weakSignalTypes": [
+    "funding"
+  ],
+  "scoreBands": [
+    {
+      "min": 90,
+      "label": "Strong"
+    },
+    {
+      "min": 70,
+      "label": "Good"
+    },
+    {
+      "min": 50,
+      "label": "Borderline"
+    }
+  ],
+  "freshness": [
+    {
+      "maxHours": 24,
+      "points": 15
+    },
+    {
+      "maxHours": 48,
+      "points": 11
+    },
+    {
+      "maxHours": 72,
+      "points": 8
+    },
+    {
+      "maxHours": 168,
+      "points": 4
+    }
+  ],
+  "stackedPerExtraSignalType": 7,
+  "signalWindows": {
+    "jobsRefreshHours": 12,
+    "launchLookbackDays": 30,
+    "fundingRecentMonths": 6
+  },
+  "outreach": {
+    "senderName": "Sam",
+    "offer": "an AI outbound platform for early-stage B2B teams: it watches for buying signals like sales hires and launches, drafts the first email, and runs the follow-up sequence",
+    "proofPoints": [
+      "Built for teams without a dedicated SDR",
+      "Every first email is approved by a person before it sends",
+      "Each draft cites the public signal it is based on"
+    ]
+  },
+  "guardrails": {
+    "maxBodyWords": 80,
+    "extraBannedPhrases": []
+  }
+}
