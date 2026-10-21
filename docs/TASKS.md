@@ -893,12 +893,12 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p4.5): apply status, reset to defaults, restore wording"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.7.md`, on the card's branch (only exists if Claude asked for changes)
 
 ### You
 
-- [ ] **U4.5.0** Create a fine-grained GitHub token: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Repository access: only `ayocodes/signal-desk`. Repository permissions: **Actions: Read and write** (Metadata read-only is added automatically; nothing else). Put it in `.env.local` and in Vercel as `GITHUB_DISPATCH_TOKEN`, with `GITHUB_REPO=ayocodes/signal-desk`. Not a GitHub Actions secret: only the web app uses it.
+- [x] **U4.5.0** Create a fine-grained GitHub token: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Repository access: only `ayocodes/signal-desk`. Repository permissions: **Actions: Read and write** (Metadata read-only is added automatically; nothing else). Put it in `.env.local` and in Vercel as `GITHUB_DISPATCH_TOKEN`, with `GITHUB_REPO=ayocodes/signal-desk`. Not a GitHub Actions secret: only the web app uses it.
 
 ### Phase gate
 

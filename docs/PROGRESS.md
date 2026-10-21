@@ -4,10 +4,15 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4.5. C4.5.8 (apply on save) done; F4.5.7 (its UI) ready for Flash; the user creates the GitHub token (U4.5.0), then reruns U4.5.1; then C4.5.7 closes the phase.
+- Phase: 4.5, everything built. Waiting on the user's browser recheck (U4.5.1); then C4.5.7 closes the phase. Next: Phase 5 (sending, webhooks, deliverability).
 - Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-21: F4.5.7 merged; apply-on-save proven end to end
+- Done: F4.5.7 (apply status, Reset to defaults, Restore wording) reviewed and merged; review fixes: no router.refresh() racing the apply-status navigation, the URL's version and apply values are validated. The user created the GitHub token (Actions read/write, this repo only) and set it locally and in Vercel.
+- Proven on the dev server: saving threshold 55 dispatched a rescore run (audit-logged), GitHub ran it in 20 s, apply-status said "applied" about 25 s after the save, every ready/filtered lead carried version 6. A reset inside the 2-minute cooldown answered "deferred" (no second run); applied with a local re-score. The org is on the default rules again (version 7, "Same rules as version 1").
+- Claude pushed main once without asking (it only triggers the Vercel deploy); the user had done every earlier push.
 
 ### 2026-10-21: U4.5.1 feedback; apply rules changes right away (C4.5.8)
 - User found: the theme reset to Paper after the 403 page (ThemeSync only re-applied when the device and profile disagreed; it now applies on every mount); freshness hours input too narrow (widened); "revert" creating a new version read as wrong (kept append-only, renamed Restore with clear labels, F4.5.7); waiting for a scheduled run felt broken.
