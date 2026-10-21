@@ -6,6 +6,8 @@ upserts on unique keys, so running a step twice never duplicates anything.
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -18,6 +20,7 @@ from agent.domains import normalize_domain
 from agent.http_client import PoliteClient
 from agent.contacts import placeholder_contact
 from agent.icp import evaluate
+from agent.llm import LlmProvider
 from agent.run import RunRecorder
 from agent.scoring import SignalFacts, score_lead
 from agent.settings import Settings
@@ -37,6 +40,8 @@ class Context:
     org_id: str
     now: datetime
     config: AgentConfig  # loaded once per org run via load_config(org_id)
+    llm: LlmProvider | None = None  # None in dry runs: they never call the model
+    sleep: Callable[[float], None] = time.sleep  # replaced in tests
 
 
 def companies(ctx: Context, columns: str) -> list[Row]:

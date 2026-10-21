@@ -98,3 +98,10 @@ class Database:
         for column, value in equals.items():
             query = query.eq(column, value)
         query.execute()
+
+    def rpc(self, function: str, params: Row) -> Any:
+        """Calls a database function. Every function the agent calls writes, so dry runs skip it."""
+        if self.dry_run:
+            self._skip(f"rpc:{function}", 1)
+            return None
+        return self._client.rpc(function, params).execute().data

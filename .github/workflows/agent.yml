@@ -64,3 +64,5 @@ jobs:
           # Unset means the agent's defaults: 40 probes and 5 drafts per tick.
           DISCOVERY_PROBES_PER_RUN: ${{ vars.DISCOVERY_PROBES_PER_RUN }}
           DRAFTS_PER_RUN: ${{ vars.DRAFTS_PER_RUN }}
+          # Required: LLM requests per UTC day for agent and web app together (free-tier limit).
+          LLM_DAILY_BUDGET: ${{ vars.LLM_DAILY_BUDGET }}

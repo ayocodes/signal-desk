@@ -15,10 +15,11 @@ import json
 import sys
 from collections.abc import Callable
 
-from agent import steps
+from agent import drafting, steps
 from agent.config import load_config
 from agent.db import Database
 from agent.http_client import PoliteClient
+from agent.llm import provider_from_settings
 from agent.run import RunRecorder, utc_now
 from agent.settings import SettingsError, load_settings
 
@@ -29,6 +30,7 @@ STEPS: list[tuple[str, Callable[[steps.Context], None]]] = [
     ("detect_launches", steps.detect_launches),
     ("detect_yc_recency", steps.detect_yc_recency),
     ("score_leads", steps.score_leads),
+    ("draft_leads", drafting.draft_leads),
 ]
 CORE_STEPS = {"discover", "score_leads"}
 
@@ -40,6 +42,7 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
     ctx = steps.Context(
         settings=settings, db=db, client=client, run=run, org_id=org["id"], now=utc_now(),
         config=load_config(org["id"]),
+        llm=None if dry_run else provider_from_settings(settings.llm),
     )
     for name, step in STEPS:
         with run.step(name):

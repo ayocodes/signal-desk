@@ -63,6 +63,8 @@ class _RawEnv(BaseSettings):
     RESEND_FROM: str | None = None
     AGENT_USER_AGENT: str | None = None
     DRAFTS_PER_RUN: str | None = None
+    # LLM requests allowed per UTC day across agent and web app (the model's free-tier limit).
+    LLM_DAILY_BUDGET: str | None = None
     DISCOVERY_PROBES_PER_RUN: str | None = None
     # Which job-board sites this run checks, comma-separated. Unset means all of them.
     # The GitHub workflow sets "greenhouse,lever": Ashby refuses GitHub's runners (403).
@@ -84,6 +86,7 @@ class LlmSettings(BaseModel):
     provider: Literal["gemini", "groq"]
     api_key: str
     model: str
+    daily_budget: int
 
 
 class Settings(BaseModel):
@@ -144,6 +147,9 @@ def settings_from_env(raw: _RawEnv) -> Settings:
             problems.append(f"Missing environment variable {name} (required when LLM_PROVIDER={provider})")
 
     drafts = _whole_number(values["DRAFTS_PER_RUN"], "DRAFTS_PER_RUN", 5, problems)
+    if values["LLM_DAILY_BUDGET"] is None:
+        problems.append("Missing environment variable LLM_DAILY_BUDGET")
+    budget = _whole_number(values["LLM_DAILY_BUDGET"], "LLM_DAILY_BUDGET", 0, problems)
     probes = _whole_number(values["DISCOVERY_PROBES_PER_RUN"], "DISCOVERY_PROBES_PER_RUN", 40, problems)
     job_boards = _job_boards(values["AGENT_JOB_BOARDS"], problems)
 
@@ -154,7 +160,9 @@ def settings_from_env(raw: _RawEnv) -> Settings:
     return Settings(
         supabase_url=supabase_url,
         supabase_service_role_key=values["SUPABASE_SERVICE_ROLE_KEY"].strip(),
-        llm=LlmSettings(provider=provider, api_key=values[key_name].strip(), model=values[model_name].strip()),
+        llm=LlmSettings(
+            provider=provider, api_key=values[key_name].strip(), model=values[model_name].strip(), daily_budget=budget,
+        ),
         resend_api_key=values["RESEND_API_KEY"].strip(),
         resend_from=values["RESEND_FROM"].strip(),
         user_agent=values["AGENT_USER_AGENT"].strip(),

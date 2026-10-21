@@ -11,6 +11,7 @@ VALID = {
     "RESEND_API_KEY": "resend-key",
     "RESEND_FROM": "onboarding@resend.dev",
     "AGENT_USER_AGENT": "SignalDesk-test/0.1",
+    "LLM_DAILY_BUDGET": "20",
 }
 
 
@@ -87,3 +88,9 @@ def test_job_boards_reject_unknown_sites() -> None:
     assert problems(AGENT_JOB_BOARDS="greenhouse,workday") == [
         "Invalid environment variable AGENT_JOB_BOARDS: use ashby, greenhouse, lever, comma-separated"
     ]
+
+
+def test_llm_daily_budget_is_required_and_a_whole_number() -> None:
+    assert build().llm.daily_budget == 20  # type: ignore[attr-defined]
+    assert problems(LLM_DAILY_BUDGET=None) == ["Missing environment variable LLM_DAILY_BUDGET"]
+    assert problems(LLM_DAILY_BUDGET="lots") == ["Invalid environment variable LLM_DAILY_BUDGET: must be a whole number"]
