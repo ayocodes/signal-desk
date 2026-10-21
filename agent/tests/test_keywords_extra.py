@@ -95,3 +95,20 @@ def test_keywords_extra_classification(title: str, expected: str | None) -> None
     match = classify_title(title, keywords)
     actual = match.category if match is not None else None
     assert actual == expected, f"Expected {title!r} to be classified as {expected!r}, got {actual!r}"
+
+
+# Decided 2026-10-21: paid-ads roles point to paid, inbound acquisition, not outbound,
+# so they never count as a hiring signal (candidate toggle for the Phase 4.5 rules editor).
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Head of Performance Marketing",
+        "Director of Performance Marketing",
+        "Growth Lead, Paid Acquisition",
+        "Head of Growth (Paid Acquisition)",
+        "VP Marketing, Paid Media",
+        "Head of Paid Media",
+    ],
+)
+def test_paid_acquisition_roles_never_count(title: str) -> None:
+    assert classify_title(title, load_config("any-org").keywords) is None

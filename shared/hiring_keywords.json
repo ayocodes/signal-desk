@@ -54,7 +54,10 @@
   },
   "categoryExclude": {
     "gtm": [
-      "marketing"
+      "marketing",
+      "performance marketing",
+      "paid acquisition",
+      "paid media"
     ],
     "marketing": [
       "coordinator",
@@ -62,7 +65,10 @@
       "content writer",
       "social media",
       "product marketing",
-      "brand"
+      "brand",
+      "performance marketing",
+      "paid acquisition",
+      "paid media"
     ]
   },
   "founding": [

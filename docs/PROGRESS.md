@@ -4,11 +4,21 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 3 done (2026-10-21). Next: Phase 4, drafts and approval (the cut line).
-- Next step: Claude plans Phase 4's C cards (plan mode, wait for "go").
-- Blockers: none. Ashby is checked only on local runs (`npm run agent:local`); GitHub runs check Greenhouse and Lever.
+- Phase: 4 in progress (drafts and approval, the cut line). Plan approved 2026-10-21: `/Users/tomiomotola/.claude/plans/wise-drifting-kay.md` (copied in summary below).
+- Done: C4.0 (paid-acquisition roles excluded, with tests).
+- Next step (exact): docs commit (TASKS.md Phase 4 cards per the plan: C4.0 to C4.5 plus F4.4 Ops budget tile; PLAN.md Phase 4 bullets; ARCHITECTURE.md drafting/guardrails/service-role notes; Phase 4.5 candidate toggle for performance marketing), then C4.1 shared files, C4.2 guardrails (py + ts, shared fixtures), C4.3 migration 007, C4.4 agent drafting, C4.5 web routes. Commit after each.
+- Blockers: none. Ashby is checked only on local runs (`npm run agent:local`).
 
 ## Log
+
+### 2026-10-21: Phase 4 planned; C4.0 done
+- Decisions (and why):
+  - Performance marketing, paid acquisition and paid media roles never count (marketing and gtm exclusions): paid-ads work points to paid, inbound acquisition, not outbound. Candidate toggle for the Phase 4.5 rules editor.
+  - Offer (one shared file `shared/outreach.json`, editable in 4.5): an AI outbound platform for early-stage B2B teams that watches buying signals, drafts the first email and runs the follow-up sequence. Sender "Sam" at the lib/brand.ts brand. Only listed, generic, non-numeric proof points; the model never invents customers, names, numbers, results or case studies; the peer angle uses proof points.
+  - New guardrails: numbers/percentages not in signals or proof points fail; customer claims ("our customers", "teams we work with") fail unless that exact proof point is in the email.
+  - LLM budget: Gemini free tier is 20 requests/day (AI Studio). `LLM_DAILY_BUDGET=20`, every call counted per UTC day in `llm_calls`; the agent stops at 80% (16), the app keeps 4. The agent makes one call per lead for 3 angles, retries once at most; the raw baseline ("Unconstrained") is generated on demand through the rate-limited draft route and stored. Budget shown in Ops; the UI says plainly when it's used up.
+  - Writes needing server checks (approve, draft) go through a server-only service-role client after user-scoped RLS reads; `approve_lead()` re-checks org, role and assignment in the database.
+- Next step (exact): see Current state.
 
 ### 2026-10-21: Phase 3 closed (U3.1, C3.4)
 - Done: data layer (C3.1), live updates plus per-rep RLS checks (C3.2), second demo rep (C3.0); Flash F3.1 to F3.5 reviewed and merged with fixes. User browser check passed: admin and reps see different lead sets, real lead detail, live status, keyboard, filtered reasons. After the gate: arrow keys alongside J/K, the selected row stays in view, the split view fits the window, and lead pages load in one query (signals embedded, tab counts in one SQL call; queue about 1.0 s down to 0.7 s).
