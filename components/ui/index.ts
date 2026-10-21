@@ -13,4 +13,5 @@ export * from "./EmptyState";
 export * from "./Avatar";
 export * from "./Skeleton";
 export * from "./Toast";
+export * from "./Table";
 export * from "./utils";
