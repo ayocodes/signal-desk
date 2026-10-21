@@ -18,7 +18,7 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
 
 1. Do one card at a time. Before starting, read `AGENTS.md`, `docs/DESIGN.md` and the card.
 2. Run the card's **Start** git commands exactly as written. If `git status --short` prints anything, stop and tell the user. Don't stash it or clean it up.
-3. Change only the files listed under **Touch only**. If the card can't be done without touching another file, stop and say which file and why.
+3. Change only the files listed under **Touch only**. Before changing a file, read its current version from disk (other cards and Claude's reviews change files after you last saw them), and edit it in place: never rewrite a whole file from memory. If the card can't be done without touching another file, stop and say which file and why.
 4. Never add a dependency (`npm install`, `pip install`). If you need one, stop and tell the user.
 5. Never touch `.env*`, `supabase/`, `proxy.ts`, `next.config.ts`, any `layout.tsx` or `actions.ts`, `app/forbidden.tsx`, `app/403/`, `app/api/`, files in `lib/` other than ones your card names, `docs/TASKS.md`, `docs/reviews/`, or anything under `agent/` other than test files your card names. Claude ticks the boxes in this file after merging.
 6. No raw hex colors outside `app/themes.css`. Use the token utilities from `app/globals.css`: colors (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text`, `text-muted`, `text-subtle`, `bg-accent`, `text-accent-fg`, `bg-accent-soft`, `text-good`, `text-warn`, `text-bad`, `text-signal`), type (`text-label`, `text-meta`, `text-body`, `text-emphasis`, `text-section`, `text-title`) and radius (`rounded-control`, `rounded-panel`, `rounded-dialog`). Tailwind's default palette is switched off, so classes like `bg-blue-500`, `bg-black` or `text-white` do nothing (for an overlay, use `bg-bg/70`); `lib/design-tokens.test.ts` fails the check if one slips in, and also catches em/en dashes, `text-[Npx]` sizes and an `<h1>` in app pages (the shell's top bar is the page heading). No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
@@ -586,7 +586,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Phase gate
 
-- [ ] **C3.3** Automated checks: `npm run check` and `npm run test:rls` (each rep reads only their own leads, signals and contacts; the admin reads all); the queue and leads pages rendered for the admin and for a rep return different lead counts; a rep gets nothing for the other rep's lead. Report the counts to the user.
+- [x] **C3.3** Automated checks: `npm run check` and `npm run test:rls` (each rep reads only their own leads, signals and contacts; the admin reads all); the queue and leads pages rendered for the admin and for a rep return different lead counts; a rep gets nothing for the other rep's lead. Report the counts to the user.
 - [ ] **U3.1** In the browser, check PLAN.md Phase 3 "Done when":
   - As admin, then as rep: Queue and Leads show different lead sets; the rep sees only their assigned leads.
   - Open a lead: the signal cards, score math and buyer check show real data, and the source links work.
