@@ -3,7 +3,7 @@
 // and checks that row level security returns only what each role may see.
 // Run after `npm run seed`. Exits with code 1 if any check fails.
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { anonClient, env, signedInClient } from "./supabase-script-client";
+import { anonClient, env, serviceClient, signedInClient } from "./supabase-script-client";
 
 type Result = { name: string; ok: boolean; detail: string };
 const results: Result[] = [];
@@ -16,6 +16,96 @@ async function rowCount(client: SupabaseClient, table: string): Promise<number |
   const { data, error } = await client.from(table).select("id");
   if (error) return `error ${error.code}`;
   return data.length;
+}
+
+async function count(client: SupabaseClient, table: string, column?: string, value?: string): Promise<number> {
+  let query = client.from(table).select("id", { count: "exact", head: true });
+  if (column && value) query = query.eq(column, value);
+  const { count: n, error } = await query;
+  if (error) throw new Error(`Counting ${table} failed: ${error.message}`);
+  return n ?? 0;
+}
+
+// Waits for Realtime events on leads as the given user, while `touch` changes some leads.
+// Stops early once `expected` has been heard; otherwise gives events up to 20s to arrive.
+async function heardLeadIds(client: SupabaseClient, expected: string, touch: () => Promise<void>): Promise<Set<string>> {
+  const heard = new Set<string>();
+  await client.realtime.setAuth();
+  const channel = client
+    .channel(`rls-check-${Date.now()}`)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "leads" }, (payload) => {
+      heard.add(String((payload.new as { id?: string }).id));
+    });
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("Realtime didn't connect within 20s")), 20_000);
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        clearTimeout(timer);
+        resolve();
+      }
+    });
+  });
+  // Realtime needs a moment after SUBSCRIBED before it matches changes for a new subscriber.
+  await new Promise((resolve) => setTimeout(resolve, 3_000));
+  await touch();
+  for (let waited = 0; waited < 20_000 && !heard.has(expected); waited += 500) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  await new Promise((resolve) => setTimeout(resolve, 3_000)); // room for an event that shouldn't come
+  await client.removeChannel(channel);
+  return heard;
+}
+
+// With two reps, "a rep sees only their leads" is no longer trivially true.
+async function checkLeadsPerRep(rep: SupabaseClient, admin: SupabaseClient, repId: string | undefined): Promise<void> {
+  const service = serviceClient();
+  const allLeads = await count(service, "leads");
+  const repLeads = await count(service, "leads", "assigned_to", repId);
+  const repSees = await count(rep, "leads");
+  check("rep reads exactly the leads assigned to them", repSees === repLeads && repSees > 0 && repSees < allLeads, `${repSees} of ${allLeads}`);
+  const adminSees = await count(admin, "leads");
+  check("admin reads every lead in the org", adminSees === allLeads, `${adminSees} of ${allLeads}`);
+
+  // A company whose lead belongs to the other rep and has signals.
+  const { data: otherLeads, error } = await service
+    .from("leads")
+    .select("id, company_id")
+    .neq("assigned_to", repId ?? "")
+    .not("assigned_to", "is", null)
+    .limit(200);
+  if (error) throw new Error(`Finding the other rep's leads failed: ${error.message}`);
+  let otherCompany: string | undefined;
+  for (const lead of otherLeads) {
+    if ((await count(service, "signals", "company_id", lead.company_id)) > 0) {
+      otherCompany = lead.company_id;
+      break;
+    }
+  }
+  if (otherCompany) {
+    const repSignals = await count(rep, "signals", "company_id", otherCompany);
+    const adminSignals = await count(admin, "signals", "company_id", otherCompany);
+    check("rep can't read signals of the other rep's leads", repSignals === 0 && adminSignals > 0, `rep ${repSignals}, admin ${adminSignals}`);
+    const repContacts = await count(rep, "contacts", "company_id", otherCompany);
+    check("rep can't read contacts of the other rep's leads", repContacts === 0, `rep ${repContacts}`);
+  } else {
+    check("rep can't read signals of the other rep's leads", false, "no other-rep lead with signals to test");
+  }
+
+  // Realtime applies RLS too: touch one lead of each rep and see what the rep hears.
+  const { data: own } = await service.from("leads").select("id").eq("assigned_to", repId ?? "").limit(1).single();
+  const other = otherLeads[0];
+  const heard = await heardLeadIds(rep, own?.id ?? "", async () => {
+    for (const id of [own?.id, other?.id]) {
+      // A no-op write (score = score) still emits an UPDATE; the agent rewrites scores anyway.
+      const { data } = await service.from("leads").select("score").eq("id", id ?? "").single();
+      await service.from("leads").update({ score: data?.score ?? 0 }).eq("id", id ?? "");
+    }
+  });
+  check(
+    "Realtime tells a rep about their own leads only",
+    heard.has(own?.id ?? "") && !heard.has(other?.id ?? ""),
+    `heard own: ${heard.has(own?.id ?? "")}, heard other rep's: ${heard.has(other?.id ?? "")}`,
+  );
 }
 
 async function main(): Promise<void> {
@@ -65,6 +155,8 @@ async function main(): Promise<void> {
   check("admin reads 4 mailboxes", adminMailboxes === 4, `got ${adminMailboxes}`);
   const adminProfiles = await rowCount(admin, "profiles");
   check("admin reads all 3 profiles in the org", adminProfiles === 3, `got ${adminProfiles}`);
+
+  await checkLeadsPerRep(rep, admin, repId);
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}  (${r.detail})`);
   const failed = results.filter((r) => !r.ok).length;
