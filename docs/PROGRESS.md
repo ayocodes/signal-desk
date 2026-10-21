@@ -4,11 +4,17 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4.5 built; automated gate (C4.5.6) passed. Waiting on the user's browser check (U4.5.1), then C4.5.7 closes the phase.
-- Next step (exact): user runs U4.5.1 (TASKS.md); then tick PLAN Phase 4.5, PROGRESS entry, commit. Next phase: 5 (sending, webhooks, deliverability).
+- Phase: 4.5. C4.5.8 (apply on save) done; F4.5.7 (its UI) ready for Flash; the user creates the GitHub token (U4.5.0), then reruns U4.5.1; then C4.5.7 closes the phase.
 - Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-21: U4.5.1 feedback; apply rules changes right away (C4.5.8)
+- User found: the theme reset to Paper after the 403 page (ThemeSync only re-applied when the device and profile disagreed; it now applies on every mount); freshness hours input too narrow (widened); "revert" creating a new version read as wrong (kept append-only, renamed Restore with clear labels, F4.5.7); waiting for a scheduled run felt broken.
+- Decisions (and why):
+  - Re-score on save via workflow_dispatch (one scoring implementation, Python): token with Actions read/write only, one run per org (concurrency group), join a queued or running run, 2-minute cooldown, audit-logged dispatches, no promised times in the UI, admin "Reset to defaults" so a demo can't be left broken.
+  - A local re-score run takes about 13 s; the GitHub one adds runner start-up.
+- Next step (exact): user creates the token (U4.5.0) and pushes; Flash builds F4.5.7; Claude reviews; rerun U4.5.1; C4.5.7.
 
 ### 2026-10-21: Phase 4.5 Flash cards merged; gate C4.5.6 passed
 - Done: F4.5.4 (32 more config cases, 68 total, both validators agree), F4.5.6 (LLM pacing tile), F4.5.1 (rules editor), F4.5.3 ("What our agent looks for" page), F4.5.2 (version history and revert). Review fixes: every validation error is visible (list items, a summary above the form), unique ids for new categories, sentence-case headings, threshold and freshness sentences computed from the rules, the editor resets when a new version arrives.

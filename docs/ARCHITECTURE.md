@@ -95,6 +95,8 @@ Editable: ICP and partial-match rules and their points, hiring categories (name,
 
 Locked (always read from `/shared`): the built-in banned phrases, the banned dashes, claim phrases and grounding settings, the sender company (the brand), angle descriptions and prompt templates, mailbox rules, LLM pacing. Grounding, the invented-facts checks and the dash ban can't be turned off.
 
+**Applying a change right away.** Saving, restoring or resetting the rules starts a re-score-only agent run (`.github/workflows/rescore.yml`, started by `lib/rescore.ts` through GitHub's workflow_dispatch with a token that only has Actions read/write). One runs per org at a time: a save while one is queued or running joins it, and the running one re-checks for a newer version when it finishes (at most 3 rounds). At most one dispatch every 2 minutes; every dispatch is audit-logged. Each agent run records the rules version it scored with, which is how the editor knows a version is "Applied". Without the token, changes apply on the next scheduled run.
+
 Both languages validate a document the same way (pydantic in `agent/config.py`, zod in `lib/agent-config.ts`, agreeing on `shared/fixtures/config_cases.json`). Admins save through `save_agent_config()`, which refuses everyone else. Each scored lead records the `config_version` that scored it; the next run re-scores `ready` and `filtered` leads, and enrolled or later leads keep their score. Hiring signals are re-classified from their stored job titles at scoring time, so keyword edits apply on the next run.
 
 ## Sequence engine
