@@ -181,6 +181,12 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
     return map;
   }, [errors]);
 
+  // Errors inside a list ("outreach.proofPoints.0") show under the list itself.
+  const errorUnder = (prefix: string): string | undefined => {
+    const err = errors.find((e) => e.path === prefix || e.path.startsWith(`${prefix}.`));
+    return err ? formatRuleError(err.code) : undefined;
+  };
+
   const isDirty = React.useMemo(() => {
     return JSON.stringify(rules) !== JSON.stringify(initialRules);
   }, [rules, initialRules]);
@@ -250,7 +256,10 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
 
   const addCategory = () => {
     if (rules.hiring.categories.length >= 8) return;
-    const count = rules.hiring.categories.length + 1;
+    // Ids must be unique and can't be edited in the form, so take the first unused number.
+    const taken = new Set(rules.hiring.categories.map((c) => c.id));
+    let count = rules.hiring.categories.length + 1;
+    while (taken.has(`category_${count}`)) count += 1;
     const newCat: HiringCategoryRule = {
       id: `category_${count}`,
       name: `Category ${count}`,
@@ -300,7 +309,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
       <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3 p-4 rounded-panel border border-border bg-surface shadow-xs">
         <div className="flex items-center gap-3">
           <span className="text-body font-semibold text-text">
-            Agent Rules (Version {config.version})
+            Agent rules, {config.version === 0 ? "defaults" : `version ${config.version}`}
           </span>
           {isDirty ? (
             <Pill tone="warn" dot>
@@ -350,6 +359,21 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
         </div>
       </div>
 
+      {/* Every problem in one place, so a disabled Save always says why. */}
+      {errors.length > 0 && (
+        <div className="rounded-panel border border-bad/30 bg-bad/5 p-3.5 text-meta flex flex-col gap-1">
+          <span className="font-medium text-bad">Fix these before saving:</span>
+          <ul className="list-disc pl-5 text-text">
+            {errors.slice(0, 8).map((err) => (
+              <li key={`${err.path}:${err.code}`}>
+                <span className="font-mono text-label text-muted">{err.path}</span> {formatRuleError(err.code)}
+              </li>
+            ))}
+          </ul>
+          {errors.length > 8 && <span className="text-subtle">and {errors.length - 8} more</span>}
+        </div>
+      )}
+
       {/* Global problem banner if defaults are running */}
       {config.problem && (
         <div className="rounded-panel border border-warn/30 bg-warn/10 p-3.5 text-meta text-warn flex items-start gap-2.5">
@@ -363,7 +387,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-3 border-b border-border">
           <div>
             <h2 className="text-section font-semibold text-text">
-              Ideal Customer Profile (ICP)
+              Ideal customer profile (ICP)
             </h2>
             <p className="text-meta text-muted mt-0.5">
               Requirements for companies discovered by the agent.
@@ -600,7 +624,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-3 border-b border-border">
           <div>
             <h2 className="text-section font-semibold text-text">
-              Hiring Categories
+              Hiring categories
             </h2>
             <p className="text-meta text-muted mt-0.5">
               Categories are checked in order; the first match wins.
@@ -744,7 +768,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
                   onChange={(keywords) => updateCategory(idx, { keywords })}
                   placeholder="Add role keyword..."
                   ariaLabel={`Keywords for ${cat.name}`}
-                  error={errorMap.get(`hiring.categories.${idx}.keywords`)}
+                  error={errorUnder(`hiring.categories.${idx}.keywords`)}
                 />
               </div>
 
@@ -758,7 +782,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
                   onChange={(exclusions) => updateCategory(idx, { exclusions })}
                   placeholder="Add category exclusion..."
                   ariaLabel={`Exclusions for ${cat.name}`}
-                  error={errorMap.get(`hiring.categories.${idx}.exclusions`)}
+                  error={errorUnder(`hiring.categories.${idx}.exclusions`)}
                 />
               </div>
             </div>
@@ -793,7 +817,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
               }
               placeholder="Add founding phrase..."
               ariaLabel="Founding phrases"
-              error={errorMap.get("hiring.founding")}
+              error={errorUnder("hiring.founding")}
             />
           </div>
 
@@ -811,7 +835,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
               }
               placeholder="Add global exclusion..."
               ariaLabel="Global exclusions"
-              error={errorMap.get("hiring.exclude")}
+              error={errorUnder("hiring.exclude")}
             />
           </div>
 
@@ -829,7 +853,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
               }
               placeholder="Add exception phrase..."
               ariaLabel="Exclusion exceptions"
-              error={errorMap.get("hiring.excludeExceptions")}
+              error={errorUnder("hiring.excludeExceptions")}
             />
           </div>
         </div>
@@ -840,7 +864,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-3 border-b border-border">
           <div>
             <h2 className="text-section font-semibold text-text">
-              Other Buying Signals
+              Other buying signals
             </h2>
             <p className="text-meta text-muted mt-0.5">
               Launch signals and YC batch funding signals.
@@ -859,7 +883,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
           <div className="rounded-control border border-border bg-surface-2/40 p-3.5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-body text-text">
-                Product Launch
+                Product launch
               </span>
               <label className="inline-flex items-center gap-1.5 cursor-pointer text-meta text-text">
                 <input
@@ -912,7 +936,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
           <div className="rounded-control border border-border bg-surface-2/40 p-3.5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-body text-text">
-                YC Recent Batch
+                YC recent batch
               </span>
               <label className="inline-flex items-center gap-1.5 cursor-pointer text-meta text-text">
                 <input
@@ -968,7 +992,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
       <div className="rounded-panel border border-border bg-surface p-5 flex flex-col gap-4">
         <div>
           <h2 className="text-section font-semibold text-text">
-            Queue Threshold
+            Queue threshold
           </h2>
           <p className="text-meta text-muted mt-0.5">
             Minimum score required for a lead to appear in the review queue.
@@ -1029,7 +1053,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-3 border-b border-border">
           <div>
             <h2 className="text-section font-semibold text-text">
-              Score Calculation &amp; Windows
+              Score calculation and windows
             </h2>
             <p className="text-meta text-muted mt-0.5">
               Score bands, freshness decay, multi-signal bonus, and lookback
@@ -1046,8 +1070,8 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
           <span className="text-label uppercase tracking-wider font-semibold text-muted">
             Score bands
           </span>
-          {errorMap.get("scoreBands") && (
-            <p className="text-meta text-bad">{errorMap.get("scoreBands")}</p>
+          {errorUnder("scoreBands") && (
+            <p className="text-meta text-bad">{errorUnder("scoreBands")}</p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {rules.scoreBands.map((band, idx) => (
@@ -1089,8 +1113,8 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
           <span className="text-label uppercase tracking-wider font-semibold text-muted">
             Freshness decay points
           </span>
-          {errorMap.get("freshness") && (
-            <p className="text-meta text-bad">{errorMap.get("freshness")}</p>
+          {errorUnder("freshness") && (
+            <p className="text-meta text-bad">{errorUnder("freshness")}</p>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {rules.freshness.map((step, idx) => (
@@ -1291,7 +1315,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
             }
             placeholder="Add customer claim proof point..."
             ariaLabel="Customer proof points"
-            error={errorMap.get("outreach.proofPoints")}
+            error={errorUnder("outreach.proofPoints")}
           />
         </div>
       </div>
@@ -1301,7 +1325,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pb-3 border-b border-border">
           <div>
             <h2 className="text-section font-semibold text-text">
-              Email Guardrails
+              Email guardrails
             </h2>
             <p className="text-meta text-muted mt-0.5">
               Draft validation parameters and house style rules.
@@ -1355,7 +1379,7 @@ export function AgentRulesEditor({ config }: AgentRulesEditorProps) {
             }
             placeholder="Add phrase to ban..."
             ariaLabel="Custom banned phrases"
-            error={errorMap.get("guardrails.extraBannedPhrases")}
+            error={errorUnder("guardrails.extraBannedPhrases")}
           />
         </div>
 

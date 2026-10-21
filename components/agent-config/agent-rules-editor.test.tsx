@@ -32,16 +32,16 @@ describe("AgentRulesEditor", () => {
       <AgentRulesEditor config={sampleConfig} />
     );
 
-    expect(html).toContain("Agent Rules (Version 1)");
+    expect(html).toContain("Agent rules, version 1");
     expect(html).toContain("Save new version");
     expect(html).toContain("Discard changes");
-    expect(html).toContain("Ideal Customer Profile (ICP)");
-    expect(html).toContain("Hiring Categories");
-    expect(html).toContain("Other Buying Signals");
-    expect(html).toContain("Queue Threshold");
-    expect(html).toContain("Score Calculation");
+    expect(html).toContain("Ideal customer profile (ICP)");
+    expect(html).toContain("Hiring categories");
+    expect(html).toContain("Other buying signals");
+    expect(html).toContain("Queue threshold");
+    expect(html).toContain("Score calculation");
     expect(html).toContain("Outreach");
-    expect(html).toContain("Email Guardrails");
+    expect(html).toContain("Email guardrails");
   });
 
   it("shows 30-minute notice on sections but not on threshold", () => {
@@ -86,5 +86,19 @@ describe("AgentRulesEditor", () => {
 
     expect(html).toContain("I hope this email finds you well");
     expect(html).toContain("synergy");
+  });
+
+  it("names every problem above the form, including ones inside lists", () => {
+    const rules = structuredClone(defaults) as RulesDoc;
+    rules.outreach.proofPoints[0] = "Used by 40 teams";
+    const html = renderToStaticMarkup(<AgentRulesEditor config={{ ...sampleConfig, rules }} />);
+    expect(html).toContain("Fix these before saving:");
+    expect(html).toContain("outreach.proofPoints.0");
+    expect(html).toContain("Proof points cannot contain digits (numbers).");
+  });
+
+  it("says when the org is on the defaults", () => {
+    const html = renderToStaticMarkup(<AgentRulesEditor config={{ ...sampleConfig, version: 0 }} />);
+    expect(html).toContain("Agent rules, defaults");
   });
 });
