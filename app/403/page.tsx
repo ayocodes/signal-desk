@@ -3,6 +3,9 @@
 // alone can't set.
 import { forbidden } from "next/navigation";
 
+// This page only ever blocks (it throws), so it opts out of Next's instant-navigation check.
+export const instant = false;
+
 export default function Status403Page() {
   forbidden();
 }
