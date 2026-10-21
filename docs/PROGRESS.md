@@ -4,11 +4,22 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4.5 in progress (configurable agent). Plan approved 2026-10-21.
-- Next step (exact): C4.5.1 rules document and validators, then C4.5.2 migration 008, C4.5.3 agent, C4.5.4 web. Commit after each.
+- Phase: 4.5 in progress. Claude cards C4.5.1 to C4.5.4 done; Flash cards F4.5.1, F4.5.3, F4.5.4, F4.5.6 can start (F4.5.2 after F4.5.1).
+- Next step (exact): Flash builds the cards; Claude reviews each; then C4.5.6 gate, U4.5.1 browser check, C4.5.7 close.
 - Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-21: Phase 4.5 Claude cards (C4.5.1 to C4.5.4)
+- Done: the rules document with hand-written validators in Python and TypeScript agreeing on 36 shared cases (C4.5.1); migration 008 (`agent_configs`, `save_agent_config()`, `leads.config_version`, `threshold_preview()`), version 1 seeded, 24 RLS checks (C4.5.2); the agent and web read each org's newest version, ordered switchable hiring categories, re-classification from stored job titles, enrolled leads frozen (C4.5.3); admin routes, data functions, readable change lines, admin guard (C4.5.4). 299 web tests, 365 agent tests.
+- Real runs: version 1 loaded, 59 signals relabelled ("Sales hire"), no lead changed status. Threshold 55 saved as version 2: the preview said 14 ready, the run produced 14, every ready/filtered lead got config_version 2, enrolled leads untouched. Revert made version 3 ("Reverted to version 1 ...") and the next run used it. The org is back on the default rules (version 3).
+- Decisions (and why):
+  - Validators are hand-written walkers in both languages returning `{path, code}` (pydantic and zod name errors differently, so comparing them would be brittle). Pydantic still types the rules in Python.
+  - Category order Marketing hire, Sales hire, Paid acquisition hire (off) reproduces today's classification on all 133 known titles (test titles and every real job title). Sales and GTM merged into Sales hire (they already scored the same); tests now expect "sales" where they said "gtm".
+  - Labels come from category names: "Hiring" is now "Sales hire", "Founding sales role" is "Founding sales hire". Enrolled leads keep their old score parts.
+  - Turning a category on catches existing jobs only when their board is next refreshed (every 12 hours); keyword edits on already-stored signals apply on the next run.
+  - The seed's lead split alternated by list position, so re-seeding after enrollments moved 1036 leads to the other rep. Restored the previous owners (checked against the three enrolled leads) and the seed now only assigns leads without a demo rep.
+- Next step (exact): see Current state.
 
 ### 2026-10-21: Phase 4.5 planned
 - Decisions (and why):
