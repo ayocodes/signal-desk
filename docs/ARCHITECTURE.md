@@ -87,6 +87,16 @@ The score is a points total, not a percentage (no fixed maximum; 152 with today'
 
 Hiring signals carry a category from `shared/hiring_keywords.json`. Sales and GTM roles score `hiring_sales` ("Hiring"); senior marketing, demand generation and growth marketing roles score the lower `hiring_marketing` ("Marketing hire"). Junior, product and brand marketing roles don't count. Both kinds can appear on one lead, but they stack as one signal type (hiring).
 
+## Configurable rules (Phase 4.5)
+
+Each org's rules are one JSON document, stored per version in `agent_configs` (who saved it, when, and a readable change summary). The newest version is current; a revert copies an old version in as a new one, so history never changes. `shared/defaults/rules.json` is version 1 and the fallback when an org has none (or a stored version fails validation).
+
+Editable: ICP and partial-match rules and their points, hiring categories (name, keywords, exclusions, points, founding bonus, on/off; checked in order, first match wins), launch and YC-recent signals (on/off, points), threshold, weak signal types, score bands, freshness, stacking points, signal windows, the offer, sender name and proof points, max body words (40 to 150) and extra banned phrases.
+
+Locked (always read from `/shared`): the built-in banned phrases, the banned dashes, claim phrases and grounding settings, the sender company (the brand), angle descriptions and prompt templates, mailbox rules, LLM pacing. Grounding, the invented-facts checks and the dash ban can't be turned off.
+
+Both languages validate a document the same way (pydantic in `agent/config.py`, zod in `lib/agent-config.ts`, agreeing on `shared/fixtures/config_cases.json`). Admins save through `save_agent_config()`, which refuses everyone else. Each scored lead records the `config_version` that scored it; the next run re-scores `ready` and `filtered` leads, and enrolled or later leads keep their score. Hiring signals are re-classified from their stored job titles at scoring time, so keyword edits apply on the next run.
+
 ## Sequence engine
 
 Email only. Steps and branches for the default sequence:

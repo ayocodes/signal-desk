@@ -4,11 +4,20 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4 done (2026-10-21). **Cut line reached: the project can be shown in an application from here.** Next: Phase 4.5, configurable agent (rules per org in the database, versioned, admin editor).
-- Next step: Claude plans Phase 4.5's C cards (plan mode, wait for "go").
-- Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20 until the user reads it in AI Studio (Rate Limit page, "See more" or "All models").
+- Phase: 4.5 in progress (configurable agent). Plan approved 2026-10-21.
+- Next step (exact): C4.5.1 rules document and validators, then C4.5.2 migration 008, C4.5.3 agent, C4.5.4 web. Commit after each.
+- Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-21: Phase 4.5 planned
+- Decisions (and why):
+  - Schema: two validators (pydantic, zod) agreeing on one fixture file, like the guardrails; no new dependencies, and cross-field rules live naturally in both.
+  - Preview: threshold only, from stored scores ("N leads in the queue at this threshold, was M"), because it's a query, not a port. Other changes say "Effect shows after the next agent run (every 30 min)". The full preview (TypeScript port of the ICP filter, classifier and scoring with parity fixtures) is a Stretch card after Phase 6, next to the AI-guided setup.
+  - Hiring categories are admin-defined (name, keywords, exclusions, points, on/off), seeded Sales hire, Marketing hire and Paid acquisition hire (off), instead of a separate paid-acquisition toggle. Sales signals are now labelled "Sales hire".
+  - Admins can add banned phrases and set max body words (40 to 150). Grounding, the invented-facts checks and the dash ban are always on and shown locked with a reason.
+  - Offer, sender name and proof points are editable. LLM pacing stays a deploy setting, shown in Ops.
+  - Enrolled and later leads keep their score (today they still got re-scored).
 
 ### 2026-10-21: Phase 4 closed (F4.1 to F4.4, U4.1, C4.6, U4.2, C4.7)
 - Done: Flash F4.1 (editor, live checks), F4.2 (approve with Cmd+Enter, regenerate, agent trace, prompt), F4.3 (27 more fixture cases, 60 total, both languages agree), F4.4 (Ops budget tile), each reviewed and merged. Review fixes: the editor reset per lead (it kept the previous lead's drafts), check messages wrap, no router.refresh() racing the next-lead push, the trace lists only failed angles, Regenerate off on Unconstrained.

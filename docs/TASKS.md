@@ -736,28 +736,31 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
 
 ## Phase 4.5: Configurable agent
 
-Rules move into the database per org, versioned. The agent already reads them only through `load_config(org_id)` (`agent/config.py`), so the scoring code doesn't change.
+Rules move into the database per org, versioned, edited by admins in the app and readable by every member. The agent reads them only through `load_config(org_id)` (`agent/config.py`) and the web app through `getAgentConfig(orgId)` (`lib/agent-config.ts`), so only those loaders and the parts that use the changed shapes change.
+
+**Decisions (2026-10-21):** two validators (pydantic + zod) agreeing on one fixture file; hiring categories are admin-defined (seeded: Sales hire, Marketing hire, Paid acquisition hire off); the editor also covers the offer and proof points and email guardrails (max body words 40 to 150, extra banned phrases; grounding, invented-claims checks and the dash ban are locked); LLM pacing stays a deploy setting shown in Ops; preview is threshold-only (counts from stored scores), other changes show "Effect shows after the next agent run (every 30 min)"; the full preview is a Stretch card.
 
 ### Claude
 
-- [ ] **C4.5.1** One rules schema for both languages:
-  - candidate toggles from earlier decisions: count paid-acquisition roles (performance marketing, paid acquisition, paid media; off by default, see C4.0), and the outreach offer and proof points from `shared/outreach.json`
-  - the schema for the full rule set (ICP rules, partial rules, signal types with `enabled` + weight, keyword categories and exclusions, threshold, weak signal types, score bands, freshness steps, signal windows); format decided in the phase plan. Bands must run high to low and the lowest must equal the threshold.
-  - `shared/fixtures/config_cases.json` with valid and invalid rule sets and the expected error per invalid case
-  - a TypeScript validator (`lib/agent-config.ts`) and the Python validator (`agent/config.py`) both run the fixtures and must agree
-- [ ] **C4.5.2** Migration: `agent_configs` (org_id, version, rules jsonb, created_by, created_at, change_summary jsonb; unique (org_id, version)) plus the org's current version; `leads.config_version`. RLS: every member reads their org's rules; only admins can create a version. Version 1 per org is seeded from `/shared`.
-- [ ] **C4.5.3** Agent: `load_config(org_id)` reads the org's current version (falls back to the `/shared` defaults); scoring skips disabled signal types; every scored lead records `config_version`; when the version changed since a lead was scored, the next run re-scores it if it's `ready`/`filtered`, and never changes enrolled or later leads.
-- [ ] **C4.5.4** Server: `lib/data/agent-config.ts` (`getCurrentConfig()`, `listConfigVersions()`), and admin-only routes (zod input + role check + audit log): `POST /api/agent-config` (validate, compute a readable change summary, create the next version) and `POST /api/agent-config/revert` (copies an old version into a new one). Client helpers in `lib/api.ts`. Admin guard on `app/(app)/settings/agent/layout.tsx`.
-- [ ] **C4.5.5** (Optional) Preview: `previewConfigChange(draft)` returns how many leads would become ready or filtered. Either the scoring formula in TypeScript with parity fixtures shared with Python, or a preview computed by the agent; decided in the phase plan.
+- [ ] **C4.5.1** Rules document and validators: `RulesDoc` + `validate_rules()` in `agent/config.py`, the zod twin `validateRules()` in `lib/agent-config.ts`, both returning `{path, code}` errors; `shared/defaults/rules.json` (version 1, generated from today's `/shared` files); `shared/fixtures/config_cases.json` (about 25 cases) run by both suites. The seeded categories reproduce today's classification on every existing keyword test, unchanged.
+- [ ] **C4.5.2** Migration 008: `agent_configs` (org_id, version, rules, change_summary, created_by, created_at; unique (org_id, version); members read), `save_agent_config()` (admins only, next version under a lock), `leads.config_version`, `threshold_preview()`. Version 1 seeded per org by `npm run seed`. New RLS checks.
+- [ ] **C4.5.3** Agent: `load_config` reads the org's newest version (invalid or missing falls back to the defaults and records an error); ordered, switchable hiring categories; N-category scoring; hiring signals re-classified from their stored titles at scoring time; `config_version` on scored leads; enrolled and later leads are never re-scored; drafting reads the org's outreach and guardrails.
+- [ ] **C4.5.4** Web: `getAgentConfig` per org; `lib/data/agent-config.ts` (`getCurrentConfig()`, `listConfigVersions()`, `thresholdPreview()`); `lib/config-diff.ts` (readable change lines); admin routes `POST /api/agent-config`, `POST /api/agent-config/revert`, `GET /api/agent-config/preview?threshold=` (zod + role check + audit log); helpers `saveAgentConfig`, `revertAgentConfig`, `previewThreshold` in `lib/api.ts`; admin guard on `app/(app)/settings/agent/layout.tsx` and in the proxy; `SignalView.label` from the category name; LLM pacing data for Ops.
 
 ### Flash
 
 #### F4.5.1 Admin rules editor
-- **Starts after:** C4.5.4, F1.2
-- **Build:**
-  - `app/(app)/settings/agent/page.tsx` and `components/agent-config/*`: a form with sections for ICP rules (status, team size range, batch age, B2B), partial-match rules, signal types (on/off switch + weight each), keyword lists (add/remove chips per category and exclusion list), threshold, weak signal types, score bands (label + minimum score), and the freshness table.
-  - Validate on every change with the shared TypeScript validator from `lib/agent-config.ts` and show each error next to its field. "Save new version" is disabled while there are errors; it calls the save helper from `lib/api.ts` and shows a toast with the new version number.
-  - Unsaved changes are highlighted; "Discard changes" restores the current version.
+- **Starts after:** C4.5.4
+- **Build:** `app/(app)/settings/agent/page.tsx` (server component: loads `getCurrentConfig()`) and `components/agent-config/*`, a form with sections:
+  - ICP (status, B2B, team size range, batch age, points for full and partial matches) and partial-match rules.
+  - Hiring categories: one card per category with name, on/off switch, points, founding bonus, keyword chips and exclusion chips (add/remove), move up/down (order matters: the first matching category wins), add and delete category. Plus the shared founding phrases, global exclusions and exceptions.
+  - Other signals: Launch and YC recent, each with on/off and points.
+  - Threshold, with a live line from `previewThreshold()`: "N leads in the queue at this threshold, was M" (debounced, with a loading state).
+  - Score bands (label + minimum), freshness table, stacking points, signal windows.
+  - Outreach: sender name, offer, proof points (add/remove).
+  - Email guardrails: max body words (40 to 150) and extra banned phrases (chips). Show the locked checks as locked rows with a one-line reason each: "Grounding: every email must quote a real signal", "Invented facts: numbers and customer claims must come from the signals or proof points", "No em or en dashes: house style for every email", plus the built-in banned phrases (read-only chips).
+  - Validate on every change with `validateRules()` from `lib/agent-config.ts`; show each error next to its field (map error codes to plain messages in the component). "Save new version" is disabled while there are errors; it calls `saveAgentConfig()` and shows a toast with the new version number. Unsaved changes are highlighted; "Discard changes" restores the current version.
+  - Next to every section except the threshold: "Effect shows after the next agent run (every 30 min)".
 - **Touch only:** `app/(app)/settings/agent/page.tsx`, `components/agent-config/*`
 - **Done when:** an admin can change the threshold and save a new version; an invalid value shows its error and blocks saving; `npm run check` passes.
 - **Start:**
@@ -779,8 +782,8 @@ Rules move into the database per org, versioned. The agent already reads them on
 #### F4.5.2 Version history and revert
 - **Starts after:** F4.5.1
 - **Build:**
-  - `components/agent-config/VersionHistory.tsx`, shown on the editor page: one row per version with number, who, when (mono) and the change summary ("Threshold 50 → 55; Launch weight 18 → 20"). The current version is marked.
-  - "Revert to this version" asks for confirmation inside the page (no browser dialogs), then calls the revert helper and refreshes.
+  - `components/agent-config/VersionHistory.tsx`, shown on the editor page from `listConfigVersions()`: one row per version with number, who, when (mono) and the change summary lines. The current version is marked.
+  - "Revert to this version" asks for confirmation inside the page (no browser dialogs), then calls `revertAgentConfig()` and refreshes.
 - **Touch only:** `components/agent-config/*`, `app/(app)/settings/agent/page.tsx`
 - **Done when:** history lists every saved version and a revert creates a new version; `npm run check` passes.
 - **Start:**
@@ -800,9 +803,9 @@ Rules move into the database per org, versioned. The agent already reads them on
 - **Review notes:** `docs/reviews/F4.5.2.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.5.3 "What our agent looks for" page
-- **Starts after:** C4.5.4, F1.2
+- **Starts after:** C4.5.4
 - **Build:**
-  - `app/(app)/agent/page.tsx`: a read-only, plain-language view of the current rules for every member, from `getCurrentConfig()`. Example sentences: "We look for active B2B startups with 5 to 60 people from YC batches in the last 3 years." "A sales or GTM hire adds 30 points; a senior marketing hire adds 20." "A lead reaches your queue at 50 points with at least one hiring or launch signal." "90 or more is Strong, 70 or more is Good, 50 or more is Borderline."
+  - `app/(app)/agent/page.tsx`: a read-only, plain-language view of the current rules for every member, from `getCurrentConfig()`. Example sentences: "We look for active B2B startups with 5 to 60 people from YC batches in the last 3 years." "A Sales hire adds 30 points (35 for a founding role); a Marketing hire adds 20." "Paid acquisition hires don't count right now." "A lead reaches your queue at 50 points with at least one hiring or launch signal." "90 or more is Strong, 70 or more is Good, 50 or more is Borderline." Also the offer and the proof points emails may use.
   - Show the version number and when it changed. Admins also see an "Edit rules" link to `/settings/agent`.
   - Add the page to the sidebar and the command palette for everyone.
 - **Touch only:** `app/(app)/agent/page.tsx`, `components/agent-config/*`, `components/shell/*`, `components/command-palette.tsx`
@@ -816,7 +819,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 - **Finish:**
   ```bash
   npm run check  # must pass before committing (rule 7)
-  git add "app/(app)/agent" components/agent-config components/shell components/command-palette.tsx  # only the Touch-only files
+  git add "app/(app)/agent/page.tsx" components/agent-config components/shell components/command-palette.tsx  # only the Touch-only files
   git commit -m "flash(p4.5): what our agent looks for page"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
@@ -826,7 +829,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 #### F4.5.4 More config fixture cases
 - **Starts after:** C4.5.1
 - **Build:**
-  - Add at least 20 cases to `shared/fixtures/config_cases.json`: negative and swapped team size ranges, a threshold of 0 or above the maximum possible score, an empty keyword category, a duplicate phrase, every signal type disabled, unsorted freshness steps, unknown fields. Don't change either validator. If TypeScript and Python disagree on a case, stop and report it: that's a bug for Claude.
+  - Add at least 20 cases to `shared/fixtures/config_cases.json`: negative and swapped team size ranges, a threshold of 0 or above the maximum possible score, an empty keyword list, a duplicate phrase, every signal source disabled, unsorted freshness steps, bands out of order, a proof point with a digit, max body words of 39 and 151, duplicate category ids, unknown fields. Don't change either validator. If TypeScript and Python disagree on a case, stop and report it: that's a bug for Claude.
 - **Touch only:** `shared/fixtures/config_cases.json`
 - **Done when:** `npm run check` and `.venv/bin/python -m pytest agent/tests` both pass.
 - **Start:**
@@ -846,34 +849,33 @@ Rules move into the database per org, versioned. The agent already reads them on
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.4.md`, on the card's branch (only exists if Claude asked for changes)
 
-#### F4.5.5 (Optional) Change preview panel
-- **Starts after:** C4.5.5, F4.5.1
-- **Build:**
-  - On the editor, a "Preview" button calls the preview helper with the unsaved draft and shows "This would move N leads into the queue and M out of it", with a loading state and an error state.
-- **Touch only:** `components/agent-config/*`
-- **Done when:** the preview shows counts for an unsaved change; `npm run check` passes.
+#### F4.5.6 LLM pacing tile on Ops
+- **Starts after:** C4.5.4
+- **Build:** `components/ops/LlmPacingTile.tsx` next to the AI budget tile on `app/(app)/ops/page.tsx`, from `llmPacing()` in `lib/data/llm.ts`: drafts per run, the agent's share of the budget, retries per lead, seconds between calls, Regenerate limit per user per hour. Read-only, with a note "Deploy settings: change them in the environment, not here."
+- **Touch only:** `components/ops/*`, `app/(app)/ops/page.tsx`
+- **Done when:** Ops shows the pacing values; `npm run check` passes.
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
   git switch main  # stand on the latest main (no commits ever happen here)
-  git switch -c flash/p45-preview  # create this card's own branch and move onto it
+  git switch -c flash/p45-pacing-tile  # create this card's own branch and move onto it
   ```
 - **Finish:**
   ```bash
   npm run check  # must pass before committing (rule 7)
-  git add components/agent-config  # only the Touch-only files
-  git commit -m "flash(p4.5): change preview panel"  # commits to the card's branch, not main
+  git add components/ops "app/(app)/ops/page.tsx"  # only the Touch-only files
+  git commit -m "flash(p4.5): LLM pacing tile on Ops"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
-- **Review notes:** `docs/reviews/F4.5.5.md`, on the card's branch (only exists if Claude asked for changes)
+- **Review notes:** `docs/reviews/F4.5.6.md`, on the card's branch (only exists if Claude asked for changes)
 
 ### Phase gate
 
-- [ ] **C4.5.6** Automated checks: `npm run check` and `.venv/bin/python -m pytest agent/tests` (both validators agree on every fixture); RLS tests: a rep can read the rules but can't insert a version; an agent run after a threshold change re-scores `ready`/`filtered` leads, records the new `config_version`, and leaves an enrolled lead's score alone. Report the results to the user.
+- [ ] **C4.5.6** Automated checks: `npm run check` and `.venv/bin/python -m pytest agent/tests` (both validators agree on every fixture; every existing keyword test passes unchanged); RLS: a rep reads the rules but can't save a version; an agent run after a threshold change re-scores `ready`/`filtered` leads, records the new `config_version`, and leaves enrolled leads alone; turning Paid acquisition hire on scores a matching title; a revert restores the scores. Report the results to the user.
 - [ ] **U4.5.1** In the browser, check PLAN.md Phase 4.5 "Done when":
-  - As admin: change the threshold (and one weight), save, and see the change in the history with your name.
-  - Run the agent (Actions → Run workflow); the queue reflects the new rules, and a lead's detail shows the new version.
+  - As admin: change the threshold (watch the preview line) and one category's points, save, and see the change in the history with your name.
+  - Run the agent (Actions → Run workflow); the queue reflects the new rules.
   - As rep: the "What our agent looks for" page shows the new rules in plain language; `/settings/agent` shows the 403 page.
   - Tell Claude what passed and what didn't.
 - [ ] **C4.5.7** After U4.5.1 passes: tick PLAN.md Phase 4.5, add a PROGRESS.md entry, commit.
@@ -1126,6 +1128,20 @@ Only if everything before it works. Needs Phase 4.5. The user's spec is in PLAN.
 - [ ] **CS.2** Automated checks: `npm run check`; the draft route rejects non-admins, validates output with the shared schema, and never writes a config version. Report to the user.
 - [ ] **US.1** In the browser: answer the five questions for Cardinal's real ICP, review and save the draft; then try an out-of-scope ICP (e.g. dental clinics in Texas) and see the warning. Tell Claude what passed.
 - [ ] **CS.3** After US.1 passes: tick PLAN.md, add a PROGRESS.md entry, commit.
+
+---
+
+## Stretch: full rules preview (after Phase 6)
+
+Only if everything before it works. Needs Phase 4.5.
+
+### Claude
+
+- [ ] **CS.4** Port the ICP filter, keyword classifier and scoring to TypeScript with shared parity fixtures (both languages must give the same score for every case). `previewConfigChange(draft)` returns how many leads would move into and out of the queue for any unsaved rule change, computed on the server from stored companies and signals.
+
+### Flash
+
+- [ ] **FS.2** On the rules editor, a "Preview all changes" button that calls the preview helper and shows "This would move N leads into the queue and M out of it", with loading and error states. Touch only `components/agent-config/*`.
 
 ---
 

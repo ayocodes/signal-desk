@@ -129,20 +129,21 @@ Then add the phase's extra notes (below each phase) if any.
 
 The agent's rules (ICP, signal types and weights, keyword lists, threshold, freshness) move from `/shared` files into the database, per organization and versioned, with an admin editor. The agent already reads every rule through `load_config(org_id)` (Phase 2), so only that function changes on the Python side.
 
-- [ ] One validation schema for the rules, shared by TypeScript and Python, with shared accept/reject fixtures that both must agree on
+- [ ] One rules document validated in TypeScript (zod) and Python (pydantic), with shared accept/reject fixtures that both must agree on
 - [ ] Rules stored per org in the database, versioned (who, when, what changed), every change audit logged; `/shared` JSON becomes the default seed (version 1)
-- [ ] Signal types can be switched on/off and re-weighted; keyword lists, threshold and freshness editable
+- [ ] Hiring categories are admin-defined (name, keywords, exclusions, points, on/off; seeded Sales hire, Marketing hire, Paid acquisition hire off); launch and YC-recent signals switchable and re-weighted; threshold, bands and freshness editable
+- [ ] Offer, sender name and proof points editable; email guardrails: extra banned phrases and max body words (40 to 150), while grounding, the invented-facts checks and the dash ban stay locked
 - [ ] Each lead records the config version that scored it
 - [ ] Agent loads the org's current version each run (falls back to the `/shared` defaults); the next run re-scores `ready`/`filtered` leads; enrolled and later leads keep their score
 - [ ] Admin settings page to edit the rules, with version history and revert (a revert creates a new version)
 - [ ] Read-only "What our agent looks for" page for reps
-- [ ] Optional: preview how many leads a change would surface or filter before saving
+- [ ] Threshold preview from stored scores ("N leads in the queue at this threshold, was M"); other changes show "Effect shows after the next agent run"; LLM pacing stays a deploy setting, shown in Ops
 
 **Who builds what:** see this phase in `docs/TASKS.md`. Storage, versioning, RLS, validation and agent loading are Claude's; the settings form, history and rep page UI are Flash's.
 
 **Done when:** an admin changes the threshold and saves; history shows who changed what; the next agent run re-scores and leads show the new version; enrolled leads keep their score; a rep can read the rules page but can't open the editor (403) or write a version (RLS); both validators reject the same bad fixture.
 
-**Open decisions for the phase plan:** schema format (one JSON Schema file read by both languages, or a schema generated from one side); whether the optional preview ports the scoring formula to TypeScript (with parity fixtures) or asks the agent to compute it.
+**Decided (2026-10-21):** two validators plus shared fixtures (no new dependencies); threshold-only preview now, the full preview (a TypeScript port of the ICP filter, classifier and scoring) is a Stretch item.
 
 ---
 
@@ -189,6 +190,14 @@ A nice extra, not a core feature: built only if everything before it works. Need
 **Who builds what:** see "Stretch" in `docs/TASKS.md`.
 
 **Done when:** an admin answers the five questions, gets a validated draft with a reason per rule, edits one value, saves a new version; an out-of-scope ICP shows the coverage warning; nothing is saved without clicking Save.
+
+---
+
+## Stretch: full rules preview (after Phase 6)
+
+- [ ] Port the ICP filter, keyword classifier and scoring to TypeScript with shared parity fixtures, so the editor can show how many leads any unsaved change would move into or out of the queue.
+
+**Who builds what:** see "Stretch" in `docs/TASKS.md`.
 
 ---
 
