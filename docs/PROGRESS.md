@@ -4,12 +4,23 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4 in progress (drafts and approval, the cut line). Plan approved 2026-10-21: `/Users/tomiomotola/.claude/plans/wise-drifting-kay.md` (copied in summary below).
-- Done: C4.0 (paid-acquisition roles excluded, with tests); Phase 4 docs (TASKS cards, PLAN, ARCHITECTURE).
-- Next step (exact): C4.1 shared files, then C4.2 guardrails (py + ts, shared fixtures), C4.3 migration 007, C4.4 agent drafting, C4.5 web routes (cards in TASKS.md Phase 4). Commit after each.
-- Blockers: none. Ashby is checked only on local runs (`npm run agent:local`).
+- Phase: 4 in progress. Claude cards C4.0 to C4.5 done; Flash cards F4.1 to F4.4 are ready to start (F4.3 any time; F4.2 after F4.1).
+- Next step (exact): user sets `LLM_DAILY_BUDGET=20` and `GEMINI_MODEL=gemini-3.8-flash` in Vercel (U4.1) before pushing (the build validates env); Flash builds F4.1 to F4.4; Claude reviews each; then C4.6 gate, U4.2 browser check on Vercel, C4.7 close.
+- Blockers: none. Today's real model RPD for gemini-3.8-flash not confirmed yet; the budget stays at 20 until the user reads it in AI Studio.
 
 ## Log
+
+### 2026-10-21: Phase 4 Claude cards (C4.1 to C4.5)
+- Done: shared outreach/prompts/fixtures (C4.1); guardrails and prompt rendering in Python and TypeScript agreeing on 33 + 4 shared cases (C4.2); migration 007 with `llm_calls`, `reserve_llm_call()`, `llm_calls_today()`, `approve_lead()` and 4 new RLS checks, 20 total (C4.3); agent drafting step (C4.4); draft and approve routes, `lib/llm.ts`, draft workspace data, client helpers, 13 route tests (C4.5). 203 web tests, 290 agent tests.
+- Real runs: the agent drafted 2 leads in 2 calls (all 6 angles passed first try). End to end on the dev server: regenerate, Unconstrained once then reused, a rep refused on another rep's lead (404), a body without its signal phrase refused (422), approval created a sequence with 4 idempotent steps and moved the lead to enrolled, a second approval got 409.
+- Decisions (and why):
+  - `gemini-2.5-flash` is retired for new keys (404); GEMINI_MODEL is now `gemini-3.8-flash` (user choice) in .env.local and the GitHub secret; Vercel still needs it.
+  - Failed calls still count against the daily budget (conservative); Google's 500/503 gets one retry inside the same reserved call so a busy moment costs nothing extra.
+  - The prompt now forbids copying the company's own "we/our/us" phrases (the first real draft quoted "our enterprise pipeline engine").
+  - `getLead` is unchanged; `getDraftWorkspace(leadId)` returns the editor's data, so existing lead-detail tests stay valid. F4.1 wires it into the Queue page.
+  - Signed-out `/api/*` calls get a 401 JSON from the proxy instead of a login redirect.
+- Not done / known issues: Groq provider is still a stub (no key). "Founding GTM Recruiter" counts as a GTM hire; arguably right (they're building a GTM team), worth a look in Phase 4.5.
+- Next step (exact): see Current state.
 
 ### 2026-10-21: Phase 4 planned; C4.0 done
 - Decisions (and why):

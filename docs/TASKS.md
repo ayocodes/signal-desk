@@ -601,14 +601,14 @@ Almost all of this phase is Claude's: it's the agent core.
 
 The agent drafts three grounded angles per ready lead in one LLM call. Code checks every draft with the same rules in Python and TypeScript, a person edits and approves, and approval creates a sequence with idempotent steps (Phase 5 sends them). The free Gemini tier allows 20 calls a day: `LLM_DAILY_BUDGET=20`, the agent stops at 80%, the app keeps the rest for Regenerate and Unconstrained.
 
-### Claude
+### Claude       
 
 - [x] **C4.0** Paid-acquisition roles never count: `performance marketing`, `paid acquisition`, `paid media` in `categoryExclude` for `marketing` and `gtm`, with tests (decision in PROGRESS.md; candidate toggle for Phase 4.5).
-- [ ] **C4.1** Shared files: `shared/outreach.json` (sender "Sam" at the brand, the offer, allowed proof points, angle descriptions, LLM pacing and budget share), `shared/prompts/draft.md` (3 angles, JSON out) and `shared/prompts/raw.md` (no signals, no rules), `claimPhrases` and `minGroundedPhraseChars` in `shared/guardrails.json`, `shared/sequence.json` (default steps), `shared/fixtures/guardrails_cases.json` and `shared/fixtures/prompt_cases.json`.
-- [ ] **C4.2** Guardrails in `agent/guardrails.py` and `lib/guardrails.ts`: `runGuardrails(input, rules)` returns `{check, status, message}` per check (angle, grounding, banned_chars, banned_phrases, word_count, closing_question, numbers, claims, placeholders, subject). Both suites run the shared fixtures and must agree. Prompt rendering in both languages matches `prompt_cases.json`.
-- [ ] **C4.3** Migration 007: `drafts.prompt`, `drafts.trace`, `drafts.created_by`, `drafts.llm_call_id`; `llm_calls` (admin read); `reserve_llm_call()` (advisory lock, service role only); `llm_budget_today()` (any member); `approve_lead()` (re-checks org, role and assignment; one transaction; service role only). Regenerated DB types; new RLS checks.
-- [ ] **C4.4** Agent drafting step (`agent/llm.py` Gemini over httpx, `agent/drafting.py`): ready leads without drafts, best score first, `DRAFTS_PER_RUN` cap, one call per lead, at most one retry, 13 s between calls, 429 handling, stops at the agent's share of the budget. `LLM_DAILY_BUDGET` in settings, workflow and repo variable.
-- [ ] **C4.5** Web: `lib/llm.ts`, `lib/prompts.ts`, `lib/supabase/admin.ts` (server only, write routes only). `getLead` adds `drafts`, `sender`, `guardrailRules`, `llmBudget`. Routes (zod input + ownership via the user's RLS read + audit log):
+- [x] **C4.1** Shared files: `shared/outreach.json` (sender "Sam" at the brand, the offer, allowed proof points, angle descriptions, LLM pacing and budget share), `shared/prompts/draft.md` (3 angles, JSON out) and `shared/prompts/raw.md` (no signals, no rules), `claimPhrases` and `minGroundedPhraseChars` in `shared/guardrails.json`, `shared/sequence.json` (default steps), `shared/fixtures/guardrails_cases.json` and `shared/fixtures/prompt_cases.json`.
+- [x] **C4.2** Guardrails in `agent/guardrails.py` and `lib/guardrails.ts`: `runGuardrails(input, rules)` returns `{check, status, message}` per check (angle, grounding, banned_chars, banned_phrases, word_count, closing_question, numbers, claims, placeholders, subject). Both suites run the shared fixtures and must agree. Prompt rendering in both languages matches `prompt_cases.json`.
+- [x] **C4.3** Migration 007: `drafts.prompt`, `drafts.trace`, `drafts.created_by`, `drafts.llm_call_id`; `llm_calls` (admin read); `reserve_llm_call()` (advisory lock, service role only); `llm_budget_today()` (any member); `approve_lead()` (re-checks org, role and assignment; one transaction; service role only). Regenerated DB types; new RLS checks.
+- [x] **C4.4** Agent drafting step (`agent/llm.py` Gemini over httpx, `agent/drafting.py`): ready leads without drafts, best score first, `DRAFTS_PER_RUN` cap, one call per lead, at most one retry, 13 s between calls, 429 handling, stops at the agent's share of the budget. `LLM_DAILY_BUDGET` in settings, workflow and repo variable.
+- [x] **C4.5** Web: `lib/llm.ts`, `lib/prompts.ts`, `lib/supabase/admin.ts` (server only, write routes only). `getDraftWorkspace(leadId)` in `lib/data/drafts.ts` returns `DraftWorkspace` (`drafts` latest per angle, `sender`, `guardrailRules`, `llmBudget`); `llmBudgetToday()` in `lib/data/llm.ts`. Routes (zod input + ownership via the user's RLS read + audit log):
   - `POST /api/leads/[id]/draft` `{angle}`: Regenerate (signal, peer, short) and Unconstrained (raw, stored the first time). 5 per user per hour; 429 `budget_exhausted` with a plain message when today's budget is used.
   - `POST /api/leads/[id]/approve` `{draftId, subject, body}`: re-runs the guardrails on the server, then `approve_lead()`; 422 with the results on a failing check or the raw angle; 409 when already enrolled.
 
@@ -618,13 +618,16 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
 
 #### F4.1 Email editor
 - **Starts after:** C4.5, F3.3
-- **Build:** `components/drafts/EmailEditor.tsx`, inside LeadDetail:
-  - Angle picker (SegmentedControl): Signal, Peer, Short, Unconstrained. Unconstrained is flagged in `--bad` and can never be approved; the first time it's opened for a lead, call `generateDraft(leadId, "raw")` and show a loading state.
-  - From / To (read-only, mono, from `lead.sender` and the contact's send address), Subject and Body fields.
-  - A live checks list that calls `runGuardrails()` from `lib/guardrails.ts` with `lead.guardrailRules` on every change and shows pass, fail or warn per check, naming the grounded phrases that were found.
-  - An "Edited" marker once the text differs from the draft.
-  - When generation returns `budget_exhausted`, show its message plainly (no error styling beyond `--warn`).
-- **Touch only:** `components/drafts/*`, `components/queue/LeadDetail.tsx`
+- **Build:**
+  - In `app/(app)/queue/page.tsx`, when a lead is selected, also call `getDraftWorkspace(selectedLeadId)` from `lib/data/drafts.ts` (inside the existing `Promise.all`) and pass the result to `LeadDetail` as a `workspace` prop (`DraftWorkspace` from `lib/types.ts`). `LeadDetail` spreads its other props onto a `<div>`, so destructure `workspace` there.
+  - `components/drafts/EmailEditor.tsx`, inside LeadDetail, for ready leads:
+    - Angle picker (SegmentedControl): Signal, Peer, Short, Unconstrained (`DRAFT_ANGLES`). Unconstrained is flagged in `--bad` and can never be approved; when it isn't in `workspace.drafts` yet, opening it calls `generateDraft(leadId, "raw")` from `lib/api.ts` and shows a loading state.
+    - From / To (read-only, mono): `workspace.sender.name` at `workspace.sender.fromAddress`, and the contact's `sendAddress`. Subject and Body fields.
+    - A live checks list that calls `runGuardrails()` from `lib/guardrails.ts` with `workspace.guardrailRules` on every change (input: angle, subject, body, the draft's `groundedPhrases`, and the lead's signals as `{ title, excerpt }`). Show pass, fail or warn per check with its message (messages already name the grounded phrases found).
+    - An "Edited" marker once the text differs from the draft.
+    - When `generateDraft` returns `budget_exhausted` or `rate_limited`, show its `message` as is, in `--warn`.
+    - A lead with no drafts yet says the agent will draft it on its next run.
+- **Touch only:** `components/drafts/*`, `components/queue/LeadDetail.tsx`, `app/(app)/queue/page.tsx`
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
@@ -634,7 +637,7 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
 - **Finish:**
   ```bash
   npm run check  # must pass before committing (rule 7)
-  git add components/drafts components/queue/LeadDetail.tsx  # only the Touch-only files
+  git add components/drafts components/queue/LeadDetail.tsx "app/(app)/queue/page.tsx"  # only the Touch-only files
   git commit -m "flash(p4): email editor with live checks"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
@@ -644,7 +647,7 @@ The agent drafts three grounded angles per ready lead in one LLM call. Code chec
 #### F4.2 Approve, regenerate, agent trace
 - **Starts after:** F4.1
 - **Build:**
-  - "Approve and enroll" button with a `⌘↵` Kbd hint. It is disabled unless every check passes. It calls `approveLead()`, shows the toast "{Company} enrolled", and moves to the next lead.
+  - "Approve and enroll" button with a `⌘↵` Kbd hint. It is disabled unless every check passes. It calls `approveLead()` from `lib/api.ts`, shows the toast "{Company} enrolled", and moves to the next lead in the list. On `checks_failed` show the server's `results`; on `already_enrolled` or `forbidden` show the message and refresh.
   - "Regenerate" calls `generateDraft()` for the current angle and shows a loading state and errors, including the hourly limit and the budget message.
   - Two collapsibles: "Agent trace" (`draft.trace`) and "Prompt sent to the model" (`draft.prompt`, mono, scrollable).
 - **Touch only:** `components/drafts/*`, `components/queue/*`, `components/command-palette.tsx`
