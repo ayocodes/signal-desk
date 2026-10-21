@@ -16,10 +16,11 @@ export type TableProps = React.HTMLAttributes<HTMLTableElement>;
 
 export function Table({ className, ...props }: TableProps) {
   return (
-    <div className="w-full overflow-x-auto rounded-panel border border-border bg-surface">
+    // The box scrolls both ways so the sticky header has something to stick to.
+    <div className="w-full max-h-[calc(100vh-12rem)] overflow-auto rounded-panel border border-border bg-surface">
       <table
         className={cn(
-          "w-full text-left border-collapse text-meta select-none",
+          "w-full text-left border-collapse text-meta",
           className
         )}
         {...props}
@@ -90,7 +91,7 @@ export function TableRow({
       onClick={handleClick}
       aria-selected={selected ? "true" : undefined}
       className={cn(
-        "h-8 border-b border-border/60 transition-colors select-none",
+        "h-8 border-b border-border/60 transition-colors",
         href && "cursor-pointer hover:bg-surface-2/70",
         selected && "bg-accent-soft",
         className

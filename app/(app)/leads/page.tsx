@@ -15,7 +15,7 @@ import {
   Tag,
 } from "@/components/ui";
 import { StatusPill } from "@/components/leads";
-import { formatSignalAge } from "@/components/leads/SignalCard";
+import { formatSignalAge, signalLabel } from "@/components/leads/SignalCard";
 import type { LeadsSort, SortDir } from "@/lib/types";
 
 interface LeadsPageProps {
@@ -58,12 +58,8 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
   return (
     <div className="flex flex-col gap-3 h-full">
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-baseline gap-2">
-          <h1 className="text-section font-semibold text-text">Leads</h1>
-          <span className="text-meta font-mono text-muted">
-            ({data.total.toLocaleString()} leads)
-          </span>
-        </div>
+        {/* The shell's top bar already shows "Leads" as the page heading. */}
+        <span className="text-meta font-mono text-muted">{data.total.toLocaleString()} leads</span>
         <TablePager
           page={data.page}
           pageSize={data.pageSize}
@@ -141,7 +137,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                       {lead.contact.title ? ` · ${lead.contact.title}` : ""}
                     </span>
                   ) : (
-                    <span className="text-subtle select-none">—</span>
+                    <span className="text-subtle">None</span>
                   )}
                 </TableCell>
 
@@ -161,9 +157,9 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                     <div className="flex items-center gap-1.5 text-muted max-w-[280px]">
                       <Tag
                         active={false}
-                        className="text-[10px] py-0 px-1 font-mono uppercase shrink-0"
+                        className="text-label py-0 px-1 font-mono uppercase shrink-0"
                       >
-                        {topSig.type}
+                        {signalLabel(topSig)}
                       </Tag>
                       <span className="truncate text-text text-meta">
                         {topSig.title}
@@ -178,7 +174,7 @@ export default async function LeadsPage({ searchParams }: LeadsPageProps) {
                       </span>
                     </div>
                   ) : (
-                    <span className="text-subtle text-meta select-none">—</span>
+                    <span className="text-subtle text-meta">No signals yet</span>
                   )}
                 </TableCell>
 

@@ -38,6 +38,28 @@ describe("design tokens", () => {
     expect(hits, `Use theme tokens instead (bg-bg, text-muted, bg-surface-2, ...):\n${hits.join("\n")}`).toEqual([]);
   });
 
+  it("uses no em or en dashes in UI copy (AGENTS.md)", () => {
+    const hits = files.flatMap((file) =>
+      readFileSync(file, "utf-8")
+        .split("\n")
+        .flatMap((line, i) => (/[\u2013\u2014]/.test(line) ? [`${relative(ROOT, file)}:${i + 1}: ${line.trim()}`] : [])),
+    );
+    expect(hits, `Use a comma, colon, "to" or a plain word instead:\n${hits.join("\n")}`).toEqual([]);
+  });
+
+  it("uses the type scale, not arbitrary pixel font sizes", () => {
+    const hits = files.flatMap((file) =>
+      [...readFileSync(file, "utf-8").matchAll(/\btext-\[\d+(?:\.\d+)?(?:px|rem)\]/g)].map((m) => `${relative(ROOT, file)}: ${m[0]}`),
+    );
+    expect(hits, `Use text-label, text-meta, text-body, text-emphasis, text-section or text-title:\n${hits.join("\n")}`).toEqual([]);
+  });
+
+  it("leaves the page heading to the shell's top bar (no <h1> in app pages)", () => {
+    const pages = files.filter((file) => file.includes(join("app", "(app)")) && file.endsWith("page.tsx"));
+    const hits = pages.filter((file) => readFileSync(file, "utf-8").includes("<h1"));
+    expect(hits.map((file) => relative(ROOT, file))).toEqual([]);
+  });
+
   it("uses no raw hex colors outside app/themes.css", () => {
     const hits = files.flatMap((file) =>
       [...readFileSync(file, "utf-8").matchAll(RAW_HEX)].map((m) => `${relative(ROOT, file)}: ${m[0]}`),

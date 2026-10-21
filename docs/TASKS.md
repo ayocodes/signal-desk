@@ -21,7 +21,7 @@ Claude reviews every Flash card before it is merged into `main`. After merging, 
 3. Change only the files listed under **Touch only**. If the card can't be done without touching another file, stop and say which file and why.
 4. Never add a dependency (`npm install`, `pip install`). If you need one, stop and tell the user.
 5. Never touch `.env*`, `supabase/`, `proxy.ts`, `next.config.ts`, any `layout.tsx` or `actions.ts`, `app/forbidden.tsx`, `app/403/`, `app/api/`, files in `lib/` other than ones your card names, `docs/TASKS.md`, `docs/reviews/`, or anything under `agent/` other than test files your card names. Claude ticks the boxes in this file after merging.
-6. No raw hex colors outside `app/themes.css`. Use the token utilities from `app/globals.css`: colors (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text`, `text-muted`, `text-subtle`, `bg-accent`, `text-accent-fg`, `bg-accent-soft`, `text-good`, `text-warn`, `text-bad`, `text-signal`), type (`text-label`, `text-meta`, `text-body`, `text-emphasis`, `text-section`, `text-title`) and radius (`rounded-control`, `rounded-panel`, `rounded-dialog`). Tailwind's default palette is switched off, so classes like `bg-blue-500`, `bg-black` or `text-white` do nothing (for an overlay, use `bg-bg/70`); `lib/design-tokens.test.ts` fails the check if one slips in. No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
+6. No raw hex colors outside `app/themes.css`. Use the token utilities from `app/globals.css`: colors (`bg-bg`, `bg-surface`, `bg-surface-2`, `border-border`, `text-text`, `text-muted`, `text-subtle`, `bg-accent`, `text-accent-fg`, `bg-accent-soft`, `text-good`, `text-warn`, `text-bad`, `text-signal`), type (`text-label`, `text-meta`, `text-body`, `text-emphasis`, `text-section`, `text-title`) and radius (`rounded-control`, `rounded-panel`, `rounded-dialog`). Tailwind's default palette is switched off, so classes like `bg-blue-500`, `bg-black` or `text-white` do nothing (for an overlay, use `bg-bg/70`); `lib/design-tokens.test.ts` fails the check if one slips in, and also catches em/en dashes, `text-[Npx]` sizes and an `<h1>` in app pages (the shell's top bar is the page heading). No em-dashes or en-dashes in UI copy. No `any`. No empty `catch {}`.
 7. **Checks must pass before you commit.** Each Finish block starts with `npm run check`, which runs lint, types, tests **and a production build** (some Next.js errors only show up in the build), and `.venv/bin/python -m pytest agent/tests` where listed.
    - If a check fails, fix it by changing only the card's "Touch only" files, then run it again.
    - If it can't be fixed within those files: stop, **don't commit**, leave the changes on the branch, and report the failing command and its full error output to the user.
@@ -556,7 +556,7 @@ Almost all of this phase is Claude's: it's the agent core.
   git commit -m "flash(p3): leads table"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.4.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F3.5 Keyboard, skeletons, empty and error states
