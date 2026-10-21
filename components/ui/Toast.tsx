@@ -102,15 +102,18 @@ export function dismissToast(id?: string) {
   notify();
 }
 
+function subscribe(callback: Listener) {
+  listeners.add(callback);
+  return () => {
+    listeners.delete(callback);
+  };
+}
+
+// useSyncExternalStore needs the same value on every call, or React warns about a loop.
+const NO_TOASTS: ToastItem[] = [];
+
 export function useToast() {
-  const currentToasts = React.useSyncExternalStore(
-    (callback) => {
-      listeners.add(callback);
-      return () => listeners.delete(callback);
-    },
-    () => toasts,
-    () => []
-  );
+  const currentToasts = React.useSyncExternalStore(subscribe, () => toasts, () => NO_TOASTS);
 
   const toast = React.useCallback(
     (message: string, options?: { tone?: ToastTone; duration?: number }) => {
