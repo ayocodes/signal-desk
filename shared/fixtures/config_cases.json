@@ -595,6 +595,171 @@
           "code": "wrong_type"
         }
       ]
+    },
+    {
+      "name": "icp team size min of 0",
+      "ops": [{ "op": "set", "path": "icp.teamSizeMin", "value": 0 }],
+      "errors": [{ "path": "icp.teamSizeMin", "code": "out_of_range" }]
+    },
+    {
+      "name": "icp team size max of 0",
+      "ops": [{ "op": "set", "path": "icp.teamSizeMax", "value": 0 }],
+      "errors": [{ "path": "icp.teamSizeMax", "code": "out_of_range" }]
+    },
+    {
+      "name": "icp team size max is negative",
+      "ops": [{ "op": "set", "path": "icp.teamSizeMax", "value": -5 }],
+      "errors": [{ "path": "icp.teamSizeMax", "code": "out_of_range" }]
+    },
+    {
+      "name": "partial team size min above max",
+      "ops": [{ "op": "set", "path": "partial.teamSizeMin", "value": 150 }],
+      "errors": [{ "path": "partial.teamSizeMin", "code": "min_above_max" }]
+    },
+    {
+      "name": "partial team size max of 0",
+      "ops": [{ "op": "set", "path": "partial.teamSizeMax", "value": 0 }],
+      "errors": [{ "path": "partial.teamSizeMax", "code": "out_of_range" }]
+    },
+    {
+      "name": "icp team size max above 10000",
+      "ops": [{ "op": "set", "path": "icp.teamSizeMax", "value": 10001 }],
+      "errors": [{ "path": "icp.teamSizeMax", "code": "out_of_range" }]
+    },
+    {
+      "name": "threshold above 500",
+      "ops": [{ "op": "set", "path": "threshold", "value": 501 }],
+      "errors": [{ "path": "threshold", "code": "out_of_range" }]
+    },
+    {
+      "name": "score bands empty list",
+      "ops": [{ "op": "set", "path": "scoreBands", "value": [] }],
+      "errors": [{ "path": "scoreBands", "code": "too_few" }]
+    },
+    {
+      "name": "score band min of 0",
+      "ops": [{ "op": "set", "path": "scoreBands.0.min", "value": 0 }],
+      "errors": [{ "path": "scoreBands.0.min", "code": "out_of_range" }]
+    },
+    {
+      "name": "category keyword is empty",
+      "ops": [{ "op": "set", "path": "hiring.categories.0.keywords.0", "value": "   " }],
+      "errors": [{ "path": "hiring.categories.0.keywords.0", "code": "empty" }]
+    },
+    {
+      "name": "duplicate founding phrase",
+      "ops": [{ "op": "set", "path": "hiring.founding", "value": ["founding", "Founding"] }],
+      "errors": [{ "path": "hiring.founding.1", "code": "duplicate" }]
+    },
+    {
+      "name": "duplicate exclude phrase",
+      "ops": [{ "op": "set", "path": "hiring.exclude", "value": ["intern", "Intern"] }],
+      "errors": [{ "path": "hiring.exclude.1", "code": "duplicate" }]
+    },
+    {
+      "name": "duplicate exclude exception phrase",
+      "ops": [{ "op": "set", "path": "hiring.excludeExceptions", "value": ["founding intern", "Founding  intern"] }],
+      "errors": [{ "path": "hiring.excludeExceptions.1", "code": "duplicate" }]
+    },
+    {
+      "name": "duplicate category exclusion phrase",
+      "ops": [{ "op": "set", "path": "hiring.categories.0.exclusions", "value": ["contractor", "Contractor"] }],
+      "errors": [{ "path": "hiring.categories.0.exclusions.1", "code": "duplicate" }]
+    },
+    {
+      "name": "launch points above 100",
+      "ops": [{ "op": "set", "path": "signals.launch.points", "value": 101 }],
+      "errors": [{ "path": "signals.launch.points", "code": "out_of_range" }]
+    },
+    {
+      "name": "yc recent points is negative",
+      "ops": [{ "op": "set", "path": "signals.ycRecent.points", "value": -1 }],
+      "errors": [{ "path": "signals.ycRecent.points", "code": "out_of_range" }]
+    },
+    {
+      "name": "duplicate weak signal type",
+      "ops": [{ "op": "set", "path": "weakSignalTypes", "value": ["funding", "funding"] }],
+      "errors": [{ "path": "weakSignalTypes.1", "code": "duplicate" }]
+    },
+    {
+      "name": "freshness empty list",
+      "ops": [{ "op": "set", "path": "freshness", "value": [] }],
+      "errors": [{ "path": "freshness", "code": "too_few" }]
+    },
+    {
+      "name": "freshness max hours is 0",
+      "ops": [{ "op": "set", "path": "freshness.0.maxHours", "value": 0 }],
+      "errors": [{ "path": "freshness.0.maxHours", "code": "out_of_range" }]
+    },
+    {
+      "name": "freshness points above 50",
+      "ops": [{ "op": "set", "path": "freshness.0.points", "value": 51 }],
+      "errors": [{ "path": "freshness.0.points", "code": "out_of_range" }]
+    },
+    {
+      "name": "jobs refresh hours is 0",
+      "ops": [{ "op": "set", "path": "signalWindows.jobsRefreshHours", "value": 0 }],
+      "errors": [{ "path": "signalWindows.jobsRefreshHours", "code": "out_of_range" }]
+    },
+    {
+      "name": "launch lookback days above 365",
+      "ops": [{ "op": "set", "path": "signalWindows.launchLookbackDays", "value": 366 }],
+      "errors": [{ "path": "signalWindows.launchLookbackDays", "code": "out_of_range" }]
+    },
+    {
+      "name": "funding recent months is 0",
+      "ops": [{ "op": "set", "path": "signalWindows.fundingRecentMonths", "value": 0 }],
+      "errors": [{ "path": "signalWindows.fundingRecentMonths", "code": "out_of_range" }]
+    },
+    {
+      "name": "proof points empty list",
+      "ops": [{ "op": "set", "path": "outreach.proofPoints", "value": [] }],
+      "errors": [{ "path": "outreach.proofPoints", "code": "too_few" }]
+    },
+    {
+      "name": "duplicate proof points",
+      "ops": [{ "op": "set", "path": "outreach.proofPoints", "value": ["Grew revenue", "grew revenue"] }],
+      "errors": [{ "path": "outreach.proofPoints.1", "code": "duplicate" }]
+    },
+    {
+      "name": "proof point is too short",
+      "ops": [{ "op": "set", "path": "outreach.proofPoints.0", "value": "Ok" }],
+      "errors": [{ "path": "outreach.proofPoints.0", "code": "out_of_range" }]
+    },
+    {
+      "name": "category id starts with a number",
+      "ops": [{ "op": "set", "path": "hiring.categories.0.id", "value": "1sales" }],
+      "errors": [{ "path": "hiring.categories.0.id", "code": "bad_id" }]
+    },
+    {
+      "name": "category id has uppercase letters",
+      "ops": [{ "op": "set", "path": "hiring.categories.0.id", "value": "Sales" }],
+      "errors": [{ "path": "hiring.categories.0.id", "code": "bad_id" }]
+    },
+    {
+      "name": "category points above 100",
+      "ops": [{ "op": "set", "path": "hiring.categories.0.points", "value": 101 }],
+      "errors": [{ "path": "hiring.categories.0.points", "code": "out_of_range" }]
+    },
+    {
+      "name": "category founding bonus above 50",
+      "ops": [{ "op": "set", "path": "hiring.categories.0.foundingBonus", "value": 51 }],
+      "errors": [{ "path": "hiring.categories.0.foundingBonus", "code": "out_of_range" }]
+    },
+    {
+      "name": "icp max batch age is 0",
+      "ops": [{ "op": "set", "path": "icp.maxBatchAgeYears", "value": 0 }],
+      "errors": [{ "path": "icp.maxBatchAgeYears", "code": "out_of_range" }]
+    },
+    {
+      "name": "icp full match points is negative",
+      "ops": [{ "op": "set", "path": "icp.points.full", "value": -1 }],
+      "errors": [{ "path": "icp.points.full", "code": "out_of_range" }]
+    },
+    {
+      "name": "unknown field in signal windows",
+      "ops": [{ "op": "set", "path": "signalWindows.unknownKey", "value": 10 }],
+      "errors": [{ "path": "signalWindows.unknownKey", "code": "unknown_field" }]
     }
   ]
 }
