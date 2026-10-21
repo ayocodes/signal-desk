@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ArrowDown,
   ArrowUp,
+  Check,
   Loader2,
   Lock,
   Plus,
@@ -20,18 +21,31 @@ import {
   Pill,
   showToast,
 } from "@/components/ui";
-import { previewThreshold, saveAgentConfig } from "@/lib/api";
+import { cn } from "@/components/ui/utils";
+import {
+  applyStatus as applyStatusApi,
+  previewThreshold,
+  resetAgentConfig,
+  saveAgentConfig,
+} from "@/lib/api";
 import {
   validateRules,
   type HiringCategoryRule,
   type RulesDoc,
 } from "@/lib/rules";
-import type { CurrentRules, RulesVersion, ThresholdPreview } from "@/lib/types";
+import type {
+  ApplyStart,
+  CurrentRules,
+  RulesVersion,
+  ThresholdPreview,
+} from "@/lib/types";
 import { VersionHistory } from "./VersionHistory";
 
 export interface AgentRulesEditorProps {
   config: CurrentRules;
   versions?: RulesVersion[];
+  initialApplyingVersion?: number;
+  initialApplyStart?: ApplyStart;
 }
 
 export function formatRuleError(code: string): string {
@@ -159,7 +173,12 @@ function ChipListEditor({
   );
 }
 
-export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
+export function AgentRulesEditor({
+  config,
+  versions,
+  initialApplyingVersion,
+  initialApplyStart,
+}: AgentRulesEditorProps) {
   const router = useRouter();
   const initialRules = React.useMemo(
     () => structuredClone(config.rules),
@@ -167,8 +186,66 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
   );
   const [rules, setRules] = React.useState<RulesDoc>(initialRules);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isResetting, setIsResetting] = React.useState(false);
+  const [isConfirmingReset, setIsConfirmingReset] = React.useState(false);
   const [preview, setPreview] = React.useState<ThresholdPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
+
+  // Apply status state
+  const [applyStatus, setApplyStatus] = React.useState<
+    "applying" | "applied" | "failed" | null
+  >(() => {
+    if (!initialApplyingVersion) return null;
+    if (initialApplyStart === "deferred" || initialApplyStart === "failed") {
+      return "failed";
+    }
+    if (initialApplyStart === "dispatched" || initialApplyStart === "joined") {
+      return "applying";
+    }
+    return "applying";
+  });
+
+  React.useEffect(() => {
+    if (!initialApplyingVersion) return;
+    if (initialApplyStart === "deferred" || initialApplyStart === "failed") {
+      return;
+    }
+
+    let active = true;
+
+    const check = async () => {
+      try {
+        const res = await applyStatusApi(initialApplyingVersion);
+        if (!active) return true;
+        if (res.ok) {
+          if (res.data === "applied") {
+            setApplyStatus("applied");
+            return true;
+          }
+          if (res.data === "failed") {
+            setApplyStatus("failed");
+            return true;
+          }
+          setApplyStatus("applying");
+        }
+      } catch {
+        // Continue polling on error
+      }
+      return false;
+    };
+
+    check();
+
+    const interval = setInterval(async () => {
+      const done = await check();
+      if (done) clearInterval(interval);
+    }, 5000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [initialApplyingVersion, initialApplyStart]);
 
   // Validate on every change
   const errors = React.useMemo(() => validateRules(rules), [rules]);
@@ -230,6 +307,9 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
         showToast(`Rules saved as version ${res.data.version}`, {
           tone: "good",
         });
+        router.replace(
+          `/settings/agent?applying=${res.data.version}&apply=${res.data.apply}`
+        );
         router.refresh();
       } else {
         showToast(res.error.message, { tone: "bad" });
@@ -238,6 +318,31 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
       showToast("Saving rules failed. Check connection.", { tone: "bad" });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (isResetting) return;
+    setIsResetting(true);
+
+    try {
+      const res = await resetAgentConfig();
+      if (res.ok) {
+        showToast(`Reset to defaults as version ${res.data.version}`, {
+          tone: "good",
+        });
+        setIsConfirmingReset(false);
+        router.replace(
+          `/settings/agent?applying=${res.data.version}&apply=${res.data.apply}`
+        );
+        router.refresh();
+      } else {
+        showToast(res.error.message, { tone: "bad" });
+      }
+    } catch {
+      showToast("Resetting rules failed. Check connection.", { tone: "bad" });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -333,8 +438,17 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
           <Button
             variant="secondary"
             size="sm"
+            onClick={() => setIsConfirmingReset(true)}
+            disabled={isSaving || isResetting}
+          >
+            <span>Reset to defaults</span>
+          </Button>
+
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleDiscard}
-            disabled={!isDirty || isSaving}
+            disabled={!isDirty || isSaving || isResetting}
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Discard changes</span>
@@ -344,7 +458,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             variant="primary"
             size="sm"
             onClick={handleSave}
-            disabled={!isDirty || errors.length > 0 || isSaving}
+            disabled={!isDirty || errors.length > 0 || isSaving || isResetting}
           >
             {isSaving ? (
               <>
@@ -360,6 +474,76 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
           </Button>
         </div>
       </div>
+
+      {/* Inline confirm for Reset to defaults */}
+      {isConfirmingReset && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-panel border border-border bg-surface-2/60">
+          <p className="text-meta font-medium text-text">
+            Reset every rule to the defaults? This saves a new version.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="danger"
+              disabled={isResetting}
+              onClick={handleReset}
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Resetting...</span>
+                </>
+              ) : (
+                <span>Confirm</span>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isResetting}
+              onClick={() => setIsConfirmingReset(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Apply status line */}
+      {applyStatus && (
+        <div
+          data-testid="apply-status"
+          className={cn(
+            "flex items-center gap-2 px-3.5 py-2.5 rounded-control text-meta border transition-colors",
+            applyStatus === "applying" &&
+              "border-accent/40 bg-accent-soft/20 text-text",
+            applyStatus === "applied" &&
+              "border-good/40 bg-good/10 text-good",
+            applyStatus === "failed" && "border-warn/40 bg-warn/10 text-warn"
+          )}
+        >
+          {applyStatus === "applying" && (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin text-accent shrink-0" />
+              <span>Applying your changes...</span>
+            </>
+          )}
+          {applyStatus === "applied" && (
+            <>
+              <Check className="h-4 w-4 text-good shrink-0" />
+              <span>Applied</span>
+            </>
+          )}
+          {applyStatus === "failed" && (
+            <>
+              <AlertCircle className="h-4 w-4 text-warn shrink-0" />
+              <span>
+                Couldn&apos;t apply right now. Your changes are saved and will apply on the next scheduled run.
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Every problem in one place, so a disabled Save always says why. */}
       {errors.length > 0 && (
@@ -396,7 +580,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             </p>
           </div>
           <span className="text-label text-subtle font-mono">
-            Effect shows after the next agent run (every 30 min)
+            Applies to the queue after saving
           </span>
         </div>
 
@@ -633,7 +817,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             </p>
           </div>
           <span className="text-label text-subtle font-mono">
-            Effect shows after the next agent run (every 30 min)
+            Applies to the queue after saving
           </span>
         </div>
 
@@ -873,7 +1057,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             </p>
           </div>
           <span className="text-label text-subtle font-mono">
-            Effect shows after the next agent run (every 30 min)
+            Applies to the queue after saving
           </span>
         </div>
 
@@ -1063,7 +1247,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             </p>
           </div>
           <span className="text-label text-subtle font-mono">
-            Effect shows after the next agent run (every 30 min)
+            Applies to the queue after saving
           </span>
         </div>
 
@@ -1247,7 +1431,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             </p>
           </div>
           <span className="text-label text-subtle font-mono">
-            Effect shows after the next agent run (every 30 min)
+            Applies to the queue after saving
           </span>
         </div>
 
@@ -1335,7 +1519,7 @@ export function AgentRulesEditor({ config, versions }: AgentRulesEditorProps) {
             </p>
           </div>
           <span className="text-label text-subtle font-mono">
-            Effect shows after the next agent run (every 30 min)
+            Applies to the queue after saving
           </span>
         </div>
 
