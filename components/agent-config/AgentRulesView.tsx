@@ -64,7 +64,22 @@ export function formatDisabledHiringSentence(
 }
 
 export function formatThresholdSentence(rules: CurrentRules["rules"]): string {
-  return `A lead reaches your queue at ${rules.threshold} points with at least one hiring or launch signal.`;
+  // Only signals that are switched on and not "weak" can qualify a lead on their own.
+  const weak = new Set<string>(rules.weakSignalTypes);
+  const strong = [
+    rules.hiring.categories.some((c) => c.enabled) && !weak.has("hiring") ? "hiring" : null,
+    rules.signals.launch.enabled && !weak.has("launch") ? "launch" : null,
+    rules.signals.ycRecent.enabled && !weak.has("funding") ? "recent YC batch" : null,
+  ].filter((name): name is string => name !== null);
+  return `A lead reaches your queue at ${rules.threshold} points with at least one ${strong.join(" or ")} signal.`;
+}
+
+const span = (hours: number) => (hours < 48 ? `${hours} hours` : `${Math.round(hours / 24)} days`);
+
+export function formatFreshnessSentence(rules: CurrentRules["rules"]): string {
+  const first = rules.freshness[0];
+  const last = rules.freshness[rules.freshness.length - 1];
+  return `A signal under ${span(first.maxHours)} old adds ${first.points} points for freshness, less as it ages, and nothing after ${span(last.maxHours)}.`;
 }
 
 export function formatScoreBandsSentence(rules: CurrentRules["rules"]): string {
@@ -141,7 +156,7 @@ export function AgentRulesView({ config, isAdmin }: AgentRulesViewProps) {
           title={
             <span className="flex items-center gap-2">
               <Target className="h-4 w-4 text-accent" />
-              <span>Ideal Customer Profile</span>
+              <span>Ideal customer profile</span>
             </span>
           }
           description="Target company profile and qualification criteria"
@@ -158,7 +173,7 @@ export function AgentRulesView({ config, isAdmin }: AgentRulesViewProps) {
           title={
             <span className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-accent" />
-              <span>Buying Signals</span>
+              <span>Buying signals</span>
             </span>
           }
           description="Roles and company events that trigger outbound"
@@ -187,10 +202,7 @@ export function AgentRulesView({ config, isAdmin }: AgentRulesViewProps) {
                 ? `A recent YC batch adds ${rules.signals.ycRecent.points} points.`
                 : "Recent YC batch signals are currently off."}
             </p>
-            <p>
-              Signals under 24 hours receive a freshness bonus of up to{" "}
-              {rules.freshness[0]?.points ?? 15} points, tapering down over 7 days.
-            </p>
+            <p>{formatFreshnessSentence(rules)}</p>
             <p>
               Each additional signal type adds {rules.stackedPerExtraSignalType}{" "}
               points.
@@ -205,7 +217,7 @@ export function AgentRulesView({ config, isAdmin }: AgentRulesViewProps) {
           title={
             <span className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-accent" />
-              <span>Queue Threshold & Score Bands</span>
+              <span>Queue threshold and score bands</span>
             </span>
           }
           description="Point thresholds required to route leads to reps"
@@ -222,7 +234,7 @@ export function AgentRulesView({ config, isAdmin }: AgentRulesViewProps) {
           title={
             <span className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-accent" />
-              <span>Outreach & Grounding</span>
+              <span>Outreach and grounding</span>
             </span>
           }
           description="Offer positioning and email verification guardrails"

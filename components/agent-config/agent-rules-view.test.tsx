@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import defaultRulesJson from "@/shared/defaults/rules.json";
 import type { CurrentRules } from "@/lib/types";
-import { AgentRulesView } from "./AgentRulesView";
+import { DEFAULT_RULES } from "@/lib/agent-config";
+import { AgentRulesView, formatFreshnessSentence, formatThresholdSentence } from "./AgentRulesView";
 
 const mockConfig: CurrentRules = {
   version: 1,
@@ -69,4 +70,15 @@ describe("AgentRulesView", () => {
     expect(html).not.toContain('href="/settings/agent"');
     expect(html).not.toContain("Edit rules");
   });
+
+  it("builds the threshold and freshness sentences from the rules, not fixed text", () => {
+    const rules = structuredClone(DEFAULT_RULES);
+    rules.weakSignalTypes = ["funding", "launch"];
+    rules.freshness = [{ maxHours: 12, points: 20 }, { maxHours: 72, points: 5 }];
+    expect(formatThresholdSentence(rules)).toBe("A lead reaches your queue at 50 points with at least one hiring signal.");
+    expect(formatFreshnessSentence(rules)).toBe(
+      "A signal under 12 hours old adds 20 points for freshness, less as it ages, and nothing after 3 days.",
+    );
+  });
 });
+
