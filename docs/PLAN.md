@@ -107,16 +107,19 @@ Then add the phase's extra notes (below each phase) if any.
 
 ## Phase 4: Drafts and approval
 
-- [ ] `shared/prompts/draft.md` and `shared/guardrails.json` from ARCHITECTURE.md
-- [ ] Agent drafting step: 3 angles + raw baseline, JSON output, cap per run, 429 backoff, tokens stored
-- [ ] Guardrails in Python AND TypeScript reading the same JSON, including the grounding verification; shared test fixtures so both give identical results
-- [ ] Email editor in lead detail: angle picker (raw shown as "Unconstrained", flagged), From / To / Subject / Body, live checks with named grounded phrases, edited state
-- [ ] Regenerate button: server route calls the LLM for one angle (rate-limited per user)
-- [ ] Approve and enroll (`⌘↵`): disabled unless checks pass; creates `sequences` + `sequence_steps` with idempotency keys; audit log; moves to next lead
+- [ ] `shared/outreach.json` (sender, offer, allowed proof points), `shared/prompts/draft.md` and `raw.md`, `shared/guardrails.json` from ARCHITECTURE.md
+- [ ] Agent drafting step: one call per lead for 3 angles (signal, peer, short), JSON output, at most one retry, cap per run, 429 backoff, tokens and prompt stored
+- [ ] LLM budget: every call counted per UTC day (`LLM_DAILY_BUDGET`, 20 on the free tier); the agent stops at 80%, the app keeps the rest; Ops shows calls used today
+- [ ] Guardrails in Python AND TypeScript reading the same JSON, including grounding, invented numbers and unlisted customer claims; shared test fixtures so both give identical results
+- [ ] Email editor in lead detail: angle picker (the raw baseline shown as "Unconstrained", generated on demand, flagged), From / To / Subject / Body, live checks with named grounded phrases, edited state
+- [ ] Regenerate button: server route calls the LLM for one angle (rate-limited per user, inside the budget)
+- [ ] Approve and enroll (`⌘↵`): disabled unless checks pass; the server re-checks; creates `sequences` + `sequence_steps` with idempotency keys; audit log; moves to next lead
 - [ ] Agent trace and "Prompt sent to the model" collapsibles in lead detail
 - [ ] Deploy to Vercel and test with both demo accounts
 
-**Done when:** a new lead gets drafts on the next agent run; deleting the signal phrase from a draft disables Approve; approving creates a sequence row; the raw baseline is visibly blocked.
+**Who builds what:** see this phase in `docs/TASKS.md`.
+
+**Done when:** a new lead gets drafts on the next agent run; deleting the signal phrase from a draft disables Approve; approving creates a sequence row; the raw baseline is visibly blocked; the daily LLM budget is never exceeded.
 
 **This is the cut line.** You can apply from here.
 

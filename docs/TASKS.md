@@ -599,26 +599,31 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ## Phase 4: Drafts and approval (the cut line)
 
+The agent drafts three grounded angles per ready lead in one LLM call. Code checks every draft with the same rules in Python and TypeScript, a person edits and approves, and approval creates a sequence with idempotent steps (Phase 5 sends them). The free Gemini tier allows 20 calls a day: `LLM_DAILY_BUDGET=20`, the agent stops at 80%, the app keeps the rest for Regenerate and Unconstrained.
+
 ### Claude
 
-- [ ] **C4.1** `shared/prompts/draft.md`, `shared/fixtures/guardrails_cases.json` (input → expected result per check), and a review of `shared/guardrails.json` (created in C1.4 for the mailbox cap).
-- [ ] **C4.2** Guardrails in `agent/guardrails.py` and `lib/guardrails.ts`, both reading the same JSON. Includes the grounding check. Both test suites run the shared fixtures and must agree.
-- [ ] **C4.3** Agent drafting step: 3 angles plus the raw baseline, JSON output, a cap per run, 429 backoff, tokens stored, prompt hash.
-- [ ] **C4.4** `lib/llm.ts`. Routes (zod input + role/ownership check + audit log):
-  - `POST /api/leads/[id]/regenerate`: one angle, rate-limited per user.
-  - `POST /api/leads/[id]/approve`: re-runs the guardrails on the server; creates `sequences` and `sequence_steps` with idempotency keys.
+- [x] **C4.0** Paid-acquisition roles never count: `performance marketing`, `paid acquisition`, `paid media` in `categoryExclude` for `marketing` and `gtm`, with tests (decision in PROGRESS.md; candidate toggle for Phase 4.5).
+- [ ] **C4.1** Shared files: `shared/outreach.json` (sender "Sam" at the brand, the offer, allowed proof points, angle descriptions, LLM pacing and budget share), `shared/prompts/draft.md` (3 angles, JSON out) and `shared/prompts/raw.md` (no signals, no rules), `claimPhrases` and `minGroundedPhraseChars` in `shared/guardrails.json`, `shared/sequence.json` (default steps), `shared/fixtures/guardrails_cases.json` and `shared/fixtures/prompt_cases.json`.
+- [ ] **C4.2** Guardrails in `agent/guardrails.py` and `lib/guardrails.ts`: `runGuardrails(input, rules)` returns `{check, status, message}` per check (angle, grounding, banned_chars, banned_phrases, word_count, closing_question, numbers, claims, placeholders, subject). Both suites run the shared fixtures and must agree. Prompt rendering in both languages matches `prompt_cases.json`.
+- [ ] **C4.3** Migration 007: `drafts.prompt`, `drafts.trace`, `drafts.created_by`, `drafts.llm_call_id`; `llm_calls` (admin read); `reserve_llm_call()` (advisory lock, service role only); `llm_budget_today()` (any member); `approve_lead()` (re-checks org, role and assignment; one transaction; service role only). Regenerated DB types; new RLS checks.
+- [ ] **C4.4** Agent drafting step (`agent/llm.py` Gemini over httpx, `agent/drafting.py`): ready leads without drafts, best score first, `DRAFTS_PER_RUN` cap, one call per lead, at most one retry, 13 s between calls, 429 handling, stops at the agent's share of the budget. `LLM_DAILY_BUDGET` in settings, workflow and repo variable.
+- [ ] **C4.5** Web: `lib/llm.ts`, `lib/prompts.ts`, `lib/supabase/admin.ts` (server only, write routes only). `getLead` adds `drafts`, `sender`, `guardrailRules`, `llmBudget`. Routes (zod input + ownership via the user's RLS read + audit log):
+  - `POST /api/leads/[id]/draft` `{angle}`: Regenerate (signal, peer, short) and Unconstrained (raw, stored the first time). 5 per user per hour; 429 `budget_exhausted` with a plain message when today's budget is used.
+  - `POST /api/leads/[id]/approve` `{draftId, subject, body}`: re-runs the guardrails on the server, then `approve_lead()`; 422 with the results on a failing check or the raw angle; 409 when already enrolled.
 
-  Client helpers in `lib/api.ts`: `regenerateDraft(leadId, angle)` and `approveLead(leadId, { draftId, subject, body })`.
+  Client helpers in `lib/api.ts`: `generateDraft(leadId, angle)` and `approveLead(leadId, { draftId, subject, body })`.
 
 ### Flash
 
 #### F4.1 Email editor
-- **Starts after:** C4.2, C4.4, F3.3
+- **Starts after:** C4.5, F3.3
 - **Build:** `components/drafts/EmailEditor.tsx`, inside LeadDetail:
-  - Angle picker (SegmentedControl). The raw angle is shown as "Unconstrained", flagged in `--bad`, and can never be approved.
-  - From / To (read-only, mono), Subject and Body fields.
-  - A live checks list that calls `runGuardrails()` from `lib/guardrails.ts` on every change and shows pass, fail or warn per check, naming the grounded phrases that were found.
+  - Angle picker (SegmentedControl): Signal, Peer, Short, Unconstrained. Unconstrained is flagged in `--bad` and can never be approved; the first time it's opened for a lead, call `generateDraft(leadId, "raw")` and show a loading state.
+  - From / To (read-only, mono, from `lead.sender` and the contact's send address), Subject and Body fields.
+  - A live checks list that calls `runGuardrails()` from `lib/guardrails.ts` with `lead.guardrailRules` on every change and shows pass, fail or warn per check, naming the grounded phrases that were found.
   - An "Edited" marker once the text differs from the draft.
+  - When generation returns `budget_exhausted`, show its message plainly (no error styling beyond `--warn`).
 - **Touch only:** `components/drafts/*`, `components/queue/LeadDetail.tsx`
 - **Start:**
   ```bash
@@ -640,8 +645,8 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Starts after:** F4.1
 - **Build:**
   - "Approve and enroll" button with a `⌘↵` Kbd hint. It is disabled unless every check passes. It calls `approveLead()`, shows the toast "{Company} enrolled", and moves to the next lead.
-  - "Regenerate" button calls `regenerateDraft()` and shows a loading state and errors (including the rate limit).
-  - Two collapsibles: "Agent trace" (the run steps for this lead) and "Prompt sent to the model".
+  - "Regenerate" calls `generateDraft()` for the current angle and shows a loading state and errors, including the hourly limit and the budget message.
+  - Two collapsibles: "Agent trace" (`draft.trace`) and "Prompt sent to the model" (`draft.prompt`, mono, scrollable).
 - **Touch only:** `components/drafts/*`, `components/queue/*`, `components/command-palette.tsx`
 - **Start:**
   ```bash
@@ -661,7 +666,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 #### F4.3 More guardrail fixture cases
 - **Starts after:** C4.2
-- **Build:** add at least 20 cases to `shared/fixtures/guardrails_cases.json`: em-dashes and en-dashes, every banned phrase, word-count edges (80 and 81), a missing closing question, a grounded phrase that appears in the email but not in the signal, a case-insensitive match, and word-boundary traps. Don't change the guardrail code. If Python and TS disagree on a case, stop and report it; that's a bug for Claude.
+- **Build:** add at least 20 cases to `shared/fixtures/guardrails_cases.json`: em-dashes and en-dashes, every banned phrase, word-count edges (80 and 81), a missing closing question, a grounded phrase that appears in the email but not in the signal, a case-insensitive match, word-boundary traps, a number that is in the signal (passes) and one that isn't (fails), "B2B" (not a number), a customer claim with and without its listed proof point, and leftover placeholders. Don't change the guardrail code. If Python and TS disagree on a case, stop and report it; that's a bug for Claude.
 - **Touch only:** `shared/fixtures/guardrails_cases.json`
 - **Done when:** `npm run check` and `.venv/bin/python -m pytest agent/tests` both pass.
 - **Start:**
@@ -681,26 +686,48 @@ Almost all of this phase is Claude's: it's the agent core.
 - [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.3.md`, on the card's branch (only exists if Claude asked for changes)
 
+#### F4.4 AI budget tile on Ops
+- **Starts after:** C4.5
+- **Build:** `components/ops/LlmBudgetTile.tsx` and its use in `app/(app)/ops/page.tsx` (keep the page a server component): "AI calls today: 7 of 20", with the split underneath ("agent up to 16, app 4") and a thin meter. Data from `llmBudgetToday()` in `lib/data/llm.ts`. At the limit, say "Used up for today. Resets at 00:00 UTC."
+- **Touch only:** `components/ops/*`, `app/(app)/ops/page.tsx`
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p4-budget-tile  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add components/ops "app/(app)/ops/page.tsx"  # only the Touch-only files
+  git commit -m "flash(p4): AI budget tile on Ops"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.4.md`, on the card's branch (only exists if Claude asked for changes)
+
 ### You
 
-- [ ] **U4.1** In Vercel, check that every required variable from `lib/env.ts` is set (same names as `.env.example`). Push `main` and wait for the deploy to go green.
+- [ ] **U4.1** In Vercel, check that every required variable from `lib/env.ts` is set (same names as `.env.example`), including the new `LLM_DAILY_BUDGET=20`. Push `main` and wait for the deploy to go green.
 
 ### Phase gate
 
-- [ ] **C4.5** Automated checks:
-  - `npm run check` and `.venv/bin/python -m pytest agent/tests`; both guardrail suites must agree on every shared fixture.
-  - Route tests: the approve route rejects the `raw` angle and any draft whose grounding check fails.
-  - One `--once` run creates drafts for at least one ready lead.
+- [ ] **C4.6** Automated checks:
+  - `npm run check` and `.venv/bin/python -m pytest agent/tests`; both guardrail suites agree on every shared fixture, and both prompt renderers match.
+  - Route tests: the approve route rejects the `raw` angle, a draft whose grounding check fails, and another rep's lead; a second approve gets 409.
+  - `npm run test:rls`: a rep can't read `llm_calls` or call `approve_lead` / `reserve_llm_call` directly.
+  - One `--once` run creates drafts for at least one ready lead and stays inside the agent's share of the budget.
 
   Report the results to the user.
 - [ ] **U4.2** On the live Vercel URL, as admin and then as rep, check PLAN.md Phase 4 "Done when":
-  - A lead from the latest run has a draft for each angle.
+  - A lead from the latest run has a draft for each angle (Signal, Peer, Short).
   - Deleting the signal phrase from the body fails the grounding check and disables "Approve and enroll".
-  - The raw angle shows "Unconstrained" and can't be approved.
+  - Opening Unconstrained generates it once; it's flagged and can't be approved.
   - Approving with `⌘↵` shows a toast, opens the next lead, and adds a row to `sequences` (Supabase Table Editor).
   - The rep can approve only their own leads.
+  - Ops shows AI calls used today out of 20.
   - Tell Claude what passed and what didn't.
-- [ ] **C4.6** After U4.2 passes: tick PLAN.md Phase 4, add a PROGRESS.md entry, commit. **Cut line: you can apply from here.**
+- [ ] **C4.7** After U4.2 passes: tick PLAN.md Phase 4, add a PROGRESS.md entry, commit. **Cut line: you can apply from here.**
 
 ---
 
@@ -711,6 +738,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 ### Claude
 
 - [ ] **C4.5.1** One rules schema for both languages:
+  - candidate toggles from earlier decisions: count paid-acquisition roles (performance marketing, paid acquisition, paid media; off by default, see C4.0), and the outreach offer and proof points from `shared/outreach.json`
   - the schema for the full rule set (ICP rules, partial rules, signal types with `enabled` + weight, keyword categories and exclusions, threshold, weak signal types, score bands, freshness steps, signal windows); format decided in the phase plan. Bands must run high to low and the lowest must equal the threshold.
   - `shared/fixtures/config_cases.json` with valid and invalid rule sets and the expected error per invalid case
   - a TypeScript validator (`lib/agent-config.ts`) and the Python validator (`agent/config.py`) both run the fixtures and must agree

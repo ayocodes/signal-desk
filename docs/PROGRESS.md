@@ -5,8 +5,8 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 ## Current state
 
 - Phase: 4 in progress (drafts and approval, the cut line). Plan approved 2026-10-21: `/Users/tomiomotola/.claude/plans/wise-drifting-kay.md` (copied in summary below).
-- Done: C4.0 (paid-acquisition roles excluded, with tests).
-- Next step (exact): docs commit (TASKS.md Phase 4 cards per the plan: C4.0 to C4.5 plus F4.4 Ops budget tile; PLAN.md Phase 4 bullets; ARCHITECTURE.md drafting/guardrails/service-role notes; Phase 4.5 candidate toggle for performance marketing), then C4.1 shared files, C4.2 guardrails (py + ts, shared fixtures), C4.3 migration 007, C4.4 agent drafting, C4.5 web routes. Commit after each.
+- Done: C4.0 (paid-acquisition roles excluded, with tests); Phase 4 docs (TASKS cards, PLAN, ARCHITECTURE).
+- Next step (exact): C4.1 shared files, then C4.2 guardrails (py + ts, shared fixtures), C4.3 migration 007, C4.4 agent drafting, C4.5 web routes (cards in TASKS.md Phase 4). Commit after each.
 - Blockers: none. Ashby is checked only on local runs (`npm run agent:local`).
 
 ## Log
