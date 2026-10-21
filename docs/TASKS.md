@@ -776,7 +776,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p4.5): admin rules editor"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.1.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.5.2 Version history and revert
@@ -823,7 +823,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p4.5): what our agent looks for page"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.3.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.5.4 More config fixture cases
@@ -846,7 +846,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p4.5): more config fixture cases"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.4.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F4.5.6 LLM pacing tile on Ops
@@ -867,7 +867,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p4.5): LLM pacing tile on Ops"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.6.md`, on the card's branch (only exists if Claude asked for changes)
 
 ### Phase gate
