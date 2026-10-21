@@ -7,7 +7,7 @@ import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/components/ui/utils";
-import { formatSignalAge } from "@/components/leads/SignalCard";
+import { formatSignalAge, signalLabel } from "@/components/leads/SignalCard";
 import type {
   FilteredLead,
   LeadCounts,
@@ -36,7 +36,7 @@ const TAB_CONFIG: { id: QueueTab; label: string }[] = [
 const SIGNAL_OPTIONS: { id: SignalType; label: string }[] = [
   { id: "hiring", label: "Hiring" },
   { id: "launch", label: "Launch" },
-  { id: "funding", label: "Funding" },
+  { id: "funding", label: "YC recent" },
 ];
 
 export function QueueList({
@@ -175,7 +175,7 @@ export function QueueList({
                     {/* Score badge & band */}
                     <div className="flex flex-col items-center gap-1 shrink-0 pt-0.5 min-w-8">
                       <ScoreBadge score={lead.score} tier={lead.tier} size="sm" />
-                      <span className="text-[10px] font-mono uppercase tracking-wider text-muted font-medium">
+                      <span className="text-label font-mono uppercase tracking-wider text-muted font-medium">
                         {lead.band}
                       </span>
                     </div>
@@ -205,9 +205,9 @@ export function QueueList({
                         <div className="mt-1 flex items-center gap-1.5 text-meta text-muted">
                           <Tag
                             active={false}
-                            className="text-[10px] py-0 px-1 font-mono uppercase tracking-wider shrink-0"
+                            className="text-label py-0 px-1 font-mono uppercase tracking-wider shrink-0"
                           >
-                            {topSig.type}
+                            {signalLabel(topSig)}
                           </Tag>
                           <span className="truncate text-text">{topSig.title}</span>
                           {extraSignals > 0 && (

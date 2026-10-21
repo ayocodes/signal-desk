@@ -139,7 +139,7 @@ describe("Queue components", () => {
       expect(html).toContain("All signals");
       expect(html).toContain("Hiring");
       expect(html).toContain("Launch");
-      expect(html).toContain("Funding");
+      expect(html).toContain("YC recent");
     });
 
     it("renders lead rows with score, band word, company, contact, top signal and age", () => {

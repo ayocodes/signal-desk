@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { listQueue, leadCounts, listFiltered } from "@/lib/data/leads";
 import { QueueList, SplitView, LiveStatus } from "@/components/queue";
 import type { QueueTab, SignalType } from "@/lib/types";
@@ -38,13 +37,12 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
 
   return (
     <div className="flex flex-col gap-3 h-full">
-      <div className="flex items-center justify-between px-1">
-        <h1 className="text-section font-semibold text-text">Queue</h1>
+      {/* The shell's top bar already shows "Queue" as the page heading. */}
+      <div className="flex items-center justify-end px-1">
         <LiveStatus />
       </div>
 
-      <Suspense fallback={<div className="p-8 text-muted text-meta">Loading queue...</div>}>
-        <SplitView
+      <SplitView
           list={
             <QueueList
               leads={leads}
@@ -76,7 +74,6 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
             )
           }
         />
-      </Suspense>
     </div>
   );
 }
