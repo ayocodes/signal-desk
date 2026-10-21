@@ -11,6 +11,8 @@ import {
   TableRow,
   TableSortHeader,
 } from "@/components/ui/Table";
+import LeadsLoading from "./loading";
+import LeadsError from "./error";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
@@ -148,4 +150,26 @@ describe("Table UI components", () => {
       expect(html).toContain('aria-disabled="true"');
     });
   });
+
+  describe("LeadsLoading", () => {
+    it("renders skeleton table with header and rows", () => {
+      const html = renderToStaticMarkup(<LeadsLoading />);
+      expect(html).toContain('aria-busy="true"');
+      expect(html).toContain("Company");
+      expect(html).toContain("Contact");
+      expect(html).toContain("animate-pulse");
+    });
+  });
+
+  describe("LeadsError", () => {
+    it("renders error state with description and retry button", () => {
+      const html = renderToStaticMarkup(
+        <LeadsError error={new Error("Network timeout")} reset={() => {}} />
+      );
+      expect(html).toContain("Failed to load leads table");
+      expect(html).toContain("Network timeout");
+      expect(html).toContain("Try again");
+    });
+  });
 });
+

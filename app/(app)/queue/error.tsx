@@ -1,0 +1,47 @@
+"use client";
+
+import * as React from "react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui";
+
+export default function QueueError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  React.useEffect(() => {
+    // Log error for diagnostics
+    console.error("Queue page error:", error);
+  }, [error]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] p-8 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-bad/10 text-bad mb-4">
+        <AlertCircle className="h-6 w-6" aria-hidden="true" />
+      </div>
+
+      <h2 className="text-section font-semibold text-text mb-2">
+        Failed to load outbound queue
+      </h2>
+
+      <p className="text-body text-muted max-w-md mb-2">
+        The application could not retrieve the queue leads or signal counts from the database.
+      </p>
+
+      {error.message && (
+        <p className="font-mono text-label text-subtle bg-surface-2 px-2.5 py-1 rounded-control mb-6 max-w-lg truncate">
+          {error.message}
+        </p>
+      )}
+
+      <div className="flex items-center gap-3">
+        <Button variant="primary" onClick={() => reset()} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          <span>Try again</span>
+        </Button>
+      </div>
+    </div>
+  );
+}

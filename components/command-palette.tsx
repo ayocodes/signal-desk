@@ -6,7 +6,9 @@ import { Command } from "cmdk";
 import {
   Activity,
   ArrowLeft,
+  ArrowRight,
   Check,
+  Copy,
   Inbox,
   LogOut,
   Palette,
@@ -17,6 +19,7 @@ import {
 } from "lucide-react";
 import { signOut } from "@/app/(auth)/login/actions";
 import { Kbd, showToast } from "@/components/ui";
+import { useSelectedLeadContext } from "@/components/queue/lead-context";
 import type { Role } from "@/lib/auth";
 import { applyTheme, readStoredTheme, saveTheme } from "@/lib/theme-client";
 import { isThemeId, THEME_CHOICES, type ThemeId } from "@/lib/themes";
@@ -39,6 +42,7 @@ export function CommandPalette({
   const [view, setView] = React.useState<"root" | "theme">("root");
   const [search, setSearch] = React.useState("");
   const [activeValue, setActiveValue] = React.useState("");
+  const selectedLead = useSelectedLeadContext();
 
   const setIsOpen = React.useCallback(
     (openState: boolean) => {
@@ -240,6 +244,45 @@ export function CommandPalette({
                   heading="Actions"
                   className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-label [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted [&_[cmdk-group-heading]]:font-mono mt-1"
                 >
+                  {selectedLead && (
+                    <>
+                      {selectedLead.nextLeadHref && (
+                        <Command.Item
+                          value="open next lead"
+                          onSelect={() => {
+                            handleClose();
+                            router.push(selectedLead.nextLeadHref!);
+                          }}
+                          className="flex h-9 items-center justify-between rounded-control px-2.5 text-body text-text cursor-pointer select-none transition-colors data-[selected=true]:bg-surface-2"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <ArrowRight className="h-4 w-4 text-muted shrink-0" />
+                            <span>Open next lead</span>
+                          </div>
+                          <Kbd>J</Kbd>
+                        </Command.Item>
+                      )}
+
+                      <Command.Item
+                        value={`copy company domain ${selectedLead.domain}`}
+                        onSelect={() => {
+                          handleClose();
+                          if (selectedLead.domain) {
+                            void navigator.clipboard.writeText(selectedLead.domain);
+                            showToast(`Copied ${selectedLead.domain}`);
+                          }
+                        }}
+                        className="flex h-9 items-center justify-between rounded-control px-2.5 text-body text-text cursor-pointer select-none transition-colors data-[selected=true]:bg-surface-2"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Copy className="h-4 w-4 text-muted shrink-0" />
+                          <span>Copy company domain</span>
+                        </div>
+                        <span className="font-mono text-meta text-muted">{selectedLead.domain}</span>
+                      </Command.Item>
+                    </>
+                  )}
+
                   <Command.Item
                     value="change theme"
                     onSelect={handleOpenTheme}
