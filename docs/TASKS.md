@@ -451,7 +451,7 @@ Almost all of this phase is Claude's: it's the agent core.
 
 ### Claude
 
-- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Give each list item a `scoreTier` computed from `shared/scoring.json`'s threshold, and pass it to `ScoreBadge` as `tier` (its built-in 75/50 cutoffs are only a fallback). Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
+- [ ] **C3.1** Regenerate DB types (`npm run db:types`; first generated in C1.5). Give each list item a `scoreBand` from `shared/scoring.json` `scoreBands` (Strong 90+, Good 70+, Borderline 50+; filtered leads are "Filtered") plus the matching `ScoreBadge` `tier` (Strong → `hi`, Good → `md`, Borderline and Filtered → `lo`); ScoreBadge's built-in 75/50 cutoffs are only a fallback. The score stays a points total (no percentage): the word gives the quick read, the math stays visible. Write `lib/types.ts` with the UI shapes (`LeadListItem`, `LeadDetail`, `SignalView`, `ScorePart`). Write the data functions in `lib/data/leads.ts`: `listLeads({ tab, signalTypes })`, `leadCounts()`, `listFilteredLeads()`, `getLead(id)`. Add `@testing-library/react` and `jsdom` for component tests (reason: to render components in vitest).
 - [ ] **C3.2** `useLiveLeads()` hook (Supabase Realtime, falling back to polling). Check RLS by hand: the rep sees only their own leads, even through a direct query.
 
 ### Flash
@@ -460,7 +460,7 @@ Almost all of this phase is Claude's: it's the agent core.
 - **Starts after:** C3.1, F1.2
 - **Build:** in `components/leads/`:
   - `SignalCard`: numbered; shows type Tag, title, source, age, excerpt and an external link.
-  - `ScoreMath`: renders `ScorePart[]` as "ICP match 40 + Hiring 30 + Fresh 15 = 85" in mono, with the total in a ScoreBadge.
+  - `ScoreMath`: renders `ScorePart[]` as "ICP match 40 + Hiring 30 + Fresh 15 = 85" in mono, with the total in a ScoreBadge and the band word next to it ("85 · Good").
   - `StatusPill`: maps each lead status to a Pill tone.
   - `BuyerCheck`: shows verified, rerouted or unverified, plus the reason.
 
@@ -705,7 +705,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 ### Claude
 
 - [ ] **C4.5.1** One rules schema for both languages:
-  - the schema for the full rule set (ICP rules, partial rules, signal types with `enabled` + weight, keyword categories and exclusions, threshold, weak signal types, freshness steps, signal windows); format decided in the phase plan
+  - the schema for the full rule set (ICP rules, partial rules, signal types with `enabled` + weight, keyword categories and exclusions, threshold, weak signal types, score bands, freshness steps, signal windows); format decided in the phase plan. Bands must run high to low and the lowest must equal the threshold.
   - `shared/fixtures/config_cases.json` with valid and invalid rule sets and the expected error per invalid case
   - a TypeScript validator (`lib/agent-config.ts`) and the Python validator (`agent/config.py`) both run the fixtures and must agree
 - [ ] **C4.5.2** Migration: `agent_configs` (org_id, version, rules jsonb, created_by, created_at, change_summary jsonb; unique (org_id, version)) plus the org's current version; `leads.config_version`. RLS: every member reads their org's rules; only admins can create a version. Version 1 per org is seeded from `/shared`.
@@ -718,7 +718,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 #### F4.5.1 Admin rules editor
 - **Starts after:** C4.5.4, F1.2
 - **Build:**
-  - `app/(app)/settings/agent/page.tsx` and `components/agent-config/*`: a form with sections for ICP rules (status, team size range, batch age, B2B), partial-match rules, signal types (on/off switch + weight each), keyword lists (add/remove chips per category and exclusion list), threshold, weak signal types, and the freshness table.
+  - `app/(app)/settings/agent/page.tsx` and `components/agent-config/*`: a form with sections for ICP rules (status, team size range, batch age, B2B), partial-match rules, signal types (on/off switch + weight each), keyword lists (add/remove chips per category and exclusion list), threshold, weak signal types, score bands (label + minimum score), and the freshness table.
   - Validate on every change with the shared TypeScript validator from `lib/agent-config.ts` and show each error next to its field. "Save new version" is disabled while there are errors; it calls the save helper from `lib/api.ts` and shows a toast with the new version number.
   - Unsaved changes are highlighted; "Discard changes" restores the current version.
 - **Touch only:** `app/(app)/settings/agent/page.tsx`, `components/agent-config/*`
@@ -765,7 +765,7 @@ Rules move into the database per org, versioned. The agent already reads them on
 #### F4.5.3 "What our agent looks for" page
 - **Starts after:** C4.5.4, F1.2
 - **Build:**
-  - `app/(app)/agent/page.tsx`: a read-only, plain-language view of the current rules for every member, from `getCurrentConfig()`. Example sentences: "We look for active B2B startups with 5 to 60 people from YC batches in the last 3 years." "A sales or GTM hire adds 30 points; a senior marketing hire adds 20." "A lead reaches your queue at 50 points with at least one hiring or launch signal."
+  - `app/(app)/agent/page.tsx`: a read-only, plain-language view of the current rules for every member, from `getCurrentConfig()`. Example sentences: "We look for active B2B startups with 5 to 60 people from YC batches in the last 3 years." "A sales or GTM hire adds 30 points; a senior marketing hire adds 20." "A lead reaches your queue at 50 points with at least one hiring or launch signal." "90 or more is Strong, 70 or more is Good, 50 or more is Borderline."
   - Show the version number and when it changed. Admins also see an "Edit rules" link to `/settings/agent`.
   - Add the page to the sidebar and the command palette for everyone.
 - **Touch only:** `app/(app)/agent/page.tsx`, `components/agent-config/*`, `components/shell/*`, `components/command-palette.tsx`

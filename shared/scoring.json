@@ -3,6 +3,20 @@
   "weakSignalTypes": [
     "funding"
   ],
+  "scoreBands": [
+    {
+      "min": 90,
+      "label": "Strong"
+    },
+    {
+      "min": 70,
+      "label": "Good"
+    },
+    {
+      "min": 50,
+      "label": "Borderline"
+    }
+  ],
   "icp": {
     "full": 40,
     "partial": 20

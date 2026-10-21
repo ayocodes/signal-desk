@@ -79,7 +79,7 @@ Results are stored per check (`pass` / `fail` / `warn` + message) in `drafts.gua
 }
 ```
 
-`score_parts` is stored as an ordered array of `[label, points]` so the UI can show "ICP match 40 + Hiring 30 + Fresh 15 + 2 signals 7 = 92".
+The score is a points total, not a percentage (no fixed maximum; 152 with today's weights). `scoreBands` give ready leads a word for a quick read (Strong 90+, Good 70+, Borderline 50+). `score_parts` is stored as an ordered array of `[label, points]` so the UI can show "ICP match 40 + Hiring 30 + Fresh 15 + 2 signals 7 = 92".
 
 Hiring signals carry a category from `shared/hiring_keywords.json`. Sales and GTM roles score `hiring_sales` ("Hiring"); senior marketing, demand generation and growth marketing roles score the lower `hiring_marketing` ("Marketing hire"). Junior, product and brand marketing roles don't count. Both kinds can appear on one lead, but they stack as one signal type (hiring).
 

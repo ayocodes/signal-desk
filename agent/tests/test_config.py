@@ -18,6 +18,13 @@ def test_defaults_load_with_the_documented_weights() -> None:
     assert s.partial_rules.team_size_max > s.icp_rules.team_size_max
 
 
+def test_score_bands_run_high_to_low_and_start_at_the_threshold() -> None:
+    s = load_config("any-org").scoring
+    mins = [band.min for band in s.score_bands]
+    assert mins == sorted(mins, reverse=True)
+    assert mins[-1] == s.threshold  # every ready lead gets a label
+
+
 def test_keyword_and_guardrail_rules_load() -> None:
     cfg = load_config("any-org")
     assert "sales" in cfg.keywords.categories

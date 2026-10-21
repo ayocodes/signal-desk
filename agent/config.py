@@ -60,9 +60,16 @@ class SignalWindows(_Model):
     funding_recent_months: int = Field(alias="fundingRecentMonths")
 
 
+class ScoreBand(_Model):
+    min: int
+    label: str
+
+
 class ScoringConfig(_Model):
     threshold: int
     weak_signal_types: tuple[str, ...] = Field(alias="weakSignalTypes")
+    # Display labels for ready leads (the web app shows them next to the score).
+    score_bands: tuple[ScoreBand, ...] = Field(alias="scoreBands")
     icp: IcpPoints
     signals: SignalPoints
     freshness: tuple[FreshnessStep, ...]
