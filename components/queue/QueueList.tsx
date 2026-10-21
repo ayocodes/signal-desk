@@ -101,12 +101,18 @@ export function QueueList({
       if (nextLead) params.set("lead", nextLead.id);
       const qs = params.toString();
 
+      const queueParams = new URLSearchParams();
+      if (currentTab !== "ready") queueParams.set("tab", currentTab);
+      if (currentSignals.length > 0) queueParams.set("signals", currentSignals.join(","));
+      const queueQs = queueParams.toString();
+
       setSelectedLeadContext({
         id: currentLead.id,
         domain: currentLead.company.domain,
         companyName: currentLead.company.name,
         nextLeadId: nextLead?.id,
         nextLeadHref: nextLead ? `${pathname}?${qs}` : undefined,
+        queueHref: queueQs ? `${pathname}?${queueQs}` : pathname,
       });
     } else {
       setSelectedLeadContext(null);

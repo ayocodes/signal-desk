@@ -10,6 +10,12 @@ vi.mock("@/lib/api", () => ({
   approveLead: vi.fn(),
 }));
 
+// Mock next/navigation
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => "/queue",
+}));
+
 describe("EmailEditor component", () => {
   const sampleLead: LeadDetailType = {
     id: "lead-101",
@@ -90,8 +96,27 @@ describe("EmailEditor component", () => {
         model: "gemini-2.0-flash",
         tokensIn: 450,
         tokensOut: 85,
-        prompt: "Write an outreach email...",
-        trace: null,
+        prompt: "Write an outreach email for Acme...",
+        trace: {
+          source: "agent",
+          promptHash: "hash-12345",
+          signals: [
+            { label: "Signal 1", title: "Founding AE" },
+          ],
+          attempts: [
+            {
+              attempt: 1,
+              model: "gemini-2.0-flash",
+              tokensIn: 450,
+              tokensOut: 85,
+              ms: 1200,
+              error: null,
+              failedChecks: {},
+            },
+          ],
+          chosenAttempt: 1,
+          tokensSharedByAngles: true,
+        },
         createdAt: "2026-10-21T09:00:00Z",
         createdBy: null,
       },
@@ -172,5 +197,119 @@ describe("EmailEditor component", () => {
     expect(html).toContain("Word count");
     expect(html).toContain("Closing question");
     expect(html).toContain("Ends with a question");
+  });
+
+  it("renders Regenerate button and Approve and enroll button with ⌘↵ shortcut hint", () => {
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={sampleWorkspace} />
+    );
+
+    expect(html).toContain("Regenerate");
+    expect(html).toContain("Approve and enroll");
+    expect(html).toContain("⌘↵");
+  });
+
+  function getApproveButton(html: string): string {
+    const match = html.match(/<button[^>]*aria-label="Approve and enroll"[^>]*>/);
+    return match ? match[0] : "";
+  }
+
+  it("enables Approve and enroll button when all checks pass on an approvable angle", () => {
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={sampleWorkspace} />
+    );
+
+    const btn = getApproveButton(html);
+    expect(btn).toBeTruthy();
+    expect(btn).not.toMatch(/\sdisabled([=>\s]|$)/);
+  });
+
+  it("disables Approve and enroll button on Unconstrained angle", () => {
+    const rawWorkspace: DraftWorkspace = {
+      ...sampleWorkspace,
+      drafts: [
+        {
+          ...sampleWorkspace.drafts[0],
+          id: "draft-raw",
+          angle: "raw",
+          subject: "Unconstrained cold email",
+          body: "Buy our product today for great value.",
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={rawWorkspace} />
+    );
+
+    const btn = getApproveButton(html);
+    expect(btn).toBeTruthy();
+    expect(btn).toMatch(/\sdisabled([=>\s]|$)/);
+    expect(html).toContain("Unconstrained drafts can&#x27;t be approved");
+  });
+
+  it("disables Approve and enroll button when a guardrail check fails", () => {
+    const failingWorkspace: DraftWorkspace = {
+      ...sampleWorkspace,
+      drafts: [
+        {
+          ...sampleWorkspace.drafts[0],
+          id: "draft-fail",
+          subject: "Check this out",
+          // Missing signal phrase, no closing question
+          body: "Hello there, we provide tools.",
+          groundedPhrases: ["Founding AE"],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={failingWorkspace} />
+    );
+
+    const btn = getApproveButton(html);
+    expect(btn).toBeTruthy();
+    expect(btn).toMatch(/\sdisabled([=>\s]|$)/);
+  });
+
+  it("renders Agent trace collapsible with source, attempt, and signal details", () => {
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={sampleWorkspace} />
+    );
+
+    expect(html).toContain("Agent trace");
+    expect(html).toContain("hash-12345");
+    expect(html).toContain("Attempt 1");
+    expect(html).toContain("450 in / 85 out tokens");
+    expect(html).toContain("Tokens were shared across all angles");
+  });
+
+  it("renders Prompt sent to the model collapsible with prompt content", () => {
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={sampleWorkspace} />
+    );
+
+    expect(html).toContain("Prompt sent to the model");
+    expect(html).toContain("Write an outreach email for Acme...");
+  });
+
+  it("renders fallbacks when trace and prompt are null", () => {
+    const noTraceWorkspace: DraftWorkspace = {
+      ...sampleWorkspace,
+      drafts: [
+        {
+          ...sampleWorkspace.drafts[0],
+          trace: null,
+          prompt: null,
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <EmailEditor lead={sampleLead} workspace={noTraceWorkspace} />
+    );
+
+    expect(html).toContain("No agent trace recorded for this draft.");
+    expect(html).toContain("No prompt recorded for this draft.");
   });
 });

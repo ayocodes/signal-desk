@@ -8,6 +8,7 @@ export interface SelectedLeadContext {
   companyName: string;
   nextLeadId?: string;
   nextLeadHref?: string;
+  queueHref?: string;
 }
 
 let activeLead: SelectedLeadContext | null = null;
