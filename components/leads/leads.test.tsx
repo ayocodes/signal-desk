@@ -8,6 +8,7 @@ import {
   LEAD_STATUS_CONFIG,
   ScoreMath,
   SignalCard,
+  signalLabel,
   StatusPill,
 } from "./index";
 
@@ -145,8 +146,8 @@ describe("Lead display components", () => {
       // Number
       expect(html).toContain("#1");
 
-      // Type Tag
-      expect(html).toContain("hiring");
+      // Type Tag uses the score-math words
+      expect(html).toContain("Hiring");
 
       // Title
       expect(html).toContain("Founding Account Executive");
@@ -186,7 +187,7 @@ describe("Lead display components", () => {
         <SignalCard signal={minimalSignal} now={fixedNow} />
       );
 
-      expect(html).toContain("funding");
+      expect(html).toContain("YC recent");
       expect(html).toContain("YC Winter 2026 Batch");
       expect(html).toContain("Y Combinator");
       expect(html).toContain("2d ago");
@@ -251,5 +252,34 @@ describe("Lead display components", () => {
       expect(html).toContain(BUYER_STATUS_CONFIG.verified.label);
       expect(html).toContain("CEO owns sales");
     });
+  });
+});
+
+describe("SignalCard labels and quoting (review of F3.1)", () => {
+  const base: SignalView = {
+    id: "x",
+    type: "hiring",
+    category: "sales",
+    title: "Hiring: Founding AE",
+    excerpt: "Own the sales cycle.",
+    sourceName: "Ashby",
+    sourceUrl: null,
+    occurredAt: "2026-10-20T10:00:00Z",
+  };
+
+  it("names signals with the score-math words", () => {
+    expect(signalLabel(base)).toBe("Hiring");
+    expect(signalLabel({ ...base, category: "marketing" })).toBe("Marketing hire");
+    expect(signalLabel({ ...base, type: "launch", category: null })).toBe("Launch");
+    expect(signalLabel({ ...base, type: "funding", category: null })).toBe("YC recent");
+  });
+
+  it("quotes hiring excerpts only, since launch and YC excerpts are our own summaries", () => {
+    expect(renderToStaticMarkup(<SignalCard signal={base} />)).toContain("“Own the sales cycle.”");
+    const launch = renderToStaticMarkup(
+      <SignalCard signal={{ ...base, type: "launch", category: null, excerpt: "Show HN post with 42 points." }} />,
+    );
+    expect(launch).not.toContain("“");
+    expect(launch).toContain("Show HN post with 42 points.");
   });
 });

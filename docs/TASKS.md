@@ -482,7 +482,7 @@ Almost all of this phase is Claude's: it's the agent core.
   git commit -m "flash(p3): lead display components"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.1.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F3.2 Queue page (split view, list side)

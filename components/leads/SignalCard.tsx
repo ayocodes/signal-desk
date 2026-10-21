@@ -18,6 +18,13 @@ export function formatSignalAge(occurredAt: string, now: Date | number = Date.no
   return `${Math.round(diffDays / 365)}y ago`;
 }
 
+/** The same words the score math uses: Hiring, Marketing hire, Launch, YC recent. */
+export function signalLabel(signal: Pick<SignalView, "type" | "category">): string {
+  if (signal.type === "hiring") return signal.category === "marketing" ? "Marketing hire" : "Hiring";
+  if (signal.type === "launch") return "Launch";
+  return "YC recent";
+}
+
 export interface SignalCardProps extends React.HTMLAttributes<HTMLDivElement> {
   signal: SignalView;
   number?: number;
@@ -50,7 +57,7 @@ export function SignalCard({
             #{displayNumber}
           </span>
         )}
-        <Tag>{signal.type}</Tag>
+        <Tag>{signalLabel(signal)}</Tag>
         <h4 className="text-body font-medium text-text min-w-0 flex-1">
           {signal.title}
         </h4>
@@ -74,11 +81,16 @@ export function SignalCard({
         </div>
       </div>
 
-      {signal.excerpt && (
-        <p className="m-0 border-l-2 border-border pl-2.5 text-body text-muted italic">
-          &ldquo;{signal.excerpt}&rdquo;
-        </p>
-      )}
+      {/* Hiring excerpts are quoted from the job posting; launch and YC excerpts are our own
+          summaries, so they must not look like a quote. */}
+      {signal.excerpt &&
+        (signal.type === "hiring" ? (
+          <blockquote className="m-0 border-l-2 border-border pl-2.5 text-body text-muted italic">
+            &ldquo;{signal.excerpt}&rdquo;
+          </blockquote>
+        ) : (
+          <p className="m-0 text-body text-muted">{signal.excerpt}</p>
+        ))}
     </div>
   );
 }
