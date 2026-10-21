@@ -6,16 +6,25 @@ import {
   SignalCard,
   StatusPill,
 } from "@/components/leads";
+import { EmailEditor } from "@/components/drafts";
 import { cn } from "@/components/ui/utils";
-import type { LeadDetail as LeadDetailType } from "@/lib/types";
+import type { DraftWorkspace, LeadDetail as LeadDetailType } from "@/lib/types";
 
 export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   lead: LeadDetailType;
   /** The request time from the page, for relative ages. */
   now: number;
+  /** Draft workspace for the email editor (ready leads). */
+  workspace?: DraftWorkspace;
 }
 
-export function LeadDetail({ lead, now, className, ...props }: LeadDetailProps) {
+export function LeadDetail({
+  lead,
+  now,
+  workspace,
+  className,
+  ...props
+}: LeadDetailProps) {
   const company = lead.company;
   const contact = lead.contact;
   const isPlaceholderContact = contact?.isPlaceholder ?? false;
@@ -191,6 +200,11 @@ export function LeadDetail({ lead, now, className, ...props }: LeadDetailProps) 
           </div>
         )}
       </div>
+
+      {/* Email editor (for ready leads) */}
+      {lead.status === "ready" && workspace && (
+        <EmailEditor lead={lead} workspace={workspace} />
+      )}
     </div>
   );
 }
