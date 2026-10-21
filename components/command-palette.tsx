@@ -7,6 +7,7 @@ import {
   Activity,
   ArrowLeft,
   ArrowRight,
+  Bot,
   Check,
   Copy,
   Inbox,
@@ -217,6 +218,15 @@ export function CommandPalette({
                   >
                     <Send className="h-4 w-4 text-muted shrink-0" />
                     <span>Go to Sequences</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    value="agent"
+                    onSelect={() => handleSelectNav("/agent")}
+                    className="flex h-9 items-center gap-2.5 rounded-control px-2.5 text-body text-text cursor-pointer select-none transition-colors data-[selected=true]:bg-surface-2"
+                  >
+                    <Bot className="h-4 w-4 text-muted shrink-0" />
+                    <span>Go to Agent</span>
                   </Command.Item>
 
                   {role === "admin" && (

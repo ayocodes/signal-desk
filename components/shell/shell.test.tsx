@@ -54,6 +54,7 @@ describe("AppShell", () => {
     expect(html).not.toContain('href="/ops"');
     expect(html).toContain('href="/queue"');
     expect(html).toContain('href="/leads"');
+    expect(html).toContain('href="/agent"');
   });
 
   it("renders workspace name from BRAND_NAME", () => {

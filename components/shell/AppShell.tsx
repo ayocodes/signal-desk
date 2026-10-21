@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  Bot,
   Inbox,
   LogOut,
   type LucideIcon,
@@ -40,6 +41,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/queue", label: "Queue", icon: Inbox },
   { href: "/leads", label: "Leads", icon: Users },
   { href: "/sequences", label: "Sequences", icon: Send },
+  { href: "/agent", label: "Agent", icon: Bot },
   { href: "/ops", label: "Ops", adminOnly: true, icon: Activity },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
