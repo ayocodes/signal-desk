@@ -4,7 +4,10 @@ from pathlib import Path
 from agent.config import DEFAULTS_VERSION, load_config
 
 AGENT = Path(__file__).resolve().parent.parent
-SHARED_FILES = ("scoring.json", "hiring_keywords.json", "guardrails.json")
+SHARED_FILES = (
+    "scoring.json", "hiring_keywords.json", "guardrails.json", "outreach.json",
+    "draft.md", "raw.md", "draft_schema.json",
+)
 
 
 def test_defaults_load_with_the_documented_weights() -> None:
@@ -31,6 +34,16 @@ def test_keyword_and_guardrail_rules_load() -> None:
     assert cfg.guardrails.mailbox.daily_cap > 0
     share = cfg.guardrails.test_inboxes
     assert 0 <= share.bounced_per_100 + share.complained_per_100 < 100
+
+
+def test_outreach_and_prompts_load() -> None:
+    cfg = load_config("any-org")
+    out = cfg.outreach
+    assert out.proof_points and all(not any(ch.isdigit() for ch in p) for p in out.proof_points)
+    assert 0 < out.llm.agent_share < 1
+    # Every placeholder in the prompts is one the renderers fill in.
+    assert "{{signals}}" in cfg.prompts.draft and "{{offer}}" in cfg.prompts.raw
+    assert cfg.prompts.draft_schema["required"] == ["drafts"]
 
 
 def _code_strings(source: str) -> list[str]:

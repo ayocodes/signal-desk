@@ -1,0 +1,736 @@
+{
+  "_about": "Shared guardrail cases. agent/tests/test_guardrails.py and lib/guardrails.test.ts both run every case and must agree. Rules come from shared/guardrails.json; proof points from shared/outreach.json unless a case sets proofPoints. 'expect' lists only the checks a case is about; 'passed' is the overall result.",
+  "cases": [
+    {
+      "name": "valid signal draft passes every check",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "angle": "pass",
+        "grounding": "pass",
+        "banned_chars": "pass",
+        "banned_phrases": "pass",
+        "word_count": "pass",
+        "closing_question": "pass",
+        "numbers": "pass",
+        "claims": "pass",
+        "placeholders": "pass",
+        "subject": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "raw angle can never be approved",
+      "input": {
+        "angle": "raw",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "angle": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "no grounded phrases listed",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "phrase in the email but not in any signal (invented signal)",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, congrats on the Series A round, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Series A round"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "signal phrase deleted from the email",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, we help teams find buying signals and draft first emails that cite them. Worth a look?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "one verified phrase and one unverified: warn, still passes",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "Series A round"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "warn"
+      },
+      "passed": true
+    },
+    {
+      "name": "grounding is case-insensitive",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "founding account executive"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "grounding respects word boundaries",
+      "note": "'sales' is in the email but only inside 'Salesforce' in the signal",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, is your sales team ready for outbound?",
+        "groundedPhrases": [
+          "sales"
+        ],
+        "signals": [
+          {
+            "title": "Salesforce Administrator",
+            "excerpt": null
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "phrases shorter than the minimum don't count",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw the AE role. Worth a chat?",
+        "groundedPhrases": [
+          "AE"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "a grounded phrase in the subject counts",
+      "input": {
+        "angle": "signal",
+        "subject": "Founding Account Executive",
+        "body": "Hi Jane, we help new sales teams draft first emails that cite public signals. Worth a look?",
+        "groundedPhrases": [
+          "Founding Account Executive"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "grounding ignores extra whitespace",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "outbound  motion\nfrom scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "grounding": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "em dash in the body",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch — we help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "banned_chars": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "en dash in the subject",
+      "input": {
+        "angle": "signal",
+        "subject": "Founding AE – a question",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "banned_chars": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "banned phrase",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Can we touch base before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "banned_phrases": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "banned phrase, any case",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. This Game Changer helps teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "banned_phrases": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "banned phrase only matches whole words",
+      "note": "'synergy' inside a longer word is not the banned phrase",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. Our synergyless pitch helps teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "banned_phrases": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "body of exactly 80 words passes",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Saw you're hiring a Founding Account Executive to build your outbound motion from scratch. really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really worth a quick chat?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "word_count": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "body of 81 words fails",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Saw you're hiring a Founding Account Executive to build your outbound motion from scratch. really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really really worth a quick chat?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "word_count": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "no closing question",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Happy to show you before your first AE starts.",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "closing_question": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "question mark followed by whitespace still counts",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?  \n",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "closing_question": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "a number from the signal is allowed",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Before those first 20 deals, worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "numbers": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "an invented percentage fails",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams get 40% more replies, find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "numbers": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "an invented multiplier fails",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams book 3x more meetings, find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "numbers": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "B2B is not a number",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help B2B teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "numbers": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "an invented number in the subject fails",
+      "input": {
+        "angle": "signal",
+        "subject": "5 ideas for your founding AE",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "numbers": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "customer claim without a listed proof point",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. Our customers love how we help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "claims": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "customer claim inside its listed proof point",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. Teams we work with approve every first email. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "proofPoints": [
+        "Teams we work with approve every first email"
+      ],
+      "expect": {
+        "claims": "pass"
+      },
+      "passed": true
+    },
+    {
+      "name": "customer claim that only borrows words from the proof point",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. Teams we work with grew fast. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "proofPoints": [
+        "Teams we work with approve every first email"
+      ],
+      "expect": {
+        "claims": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "leftover placeholder",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi {first_name}, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "placeholders": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "leftover bracket placeholder",
+      "input": {
+        "angle": "signal",
+        "subject": "Your founding AE search",
+        "body": "Hi [Name], saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "placeholders": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "leftover template variable",
+      "input": {
+        "angle": "signal",
+        "subject": "A question for {{company}}",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "placeholders": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "empty subject",
+      "input": {
+        "angle": "signal",
+        "subject": "  ",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "subject": "fail"
+      },
+      "passed": false
+    },
+    {
+      "name": "long subject warns but passes",
+      "input": {
+        "angle": "signal",
+        "subject": "A question about your Founding Account Executive search this quarter",
+        "body": "Hi Jane, saw you're hiring a Founding Account Executive to build your outbound motion from scratch. We help teams find buying signals and draft first emails that cite them. Every first email is approved by a person before it sends. Worth a look before your first AE starts?",
+        "groundedPhrases": [
+          "Founding Account Executive",
+          "outbound motion from scratch"
+        ],
+        "signals": [
+          {
+            "title": "Founding Account Executive",
+            "excerpt": "You will build our outbound motion from scratch and own the first 20 customer deals."
+          }
+        ]
+      },
+      "expect": {
+        "subject": "warn"
+      },
+      "passed": true
+    }
+  ]
+}

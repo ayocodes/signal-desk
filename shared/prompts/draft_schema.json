@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "drafts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "angle": { "type": "string", "enum": ["signal", "peer", "short", "raw"] },
+          "subject": { "type": "string" },
+          "body": { "type": "string" },
+          "grounded_phrases": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["angle", "subject", "body", "grounded_phrases"]
+      }
+    }
+  },
+  "required": ["drafts"]
+}

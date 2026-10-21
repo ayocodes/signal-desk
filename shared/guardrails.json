@@ -20,6 +20,16 @@
     "circle back",
     "touch base"
   ],
+  "claimPhrases": [
+    "our customers",
+    "our clients",
+    "teams we work with",
+    "companies we work with",
+    "customers like",
+    "teams like yours use"
+  ],
+  "minGroundedPhraseChars": 4,
+  "maxSubjectChars": 60,
   "mailbox": {
     "dailyCap": 50,
     "pauseBouncePct": 4.0,

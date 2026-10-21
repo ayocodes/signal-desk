@@ -1,0 +1,8 @@
+{
+  "steps": [
+    { "key": "d1_open", "dayOffset": 0 },
+    { "key": "d3_check", "dayOffset": 3 },
+    { "key": "d7_case", "dayOffset": 7 },
+    { "key": "d11_close", "dayOffset": 11 }
+  ]
+}

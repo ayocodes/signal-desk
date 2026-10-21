@@ -106,8 +106,49 @@ class GuardrailsConfig(_Model):
     require_closing_question: bool = Field(alias="requireClosingQuestion")
     banned_chars: tuple[str, ...] = Field(alias="bannedChars")
     banned_phrases: tuple[str, ...] = Field(alias="bannedPhrases")
+    # Claims about customers; allowed only as part of a listed proof point (outreach.json).
+    claim_phrases: tuple[str, ...] = Field(alias="claimPhrases")
+    min_grounded_phrase_chars: int = Field(alias="minGroundedPhraseChars")
+    max_subject_chars: int = Field(alias="maxSubjectChars")
     mailbox: MailboxRules
     test_inboxes: InboxShare = Field(alias="testInboxes")
+
+
+class Sender(_Model):
+    name: str
+    company: str
+
+
+class Angles(_Model):
+    signal: str
+    peer: str
+    short: str
+
+
+class LlmRules(_Model):
+    # Share of LLM_DAILY_BUDGET the agent may use; the rest is kept for the web app.
+    agent_share: float = Field(alias="agentShare")
+    min_seconds_between_calls: float = Field(alias="minSecondsBetweenCalls")
+    regenerate_per_user_per_hour: int = Field(alias="regeneratePerUserPerHour")
+    max_retries_per_lead: int = Field(alias="maxRetriesPerLead")
+
+
+class OutreachConfig(_Model):
+    """Who sends, what they offer, and the only claims a draft may make about them."""
+
+    sender: Sender
+    offer: str
+    proof_points: tuple[str, ...] = Field(alias="proofPoints")
+    angles: Angles
+    max_signals_in_prompt: int = Field(alias="maxSignalsInPrompt")
+    llm: LlmRules
+
+
+class Prompts(_Model):
+    draft: str
+    raw: str
+    # JSON schema the model's answer must follow (Gemini's structured output).
+    draft_schema: dict[str, object]
 
 
 class AgentConfig(_Model):
@@ -119,6 +160,8 @@ class AgentConfig(_Model):
     scoring: ScoringConfig
     keywords: HiringKeywords
     guardrails: GuardrailsConfig
+    outreach: OutreachConfig
+    prompts: Prompts
 
 
 DEFAULTS_VERSION = "defaults"
@@ -135,6 +178,12 @@ def _load_defaults() -> AgentConfig:
         scoring=ScoringConfig.model_validate(_read("scoring.json")),
         keywords=HiringKeywords.model_validate(_read("hiring_keywords.json")),
         guardrails=GuardrailsConfig.model_validate(_read("guardrails.json")),
+        outreach=OutreachConfig.model_validate(_read("outreach.json")),
+        prompts=Prompts(
+            draft=(SHARED / "prompts" / "draft.md").read_text(encoding="utf-8"),
+            raw=(SHARED / "prompts" / "raw.md").read_text(encoding="utf-8"),
+            draft_schema=_read("prompts/draft_schema.json"),  # type: ignore[arg-type]
+        ),
     )
 
 

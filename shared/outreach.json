@@ -1,0 +1,24 @@
+{
+  "sender": {
+    "name": "Sam",
+    "company": "Signal Desk"
+  },
+  "offer": "an AI outbound platform for early-stage B2B teams: it watches for buying signals like sales hires and launches, drafts the first email, and runs the follow-up sequence",
+  "proofPoints": [
+    "Built for teams without a dedicated SDR",
+    "Every first email is approved by a person before it sends",
+    "Each draft cites the public signal it is based on"
+  ],
+  "angles": {
+    "signal": "Lead with the strongest signal: name it in their words and connect it to the offer.",
+    "peer": "Speak to what a team at their stage is dealing with, using only the listed proof points. Never name or invent other companies.",
+    "short": "Three sentences at most: the signal, one line on the offer, the question."
+  },
+  "maxSignalsInPrompt": 5,
+  "llm": {
+    "agentShare": 0.8,
+    "minSecondsBetweenCalls": 13,
+    "regeneratePerUserPerHour": 5,
+    "maxRetriesPerLead": 1
+  }
+}
