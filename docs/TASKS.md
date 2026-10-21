@@ -747,6 +747,8 @@ Rules move into the database per org, versioned, edited by admins in the app and
 - [x] **C4.5.3** Agent: `load_config` reads the org's newest version (invalid or missing falls back to the defaults and records an error); ordered, switchable hiring categories; N-category scoring; hiring signals re-classified from their stored titles at scoring time; `config_version` on scored leads; enrolled and later leads are never re-scored; drafting reads the org's outreach and guardrails.
 - [x] **C4.5.4** Web: `getAgentConfig` per org; `lib/data/agent-config.ts` (`getCurrentConfig()`, `listConfigVersions()`, `thresholdPreview()`); `lib/config-diff.ts` (readable change lines); admin routes `POST /api/agent-config`, `POST /api/agent-config/revert`, `GET /api/agent-config/preview?threshold=` (zod + role check + audit log); helpers `saveAgentConfig`, `revertAgentConfig`, `previewThreshold` in `lib/api.ts`; admin guard on `app/(app)/settings/agent/layout.tsx` and in the proxy; `SignalView.label` from the category name; LLM pacing data for Ops.
 
+- [ ] **C4.5.8** Apply changes right away (user decision 2026-10-21): `python -m agent.main --rescore --org <uuid>` (score only, loops while a newer version was saved, at most 3 times); `.github/workflows/rescore.yml` (workflow_dispatch, concurrency group per org, org id through env); migration 009 (`agent_runs.config_version`, `agent_configs.restored_from`); `lib/rescore.ts` (join a queued or running re-score, 2-minute cooldown between dispatches, audit-logged dispatches); save, restore and reset return `apply: "dispatched" | "joined" | "deferred" | "failed"`; `POST /api/agent-config/reset`; `GET /api/agent-config/apply-status?version=N` (`applying | applied | failed`); `listConfigVersions()` adds `restoredFrom` and `sameRulesAs`; helpers `resetAgentConfig()`, `applyStatus(version)`.
+
 ### Flash
 
 #### F4.5.1 Admin rules editor
@@ -869,6 +871,34 @@ Rules move into the database per org, versioned, edited by admins in the app and
   ```
 - [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F4.5.6.md`, on the card's branch (only exists if Claude asked for changes)
+
+#### F4.5.7 Apply status, Reset to defaults, Restore wording
+- **Starts after:** C4.5.8, F4.5.2
+- **Build:**
+  - Editor: after a save, a restore or a reset, a status line. "Applying your changes..." while `applyStatus(version)` says `applying` (poll every 5 s), then "Applied". When the save answered `apply: "deferred"` or `"failed"`, or the status says `failed`, show exactly: "Couldn't apply right now. Your changes are saved and will apply on the next scheduled run." Never promise a time.
+  - An admin "Reset to defaults" button with an inline confirm ("Reset every rule to the defaults? This saves a new version."), calling `resetAgentConfig()`.
+  - Replace "Effect shows after the next agent run (every 30 min)" with "Applies to the queue after saving".
+  - History: the button reads "Restore these rules"; the confirm reads "Restore version {N}'s rules? This saves them as version {next}."; a row with `restoredFrom` reads "Version 5, restored from version 3"; the current version shows "Same rules as version {sameRulesAs}" when set.
+- **Touch only:** `components/agent-config/*`, `app/(app)/settings/agent/page.tsx`
+- **Start:**
+  ```bash
+  git status --short  # must print nothing; if it does, stop and tell the user
+  git switch main  # stand on the latest main (no commits ever happen here)
+  git switch -c flash/p45-apply-status  # create this card's own branch and move onto it
+  ```
+- **Finish:**
+  ```bash
+  npm run check  # must pass before committing (rule 7)
+  git add components/agent-config "app/(app)/settings/agent/page.tsx"  # only the Touch-only files
+  git commit -m "flash(p4.5): apply status, reset to defaults, restore wording"  # commits to the card's branch, not main
+  git switch main  # step off the branch; the commit stays on it for Claude to review
+  ```
+- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- **Review notes:** `docs/reviews/F4.5.7.md`, on the card's branch (only exists if Claude asked for changes)
+
+### You
+
+- [ ] **U4.5.0** Create a fine-grained GitHub token: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token. Repository access: only `ayocodes/signal-desk`. Repository permissions: **Actions: Read and write** (Metadata read-only is added automatically; nothing else). Put it in `.env.local` and in Vercel as `GITHUB_DISPATCH_TOKEN`, with `GITHUB_REPO=ayocodes/signal-desk`. Not a GitHub Actions secret: only the web app uses it.
 
 ### Phase gate
 
