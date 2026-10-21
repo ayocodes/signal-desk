@@ -24,5 +24,6 @@ Rules for every version:
 - Never invent customers, company names, numbers, results or case studies. Only use numbers that appear in the signals above.
 - Only describe {{sender_company}} with the offer and the proof points above.
 - In grounded_phrases, list the exact phrases you used from the signals (copied word for word from a signal's title or excerpt). Use at least one.
+- Pick signal phrases that read naturally in your sentence. Never copy a phrase containing "we", "our" or "us": that is the company talking about itself, and you are not them.
 
 Return JSON only, with one entry per angle: {"drafts": [{"angle": "signal" | "peer" | "short", "subject": string, "body": string, "grounded_phrases": [string]}]}
