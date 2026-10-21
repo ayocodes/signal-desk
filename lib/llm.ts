@@ -3,11 +3,15 @@
 // The API key travels in a header, so it never appears in a URL, a log line or an error.
 //
 // Rate limits: a 429 for the per-day quota throws LlmQuotaExhausted. A 429 for the per-minute
-// quota waits for the delay Google asks for (at most 60 s) and tries once more.
+// quota waits for the delay Google asks for (at most 60 s) and tries once more. A 500 or 503
+// (Google overloaded) waits 5 s and tries once more. Retries happen inside one reserved call,
+// so they don't spend more of the budget.
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
 const TIMEOUT_MS = 90_000;
 const MAX_WAIT_SECONDS = 60;
+const BUSY_STATUSES = [500, 503];
+const BUSY_WAIT_SECONDS = 5;
 
 /** The call failed; the message is safe to store and show (no key, no prompt). */
 export class LlmError extends Error {
@@ -110,6 +114,10 @@ export async function geminiGenerateJson(
         continue;
       }
       throw new LlmRateLimited("Gemini is still rate limiting after one wait");
+    }
+    if (BUSY_STATUSES.includes(response.status) && attempt === 1) {
+      await sleep(BUSY_WAIT_SECONDS);
+      continue;
     }
     if (!response.ok) {
       const message = (await googleError(response)).message ?? "";

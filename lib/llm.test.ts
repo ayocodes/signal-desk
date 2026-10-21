@@ -67,6 +67,16 @@ describe("geminiGenerateJson", () => {
     expect(String(error)).not.toContain("secret-key");
   });
 
+  it("retries an overloaded model once after five seconds", async () => {
+    const busy = { error: { code: 503, message: "This model is currently experiencing high demand." } };
+    const first = scripted([503, busy], [200, OK]);
+    expect((await geminiGenerateJson(SETTINGS, "p", {}, first.deps)).tokensIn).toBe(900);
+    expect(first.waits).toEqual([5]);
+
+    const second = scripted([503, busy], [503, busy]);
+    await expect(geminiGenerateJson(SETTINGS, "p", {}, second.deps)).rejects.toThrow(/503/);
+  });
+
   it("treats an answer without text as an error", async () => {
     const { deps } = scripted([200, { candidates: [{ finishReason: "SAFETY", content: { parts: [] } }] }]);
     await expect(geminiGenerateJson(SETTINGS, "p", {}, deps)).rejects.toThrow(/SAFETY/);

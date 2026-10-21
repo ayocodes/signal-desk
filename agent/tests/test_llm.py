@@ -83,3 +83,14 @@ def test_an_answer_without_text_is_an_error() -> None:
     p, _, _ = provider((200, {"candidates": [{"finishReason": "SAFETY", "content": {"parts": []}}]}))
     with pytest.raises(LlmError, match="SAFETY"):
         p.generate_json("prompt", {})
+
+
+def test_an_overloaded_model_gets_one_retry_after_five_seconds() -> None:
+    busy = {"error": {"code": 503, "message": "This model is currently experiencing high demand."}}
+    p, seen, waits = provider((503, busy), (200, OK))
+    assert p.generate_json("prompt", {}).tokens_in == 900
+    assert waits == [5] and len(seen) == 2
+
+    p, _, _ = provider((503, busy), (503, busy))
+    with pytest.raises(LlmError, match="503"):
+        p.generate_json("prompt", {})

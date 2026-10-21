@@ -6,7 +6,8 @@ it never appears in a URL, a log line or an error message.
 
 Rate limits: a 429 for the per-day quota stops drafting for the rest of the run
 (LlmQuotaExhausted). A 429 for the per-minute quota waits for the delay Google asks for (at
-most 60 s) and tries once more.
+most 60 s) and tries once more. A 500 or 503 (Google overloaded) waits 5 s and tries once
+more. Retries happen inside one reserved call, so they don't spend more of the budget.
 """
 
 from __future__ import annotations
@@ -24,6 +25,8 @@ from agent.settings import LlmSettings
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 TIMEOUT_SECONDS = 90
 MAX_WAIT_SECONDS = 60
+BUSY_STATUSES = (500, 503)
+BUSY_WAIT_SECONDS = 5
 
 
 class LlmError(Exception):
@@ -111,6 +114,9 @@ class GeminiProvider:
                     self._sleep(min(_retry_delay(details) or 30.0, MAX_WAIT_SECONDS))
                     continue
                 raise LlmRateLimited("Gemini is still rate limiting after one wait")
+            if response.status_code in BUSY_STATUSES and attempt == 1:
+                self._sleep(BUSY_WAIT_SECONDS)
+                continue
             if response.status_code != 200:
                 message = self._error(response).get("message", "")
                 raise LlmError(f"Gemini answered {response.status_code}: {str(message)[:200]}")
