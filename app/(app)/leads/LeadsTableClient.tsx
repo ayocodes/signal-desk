@@ -76,6 +76,8 @@ export function LeadsTableClient({ data, sort, dir }: LeadsTableClientProps) {
         e.preventDefault();
         setSelectedIndex((prev) => Math.max(prev - 1, 0));
       } else if (e.key === "Enter") {
+        // A focused link or button (sort header, pager) handles its own Enter.
+        if (e.target instanceof Element && e.target.closest("a, button")) return;
         if (selectedLead) {
           e.preventDefault();
           router.push(`/queue?lead=${selectedLead.id}`);

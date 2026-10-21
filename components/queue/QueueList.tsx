@@ -16,7 +16,7 @@ import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { Tabs, type TabItem } from "@/components/ui/Tabs";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/components/ui/utils";
-import { formatSignalAge } from "@/components/leads/SignalCard";
+import { formatSignalAge, signalLabel } from "@/components/leads/SignalCard";
 import {
   isTypingInInput,
   setSelectedLeadContext,
@@ -49,7 +49,7 @@ const TAB_CONFIG: { id: QueueTab; label: string }[] = [
 const SIGNAL_OPTIONS: { id: SignalType; label: string }[] = [
   { id: "hiring", label: "Hiring" },
   { id: "launch", label: "Launch" },
-  { id: "funding", label: "Funding" },
+  { id: "funding", label: "YC recent" },
 ];
 
 export function QueueList({
@@ -309,7 +309,7 @@ export function QueueList({
                             active={false}
                             className="text-label py-0 px-1 font-mono uppercase tracking-wider shrink-0"
                           >
-                            {topSig.type}
+                            {signalLabel(topSig)}
                           </Tag>
                           <span className="truncate text-text">{topSig.title}</span>
                           {extraSignals > 0 && (

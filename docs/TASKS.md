@@ -581,7 +581,7 @@ Almost all of this phase is Claude's: it's the agent core.
   git commit -m "flash(p3): keyboard navigation and loading/empty/error states"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F3.5.md`, on the card's branch (only exists if Claude asked for changes)
 
 ### Phase gate
