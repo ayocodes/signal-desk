@@ -1,10 +1,11 @@
 // npm run seed
-// Creates the demo organization, the admin and two rep users, their profiles, and 4 mailboxes,
-// then splits the agent's ready/filtered leads evenly between the reps.
+// Creates the demo organization, the admin and two rep users, their profiles, 4 mailboxes and
+// version 1 of the agent rules, then gives any lead without a demo rep to the rep with fewest.
 // Safe to run again: everything is an upsert, passwords are re-synced, and the split is
 // deterministic, so a second run changes nothing.
 import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import rules from "../shared/defaults/rules.json" with { type: "json" };
 import guardrails from "../shared/guardrails.json" with { type: "json" };
 import { env, serviceClient } from "./supabase-script-client";
 
@@ -58,16 +59,22 @@ async function reassignableLeads(db: SupabaseClient): Promise<LeadRow[]> {
   }
 }
 
-// Alternates leads between reps in company-name order: the same input always gives the same
-// split, and only leads whose rep changes are written.
+// Gives each ready/filtered lead without a demo rep to the rep with the fewest (the agent's own
+// rule), in company-name order. Leads that already have a rep never move, so re-seeding is
+// stable even after leads are enrolled. (An earlier version alternated by list position, and
+// one enrolled lead shifted every lead after it to the other rep.)
 async function splitLeads(db: SupabaseClient, reps: string[]): Promise<number> {
   const leads = (await reassignableLeads(db)).sort((a, b) =>
     (a.company?.name ?? "").localeCompare(b.company?.name ?? "") || a.company_id.localeCompare(b.company_id),
   );
+  const load = new Map(reps.map((rep) => [rep, leads.filter((lead) => lead.assigned_to === rep).length]));
   const changes = leads
-    .map((lead, index) => ({ lead, rep: reps[index % reps.length] }))
-    .filter(({ lead, rep }) => lead.assigned_to !== rep)
-    .map(({ lead, rep }) => ({ org_id: DEMO_ORG_ID, company_id: lead.company_id, assigned_to: rep }));
+    .filter((lead) => !lead.assigned_to || !load.has(lead.assigned_to))
+    .map((lead) => {
+      const rep = reps.reduce((fewest, candidate) => (load.get(candidate)! < load.get(fewest)! ? candidate : fewest));
+      load.set(rep, load.get(rep)! + 1);
+      return { org_id: DEMO_ORG_ID, company_id: lead.company_id, assigned_to: rep };
+    });
 
   for (let start = 0; start < changes.length; start += 500) {
     const { error } = await db
@@ -112,11 +119,28 @@ async function main(): Promise<void> {
   );
   if (mailboxError) throw new Error(`Mailbox upsert failed: ${mailboxError.message}`);
 
+  // Version 1 of the agent rules: the /shared defaults. Only added when the org has none, so
+  // re-seeding never overwrites rules an admin has saved since.
+  const { count: versions, error: versionsError } = await db
+    .from("agent_configs")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", DEMO_ORG_ID);
+  if (versionsError) throw new Error(`Reading agent rules failed: ${versionsError.message}`);
+  if (!versions) {
+    const { error: rulesError } = await db.from("agent_configs").insert({
+      org_id: DEMO_ORG_ID,
+      version: 1,
+      rules,
+      change_summary: ["First version, from the defaults"],
+    });
+    if (rulesError) throw new Error(`Seeding the agent rules failed: ${rulesError.message}`);
+  }
+
   const moved = await splitLeads(db, [repId, rep2Id]);
   console.log(`Lead split: ${moved} lead(s) reassigned.`);
 
   const counts = await Promise.all(
-    ["organizations", "profiles", "mailboxes"].map(async (table) => {
+    ["organizations", "profiles", "mailboxes", "agent_configs"].map(async (table) => {
       const { count, error } = await db.from(table).select("*", { count: "exact", head: true });
       if (error) throw new Error(`Counting ${table} failed: ${error.message}`);
       return `${table}: ${count}`;

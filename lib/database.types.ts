@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_configs: {
+        Row: {
+          change_summary: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          org_id: string
+          rules: Json
+          version: number
+        }
+        Insert: {
+          change_summary?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          org_id: string
+          rules: Json
+          version: number
+        }
+        Update: {
+          change_summary?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          org_id?: string
+          rules?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_configs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_configs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_runs: {
         Row: {
           created_at: string
@@ -381,6 +426,7 @@ export type Database = {
         Row: {
           assigned_to: string | null
           company_id: string
+          config_version: number | null
           contact_id: string | null
           created_at: string
           filtered_reason: string | null
@@ -394,6 +440,7 @@ export type Database = {
         Insert: {
           assigned_to?: string | null
           company_id: string
+          config_version?: number | null
           contact_id?: string | null
           created_at?: string
           filtered_reason?: string | null
@@ -407,6 +454,7 @@ export type Database = {
         Update: {
           assigned_to?: string | null
           company_id?: string
+          config_version?: number | null
           contact_id?: string | null
           created_at?: string
           filtered_reason?: string | null
@@ -859,6 +907,17 @@ export type Database = {
         Returns: {
           call_id: string
           refusal: string
+        }[]
+      }
+      save_agent_config: {
+        Args: { p_rules: Json; p_summary: Json }
+        Returns: number
+      }
+      threshold_preview: {
+        Args: { p_threshold: number; p_weak: string[] }
+        Returns: {
+          ready_now: number
+          would_be_ready: number
         }[]
       }
     }

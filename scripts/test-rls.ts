@@ -124,6 +124,20 @@ async function checkServerOnlyFunctions(rep: SupabaseClient, repId: string | und
   check("rep can read today's LLM call count", !usedError && typeof used === "number", usedError ? `error ${usedError.code}` : `${used} today`);
 }
 
+// Every member reads the org's agent rules; only admins can save a version.
+async function checkAgentRules(rep: SupabaseClient, admin: SupabaseClient): Promise<void> {
+  const repReads = await rowCount(rep, "agent_configs");
+  check("rep reads the org's agent rules", typeof repReads === "number" && repReads >= 1, `got ${repReads}`);
+  const { error: repSave } = await rep.rpc("save_agent_config", { p_rules: {}, p_summary: [] });
+  check("rep can't save agent rules", repSave?.code === "42501", repSave ? `blocked (${repSave.code})` : "save succeeded");
+  const { error: repInsert } = await rep.from("agent_configs").insert({ org_id: "00000000-0000-4000-8000-000000000001", version: 999, rules: {} });
+  check("nobody inserts agent rules directly", repInsert !== null, repInsert ? `blocked (${repInsert.code})` : "insert succeeded");
+  // A malformed summary is rejected after the role check, so this proves the admin passes it
+  // without writing a real version.
+  const { error: adminSave } = await admin.rpc("save_agent_config", { p_rules: {}, p_summary: {} });
+  check("admin passes the role check for saving rules", adminSave?.code === "22023", adminSave ? `stopped at validation (${adminSave.code})` : "saved");
+}
+
 async function main(): Promise<void> {
   // Logged out: the anon role has no table privileges at all.
   const anon = anonClient();
@@ -174,6 +188,7 @@ async function main(): Promise<void> {
 
   await checkLeadsPerRep(rep, admin, repId);
   await checkServerOnlyFunctions(rep, repId);
+  await checkAgentRules(rep, admin);
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}  (${r.detail})`);
   const failed = results.filter((r) => !r.ok).length;
