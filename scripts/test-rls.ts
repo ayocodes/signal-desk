@@ -64,7 +64,7 @@ async function main(): Promise<void> {
   const adminMailboxes = await rowCount(admin, "mailboxes");
   check("admin reads 4 mailboxes", adminMailboxes === 4, `got ${adminMailboxes}`);
   const adminProfiles = await rowCount(admin, "profiles");
-  check("admin reads both profiles in the org", adminProfiles === 2, `got ${adminProfiles}`);
+  check("admin reads all 3 profiles in the org", adminProfiles === 3, `got ${adminProfiles}`);
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}  (${r.detail})`);
   const failed = results.filter((r) => !r.ok).length;

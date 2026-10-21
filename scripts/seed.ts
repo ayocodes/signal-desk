@@ -1,6 +1,9 @@
 // npm run seed
-// Creates the demo organization, the admin and rep users, their profiles, and 4 mailboxes.
-// Safe to run again: everything is an upsert, and user passwords are re-synced from env.
+// Creates the demo organization, the admin and two rep users, their profiles, and 4 mailboxes,
+// then splits the agent's ready/filtered leads evenly between the reps.
+// Safe to run again: everything is an upsert, passwords are re-synced, and the split is
+// deterministic, so a second run changes nothing.
+import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import guardrails from "../shared/guardrails.json" with { type: "json" };
 import { env, serviceClient } from "./supabase-script-client";
@@ -9,6 +12,13 @@ import { env, serviceClient } from "./supabase-script-client";
 const DEMO_ORG_ID = "00000000-0000-4000-8000-000000000001";
 
 const MAILBOX_LABELS = ["outbound-1", "outbound-2", "outbound-3", "outbound-4"];
+
+// A second rep so the demo can show RLS: each rep sees only their own leads. Nobody logs in
+// as this user; the password is random on every seed run.
+const SECOND_REP_EMAIL = "rep2@example.com";
+
+// Only these statuses are (re)assigned; enrolled and later leads keep their rep.
+const REASSIGNABLE = ["ready", "filtered"];
 
 async function ensureUser(db: SupabaseClient, email: string, password: string): Promise<string> {
   const { data, error } = await db.auth.admin.listUsers({ perPage: 1000 });
@@ -30,6 +40,44 @@ async function ensureUser(db: SupabaseClient, email: string, password: string): 
   return created.user.id;
 }
 
+type LeadRow = { company_id: string; assigned_to: string | null; company: { name: string } | null };
+
+async function reassignableLeads(db: SupabaseClient): Promise<LeadRow[]> {
+  const rows: LeadRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db
+      .from("leads")
+      .select("company_id, assigned_to, company:companies(name)")
+      .eq("org_id", DEMO_ORG_ID)
+      .in("status", REASSIGNABLE)
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw new Error(`Reading leads failed: ${error.message}`);
+    rows.push(...(data as unknown as LeadRow[]));
+    if (data.length < 1000) return rows;
+  }
+}
+
+// Alternates leads between reps in company-name order: the same input always gives the same
+// split, and only leads whose rep changes are written.
+async function splitLeads(db: SupabaseClient, reps: string[]): Promise<number> {
+  const leads = (await reassignableLeads(db)).sort((a, b) =>
+    (a.company?.name ?? "").localeCompare(b.company?.name ?? "") || a.company_id.localeCompare(b.company_id),
+  );
+  const changes = leads
+    .map((lead, index) => ({ lead, rep: reps[index % reps.length] }))
+    .filter(({ lead, rep }) => lead.assigned_to !== rep)
+    .map(({ lead, rep }) => ({ org_id: DEMO_ORG_ID, company_id: lead.company_id, assigned_to: rep }));
+
+  for (let start = 0; start < changes.length; start += 500) {
+    const { error } = await db
+      .from("leads")
+      .upsert(changes.slice(start, start + 500), { onConflict: "org_id,company_id" });
+    if (error) throw new Error(`Splitting leads failed: ${error.message}`);
+  }
+  return changes.length;
+}
+
 async function main(): Promise<void> {
   const db = serviceClient();
 
@@ -43,11 +91,13 @@ async function main(): Promise<void> {
 
   const adminId = await ensureUser(db, env.demo.admin.email, env.demo.admin.password);
   const repId = await ensureUser(db, env.demo.rep.email, env.demo.rep.password);
+  const rep2Id = await ensureUser(db, SECOND_REP_EMAIL, randomBytes(24).toString("base64url"));
 
   // theme is left out so a re-seed keeps each user's chosen theme.
   const { error: profileError } = await db.from("profiles").upsert([
     { id: adminId, org_id: DEMO_ORG_ID, full_name: "Demo Admin", role: "admin" },
     { id: repId, org_id: DEMO_ORG_ID, full_name: "Demo Rep", role: "rep" },
+    { id: rep2Id, org_id: DEMO_ORG_ID, full_name: "Demo Rep 2", role: "rep" },
   ]);
   if (profileError) throw new Error(`Profile upsert failed: ${profileError.message}`);
 
@@ -61,6 +111,9 @@ async function main(): Promise<void> {
     { onConflict: "org_id,label" },
   );
   if (mailboxError) throw new Error(`Mailbox upsert failed: ${mailboxError.message}`);
+
+  const moved = await splitLeads(db, [repId, rep2Id]);
+  console.log(`Lead split: ${moved} lead(s) reassigned.`);
 
   const counts = await Promise.all(
     ["organizations", "profiles", "mailboxes"].map(async (table) => {
