@@ -4,11 +4,19 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 2 done (2026-10-21). Next: Phase 3, workspace UI (read-only queue, lead detail, leads table).
-- Next step: Claude plans Phase 3's C cards (plan mode, wait for "go").
+- Phase: 3 done (2026-10-21). Next: Phase 4, drafts and approval (the cut line).
+- Next step: Claude plans Phase 4's C cards (plan mode, wait for "go").
 - Blockers: none. Ashby is checked only on local runs (`npm run agent:local`); GitHub runs check Greenhouse and Lever.
 
 ## Log
+
+### 2026-10-21: Phase 3 closed (U3.1, C3.4)
+- Done: data layer (C3.1), live updates plus per-rep RLS checks (C3.2), second demo rep (C3.0); Flash F3.1 to F3.5 reviewed and merged with fixes. User browser check passed: admin and reps see different lead sets, real lead detail, live status, keyboard, filtered reasons. After the gate: arrow keys alongside J/K, the selected row stays in view, the split view fits the window, and lead pages load in one query (signals embedded, tab counts in one SQL call; queue about 1.0 s down to 0.7 s).
+- Decisions (and why):
+  - "Date.now() while prerendering" on every signed-in page came from supabase-js checking the session's expiry inside the layout's profile lookup (`partialPrefetching` makes Next flag clock reads in that stage). `createSupabaseServerClient` now calls `connection()` first: everything it reads is per-user, request-time work. Lead pages also take one clock reading (`lib/request-time.ts`) and pass it down as `now`, so server and browser show the same ages.
+  - Automatic guards against Flash's repeat mistakes: `lib/design-tokens.test.ts` (default palette, raw hex, dashes, `text-[Npx]`, extra `<h1>`) and `lib/ui-consistency.test.tsx` (signal labels). `npm run check` includes `next build`.
+- Not done / known issues: user still to decide on senior performance marketing roles (currently not counted).
+- Next step (exact): plan Phase 4.
 
 ### 2026-10-21: Phase 2 closed (U2.1, U2.2, C2.12)
 - Done: F2.1 (keywords, 78 cases; review removed `cro` and `performance marketing`, excluded `designer`), F2.2 (scoring/ICP example tests), F2.3 (agent README; review corrected 8 factual errors). GitHub runs green and idempotent; user checked the tables. Score bands (Strong 90+, Good 70+, Borderline 50+) added to the rules; the score stays a points total.

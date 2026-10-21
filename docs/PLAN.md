@@ -91,13 +91,13 @@ Then add the phase's extra notes (below each phase) if any.
 
 ## Phase 3: Workspace UI (read-only first)
 
-- [ ] Queue page: list with tabs (Ready, Enrolled, Bounced, Replied) and counts; signal filter chips; collapsed "N filtered out" section listing reasons
-- [ ] Lead detail: header with status pill, numbered signal cards (type, title, source, age, excerpt, link out), score math row, buyer check row
-- [ ] Leads page: dense sortable table (company, contact, score, top signal, status, assigned rep, updated)
-- [ ] Reps see only their assigned leads (enforced by RLS, not just the UI)
-- [ ] Keyboard: `J` / `K` in lists, `⌘K` actions for the selected lead
-- [ ] Loading skeletons, empty and error states
-- [ ] Realtime or polling refresh so new leads from the agent appear without reload
+- [x] Queue page: list with tabs (Ready, Enrolled, Bounced, Replied) and counts; signal filter chips; collapsed "N filtered out" section listing reasons
+- [x] Lead detail: header with status pill, numbered signal cards (type, title, source, age, excerpt, link out), score math row, buyer check row
+- [x] Leads page: dense sortable table (company, contact, score, top signal, status, assigned rep, updated)
+- [x] Reps see only their assigned leads (enforced by RLS, not just the UI)
+- [x] Keyboard: `J` / `K` in lists, `⌘K` actions for the selected lead
+- [x] Loading skeletons, empty and error states
+- [x] Realtime or polling refresh so new leads from the agent appear without reload
 
 **Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 

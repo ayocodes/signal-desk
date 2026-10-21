@@ -587,13 +587,13 @@ Almost all of this phase is Claude's: it's the agent core.
 ### Phase gate
 
 - [x] **C3.3** Automated checks: `npm run check` and `npm run test:rls` (each rep reads only their own leads, signals and contacts; the admin reads all); the queue and leads pages rendered for the admin and for a rep return different lead counts; a rep gets nothing for the other rep's lead. Report the counts to the user.
-- [ ] **U3.1** In the browser, check PLAN.md Phase 3 "Done when":
+- [x] **U3.1** In the browser, check PLAN.md Phase 3 "Done when":
   - As admin, then as rep: Queue and Leads show different lead sets; the rep sees only their assigned leads.
   - Open a lead: the signal cards, score math and buyer check show real data, and the source links work.
   - With Queue open, run the agent (Actions → Run workflow). New leads appear without a reload.
   - `J` / `K` move the selection; the tabs show counts; the filtered-out section lists reasons.
   - Tell Claude what passed and what didn't.
-- [ ] **C3.4** After U3.1 passes: tick PLAN.md Phase 3, add a PROGRESS.md entry, commit.
+- [x] **C3.4** After U3.1 passes: tick PLAN.md Phase 3, add a PROGRESS.md entry, commit.
 
 ---
 
