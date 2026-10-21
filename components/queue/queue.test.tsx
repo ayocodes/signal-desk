@@ -96,6 +96,7 @@ describe("Queue components", () => {
           id: "sig-1",
           type: "hiring",
           category: "sales",
+          label: "Sales hire",
           title: "Founding AE",
           excerpt: "Build outbound",
           sourceName: "Ashby",

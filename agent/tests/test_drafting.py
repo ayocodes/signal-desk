@@ -131,7 +131,7 @@ def test_one_call_stores_three_drafts_with_prompt_tokens_and_trace() -> None:
     assert first["prompt"] == llm.prompts[0] and len(first["prompt_hash"]) == 64
     assert (first["tokens_in"], first["tokens_out"], first["llm_call_id"]) == (800, 200, "call-1")
     assert first["trace"]["attempts"][0]["failedChecks"] == {"signal": [], "peer": [], "short": []}
-    assert first["trace"]["signals"][0] == {"label": "Hiring", "title": "Founding Account Executive"}
+    assert first["trace"]["signals"][0] == {"label": "Sales hire", "title": "Founding Account Executive"}
     assert ("llm_calls", {"ok": True, "error": None, "model": "gemini-test", "tokens_in": 800, "tokens_out": 200}, {"id": "call-1"}) in db.updates
     assert ctx.run.stats == {"llm_calls": 1, "drafts_created": 3, "leads_drafted": 1}
     assert ctx.run._audit[-1]["action"] == "draft.created"

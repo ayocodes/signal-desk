@@ -2,14 +2,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { getAgentConfig } from "@/lib/agent-config";
+import { defaultConfig } from "@/lib/agent-config";
 import { promptHash, renderDraftPrompt, renderRawPrompt, type PromptFacts } from "@/lib/prompts";
 import fixtures from "@/shared/fixtures/prompt_cases.json";
 
 type Case = { name: string; kind: "draft" | "raw"; facts: PromptFacts; expected: string };
 
 const cases = fixtures.cases as Case[];
-const config = await getAgentConfig("any-org");
+const config = defaultConfig();
 const read = (name: string) => readFileSync(join(process.cwd(), "shared", "prompts", name), "utf8");
 const templates = { draft: read("draft.md"), raw: read("raw.md") };
 

@@ -145,7 +145,7 @@ def _trace(ctx: Context, facts: PromptFacts, digest: str, attempts: list[Attempt
         "source": "agent",
         "runId": ctx.run.run_id,
         "promptHash": digest,
-        "signals": [{"label": signal_label(s), "title": s.title} for s in shown],
+        "signals": [{"label": signal_label(s, ctx.config.hiring), "title": s.title} for s in shown],
         "attempts": [
             {
                 "attempt": a.number,

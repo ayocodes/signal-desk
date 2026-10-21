@@ -9,39 +9,42 @@ from agent.scoring import SignalFacts, score_lead
 
 NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)
 CFG = load_config("test-org").scoring
+HIRING = load_config("test-org").hiring
 
 
 def signal(kind: str, hours_ago: float, founding: bool = False, title: str = "Signal") -> SignalFacts:
-    return SignalFacts(type=kind, occurred_at=NOW - timedelta(hours=hours_ago), title=title, founding=founding)  # type: ignore[arg-type]
+    # Hiring signals always carry their category; "sales" is the Sales hire category.
+    category = "sales" if kind == "hiring" else None
+    return SignalFacts(type=kind, occurred_at=NOW - timedelta(hours=hours_ago), title=title, founding=founding, category=category)  # type: ignore[arg-type]
 
 
 def test_full_match_with_no_signals_is_filtered_with_a_reason() -> None:
-    result = score_lead("full", [], NOW, CFG)
+    result = score_lead("full", [], NOW, CFG, HIRING)
     assert (result.score, result.ready) == (40, False)
     assert result.parts == (("ICP match", 40),)
     assert result.filtered_reason == "Score 40, under 50: no buying signals yet"
 
 
 def test_partial_plus_one_old_sales_hire_is_exactly_50_and_ready() -> None:
-    result = score_lead("partial", [signal("hiring", hours_ago=24 * 30)], NOW, CFG)
-    assert result.parts == (("Partial ICP match", 20), ("Hiring", 30))
+    result = score_lead("partial", [signal("hiring", hours_ago=24 * 30)], NOW, CFG, HIRING)
+    assert result.parts == (("Partial ICP match", 20), ("Sales hire", 30))
     assert (result.score, result.ready, result.filtered_reason) == (50, True, None)
 
 
 def test_49_is_filtered() -> None:
     # partial 20 + launch 18 + fresh (under 2 days) 11 = 49
-    result = score_lead("partial", [signal("launch", hours_ago=30)], NOW, CFG)
+    result = score_lead("partial", [signal("launch", hours_ago=30)], NOW, CFG, HIRING)
     assert result.score == 49
     assert not result.ready
     assert result.filtered_reason == "Score 49, under 50: partial ICP match needs a stronger signal"
 
 
 def test_full_stacked_example_from_the_architecture_doc() -> None:
-    result = score_lead("full", [signal("hiring", 2, founding=True), signal("launch", 100)], NOW, CFG)
+    result = score_lead("full", [signal("hiring", 2, founding=True), signal("launch", 100)], NOW, CFG, HIRING)
     assert result.parts == (
         ("ICP match", 40),
-        ("Hiring", 30),
-        ("Founding sales role", 5),
+        ("Sales hire", 30),
+        ("Founding sales hire", 5),
         ("Launch", 18),
         ("Fresh (under 24h)", 15),
         ("2 signal types", 7),
@@ -54,29 +57,29 @@ def test_full_stacked_example_from_the_architecture_doc() -> None:
     [(1, "Fresh (under 24h)", 15), (30, "Fresh (under 2 days)", 11), (60, "Fresh (under 3 days)", 8), (150, "Fresh (under 7 days)", 4)],
 )
 def test_freshness_buckets_use_the_newest_signal(hours_ago: float, label: str, points: int) -> None:
-    result = score_lead("full", [signal("hiring", 500), signal("hiring", hours_ago)], NOW, CFG)
+    result = score_lead("full", [signal("hiring", 500), signal("hiring", hours_ago)], NOW, CFG, HIRING)
     assert (label, points) in result.parts
 
 
 def test_no_freshness_after_a_week_and_future_dates_count_as_now() -> None:
-    assert not any(label.startswith("Fresh") for label, _ in score_lead("full", [signal("hiring", 200)], NOW, CFG).parts)
-    assert ("Fresh (under 24h)", 15) in score_lead("full", [signal("hiring", -5)], NOW, CFG).parts
+    assert not any(label.startswith("Fresh") for label, _ in score_lead("full", [signal("hiring", 200)], NOW, CFG, HIRING).parts)
+    assert ("Fresh (under 24h)", 15) in score_lead("full", [signal("hiring", -5)], NOW, CFG, HIRING).parts
 
 
 def test_a_weak_signal_alone_names_itself_when_filtered() -> None:
-    result = score_lead("partial", [signal("funding", 24 * 40, title="YC Fall 2026")], NOW, CFG)
+    result = score_lead("partial", [signal("funding", 24 * 40, title="YC Fall 2026")], NOW, CFG, HIRING)
     assert result.filtered_reason == "Score 30, under 50: only a weak signal (YC Fall 2026)"
 
 
 def test_a_weak_signal_cannot_make_a_lead_ready_even_at_50() -> None:
-    result = score_lead("full", [signal("funding", 24 * 40, title="YC Fall 2026")], NOW, CFG)
+    result = score_lead("full", [signal("funding", 24 * 40, title="YC Fall 2026")], NOW, CFG, HIRING)
     assert result.score == 50
     assert not result.ready
     assert result.filtered_reason == "Score 50: only a weak signal (YC Fall 2026)"
 
 
 def test_a_weak_signal_still_adds_points_next_to_a_real_one() -> None:
-    result = score_lead("partial", [signal("funding", 24 * 40), signal("hiring", 24 * 40)], NOW, CFG)
+    result = score_lead("partial", [signal("funding", 24 * 40), signal("hiring", 24 * 40)], NOW, CFG, HIRING)
     assert ("YC recent", 10) in result.parts
     assert result.ready
 
@@ -121,22 +124,22 @@ def hire(category: str, hours_ago: float, founding: bool = False) -> SignalFacts
 
 
 def test_a_marketing_hire_is_its_own_lower_weighted_part() -> None:
-    result = score_lead("full", [hire("marketing", 24 * 30)], NOW, CFG)
+    result = score_lead("full", [hire("marketing", 24 * 30)], NOW, CFG, HIRING)
     assert result.parts == (("ICP match", 40), ("Marketing hire", 20))
     assert (result.score, result.ready) == (60, True)
 
 
 def test_partial_plus_marketing_hire_alone_stays_filtered() -> None:
-    result = score_lead("partial", [hire("marketing", 24 * 30)], NOW, CFG)
+    result = score_lead("partial", [hire("marketing", 24 * 30)], NOW, CFG, HIRING)
     assert (result.score, result.ready) == (40, False)
 
 
 def test_sales_and_marketing_hires_both_count_but_stack_as_one_type() -> None:
-    result = score_lead("full", [hire("sales", 24 * 30), hire("marketing", 24 * 30)], NOW, CFG)
-    assert result.parts == (("ICP match", 40), ("Hiring", 30), ("Marketing hire", 20))
+    result = score_lead("full", [hire("sales", 24 * 30), hire("marketing", 24 * 30)], NOW, CFG, HIRING)
+    assert result.parts == (("ICP match", 40), ("Sales hire", 30), ("Marketing hire", 20))
     assert not any("signal types" in label for label, _ in result.parts)
 
 
 def test_founding_bonus_is_for_sales_roles_only() -> None:
-    result = score_lead("full", [hire("marketing", 24 * 30, founding=True)], NOW, CFG)
-    assert ("Founding sales role", 5) not in result.parts
+    result = score_lead("full", [hire("marketing", 24 * 30, founding=True)], NOW, CFG, HIRING)
+    assert ("Founding sales hire", 5) not in result.parts

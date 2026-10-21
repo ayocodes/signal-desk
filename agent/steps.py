@@ -24,7 +24,7 @@ from agent.llm import LlmProvider
 from agent.run import RunRecorder
 from agent.scoring import SignalFacts, score_lead
 from agent.settings import Settings
-from agent.signals import hiring_signals, launch_signal, yc_recency_signal
+from agent.signals import classify_title, hiring_signals, hiring_title, job_title_of, launch_signal, yc_recency_signal
 from agent.sources import ats, hn, yc
 
 # Politeness cap on job-board refreshes per tick (separate from the discovery probe budget).
@@ -133,7 +133,7 @@ def probe_job_boards(ctx: Context) -> None:
     ctx.run.count("ashby_unchecked", sum(1 for row in no_board if "ashby" not in (row.get("ats_checked") or {})))
 
     budget_start = ctx.client.request_count
-    keywords = ctx.config.keywords
+    hiring = ctx.config.hiring
     unavailable: dict[ats.Ats, int] = {}  # job-board site -> status it refused us with, this run
     for row in pending:
         if ctx.client.request_count - budget_start >= ctx.settings.discovery_probes_per_run:
@@ -167,7 +167,7 @@ def probe_job_boards(ctx: Context) -> None:
             }
             ctx.run.count("boards_found")
             ctx.run.audit("company.ats_found", "company", row["id"], ats=board.ats, token=board.token, jobs=len(board.jobs))
-            save_signals(ctx, hiring_signals(ctx.org_id, row["id"], board.ats, board.jobs, keywords, ctx.now))
+            save_signals(ctx, hiring_signals(ctx.org_id, row["id"], board.ats, board.jobs, hiring, ctx.now))
         ctx.db.update("companies", update, id=row["id"])
 
     ctx.run.count("probe_requests", ctx.client.request_count - budget_start)
@@ -189,7 +189,7 @@ def refresh_hiring(ctx: Context) -> None:
         if row["ats_type"]
         and (row["jobs_fetched_at"] is None or datetime.fromisoformat(row["jobs_fetched_at"]) < ctx.now - window)
     ]
-    keywords = ctx.config.keywords
+    hiring = ctx.config.hiring
     skipped = [row for row in due if row["ats_type"] not in ctx.settings.job_boards]
     ctx.run.count("refresh_skipped_site", len(skipped))  # e.g. Ashby boards on a GitHub run
     due = [row for row in due if row["ats_type"] in ctx.settings.job_boards]
@@ -206,7 +206,7 @@ def refresh_hiring(ctx: Context) -> None:
             continue
         ctx.run.count("boards_refreshed")
         if board is not None:
-            save_signals(ctx, hiring_signals(ctx.org_id, row["id"], board.ats, board.jobs, keywords, ctx.now))
+            save_signals(ctx, hiring_signals(ctx.org_id, row["id"], board.ats, board.jobs, hiring, ctx.now))
         ctx.db.update("companies", {"jobs_fetched_at": ctx.now.isoformat()}, id=row["id"])
 
 
@@ -236,6 +236,29 @@ def detect_yc_recency(ctx: Context) -> None:
 
 # Leads in these states belong to the sequence engine; scoring never changes their status.
 SCORING_OWNS = {"ready", "filtered"}
+
+
+def reclassify_hiring(ctx: Context, rows: list[Row]) -> None:
+    """Re-reads every hiring signal's job title with the org's current categories, so keyword
+    and category edits apply on the next run without fetching job boards again. Updates the
+    rows in place and writes back only the signals whose category or title changed."""
+    hiring = ctx.config.hiring
+    changed = 0
+    for row in rows:
+        if row["type"] != "hiring":
+            continue
+        job_title = job_title_of(row)
+        match = classify_title(job_title, hiring)
+        meta = dict(row.get("meta") or {})
+        category, founding = (match.category, match.founding) if match else (None, False)
+        title = hiring_title(job_title, category, hiring)
+        if (meta.get("category"), bool(meta.get("founding")), meta.get("job_title"), row["title"]) == (category, founding, job_title, title):
+            continue
+        meta.update(category=category, founding=founding, job_title=job_title)
+        row["meta"], row["title"] = meta, title
+        ctx.db.update("signals", {"meta": meta, "title": title}, id=row["id"])
+        changed += 1
+    ctx.run.count("signals_reclassified", changed)
 
 
 def _signal_facts(rows: list[Row]) -> dict[str, list[SignalFacts]]:
@@ -269,20 +292,22 @@ def score_leads(ctx: Context) -> None:
     """Scores every tracked company and creates or updates its lead. Writes only what changed."""
     tracked = companies(ctx, "id,name,icp_tier,team_size")
     tracked_ids = {r["id"] for r in tracked}
-    signals = _signal_facts(ctx.db.select_all("signals", "company_id,type,occurred_at,detected_at,title,meta", org_id=ctx.org_id))
+    signal_rows = ctx.db.select_all("signals", "id,company_id,type,occurred_at,detected_at,title,meta", org_id=ctx.org_id)
+    reclassify_hiring(ctx, signal_rows)
+    signals = _signal_facts(signal_rows)
     leads = {lead["company_id"]: lead for lead in ctx.db.select_all(
-        "leads", "id,company_id,status,score,score_parts,filtered_reason,assigned_to", org_id=ctx.org_id)}
+        "leads", "id,company_id,status,score,score_parts,filtered_reason,assigned_to,config_version", org_id=ctx.org_id)}
     contacts = ensure_contacts(ctx, tracked)
 
     reps = [p["id"] for p in ctx.db.select_all("profiles", "id,role,created_at", org_id=ctx.org_id) if p["role"] == "rep"]
     load = {rep: sum(1 for lead in leads.values() if lead["assigned_to"] == rep) for rep in reps}
     rules = ctx.config.scoring
+    version = ctx.config.version
 
     new_rows: list[dict[str, Any]] = []
     status_rows: list[dict[str, Any]] = []
-    score_rows: list[dict[str, Any]] = []
     for company in sorted(tracked, key=lambda c: c["name"]):
-        result = score_lead(company["icp_tier"], signals.get(company["id"], []), ctx.now, rules)
+        result = score_lead(company["icp_tier"], signals.get(company["id"], []), ctx.now, rules, ctx.config.hiring)
         status = "ready" if result.ready else "filtered"
         parts = [[label, points] for label, points in result.parts]
         lead = leads.get(company["id"])
@@ -294,38 +319,36 @@ def score_leads(ctx: Context) -> None:
             new_rows.append({
                 "org_id": ctx.org_id, "company_id": company["id"], "contact_id": contacts.get(company["id"]),
                 "assigned_to": assignee, "score": result.score, "score_parts": parts,
-                "status": status, "filtered_reason": result.filtered_reason,
+                "status": status, "filtered_reason": result.filtered_reason, "config_version": version,
             })
         elif lead["status"] in SCORING_OWNS:
-            if (lead["score"], lead["score_parts"], lead["status"], lead["filtered_reason"]) != (
-                result.score, parts, status, result.filtered_reason
+            if (lead["score"], lead["score_parts"], lead["status"], lead["filtered_reason"], lead["config_version"]) != (
+                result.score, parts, status, result.filtered_reason, version
             ):
                 status_rows.append({
-                    "org_id": ctx.org_id, "company_id": company["id"], "score": result.score,
-                    "score_parts": parts, "status": status, "filtered_reason": result.filtered_reason,
+                    "org_id": ctx.org_id, "company_id": company["id"], "score": result.score, "score_parts": parts,
+                    "status": status, "filtered_reason": result.filtered_reason, "config_version": version,
                 })
                 if lead["status"] != status:
                     ctx.run.audit("lead.status_changed", "lead", lead["id"], from_status=lead["status"], to_status=status, score=result.score)
                     ctx.run.count("leads_status_changed")
-        elif (lead["score"], lead["score_parts"]) != (result.score, parts):
-            score_rows.append({"org_id": ctx.org_id, "company_id": company["id"], "score": result.score, "score_parts": parts})
+        # Enrolled and later leads keep the score and rules version they were approved with.
 
     # Leads whose company stopped matching the ICP leave the queue.
     for company_id, lead in leads.items():
         if company_id not in tracked_ids and lead["status"] == "ready":
             status_rows.append({
                 "org_id": ctx.org_id, "company_id": company_id, "score": lead["score"], "score_parts": lead["score_parts"],
-                "status": "filtered", "filtered_reason": "No longer matches the ICP",
+                "status": "filtered", "filtered_reason": "No longer matches the ICP", "config_version": version,
             })
 
     for lead in ctx.db.upsert("leads", new_rows, on_conflict="org_id,company_id"):
         ctx.run.audit("lead.created", "lead", lead.get("id"), score=lead["score"], status=lead["status"])
     # Each batch has one column set, so an upsert never blanks columns it doesn't mention.
     ctx.db.upsert("leads", status_rows, on_conflict="org_id,company_id")
-    ctx.db.upsert("leads", score_rows, on_conflict="org_id,company_id")
 
     ctx.run.count("leads_new", len(new_rows))
-    ctx.run.count("leads_updated", len(status_rows) + len(score_rows))
+    ctx.run.count("leads_updated", len(status_rows))
     final = {company_id: lead["status"] for company_id, lead in leads.items()}
     final.update({row["company_id"]: row["status"] for row in new_rows + status_rows})
     ctx.run.count("leads_ready", sum(1 for s in final.values() if s == "ready"))

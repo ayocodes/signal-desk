@@ -24,19 +24,19 @@ EXTRA_CLASSIFICATION_CASES: list[tuple[str, str | None]] = [
     ("VP of Business Development", "sales"),
     ("Field Sales Manager", "sales"),
     # GTM roles (Revenue, RevOps, Growth, CRO, GTM leads)
-    ("Head of Revenue", "gtm"),
-    ("VP of Revenue", "gtm"),
-    ("Chief Revenue Officer", "gtm"),
-    ("RevOps Lead", "gtm"),
-    ("Head of RevOps", "gtm"),
-    ("Revenue Operations Manager", "gtm"),
-    ("Director of Growth", "gtm"),
-    ("VP of Growth", "gtm"),
-    ("Growth Director", "gtm"),
-    ("Head of GTM", "gtm"),
-    ("GTM Lead", "gtm"),
-    ("Outbound Lead", "gtm"),
-    ("Outbound Specialist", "gtm"),
+    ("Head of Revenue", "sales"),
+    ("VP of Revenue", "sales"),
+    ("Chief Revenue Officer", "sales"),
+    ("RevOps Lead", "sales"),
+    ("Head of RevOps", "sales"),
+    ("Revenue Operations Manager", "sales"),
+    ("Director of Growth", "sales"),
+    ("VP of Growth", "sales"),
+    ("Growth Director", "sales"),
+    ("Head of GTM", "sales"),
+    ("GTM Lead", "sales"),
+    ("Outbound Lead", "sales"),
+    ("Outbound Specialist", "sales"),
     # Marketing roles (Senior, Demand Gen, Growth marketing, Performance marketing)
     ("Head of Marketing", "marketing"),
     ("VP of Marketing", "marketing"),
@@ -91,7 +91,7 @@ EXTRA_CLASSIFICATION_CASES: list[tuple[str, str | None]] = [
 
 @pytest.mark.parametrize(("title", "expected"), EXTRA_CLASSIFICATION_CASES)
 def test_keywords_extra_classification(title: str, expected: str | None) -> None:
-    keywords = load_config("test-org").keywords
+    keywords = load_config("test-org").hiring
     match = classify_title(title, keywords)
     actual = match.category if match is not None else None
     assert actual == expected, f"Expected {title!r} to be classified as {expected!r}, got {actual!r}"
@@ -111,4 +111,4 @@ def test_keywords_extra_classification(title: str, expected: str | None) -> None
     ],
 )
 def test_paid_acquisition_roles_never_count(title: str) -> None:
-    assert classify_title(title, load_config("any-org").keywords) is None
+    assert classify_title(title, load_config("any-org").hiring) is None

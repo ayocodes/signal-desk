@@ -31,7 +31,7 @@ class RunRecorder:
         self.stats: dict[str, int] = {}
         self.step_ms: dict[str, int] = {}
         self.errors: list[dict[str, str]] = []
-        self.config_version: str | None = None
+        self.config_version: int | None = None
         self.job_boards: tuple[str, ...] = ()
         self._audit: list[Row] = []
 

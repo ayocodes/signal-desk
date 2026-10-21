@@ -41,9 +41,11 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
     run.start()
     ctx = steps.Context(
         settings=settings, db=db, client=client, run=run, org_id=org["id"], now=utc_now(),
-        config=load_config(org["id"]),
+        config=load_config(org["id"], db),
         llm=None if dry_run else provider_from_settings(settings.llm),
     )
+    if ctx.config.problem:
+        run.errors.append({"step": "load_config", "message": ctx.config.problem})
     for name, step in STEPS:
         with run.step(name):
             step(ctx)

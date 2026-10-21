@@ -1,7 +1,7 @@
 // Drafts for the email editor. Server only. Reads run as the signed-in user, so RLS decides:
 // a rep sees drafts of their own leads only.
 import "server-only";
-import { getAgentConfig } from "@/lib/agent-config";
+import { getAgentConfig } from "@/lib/data/agent-config";
 import { requireProfile } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { guardrailRules } from "@/lib/guardrails";

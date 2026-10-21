@@ -1,4 +1,4 @@
-"""Does a YC company fit the ICP? (Rules come from load_config; defaults: shared/scoring.json, icpRules and partialRules.)
+"""Does a YC company fit the ICP? (Rules come from load_config: the org's icp and partial rules; defaults in shared/defaults/rules.json.)
 
 Hard rules decide whether we track a company at all: active, B2B (by industry or tag), not a
 nonprofit. Two soft rules then decide the tier:

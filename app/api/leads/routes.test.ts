@@ -23,6 +23,10 @@ vi.mock("@/lib/auth", () => ({ getProfile: mocks.getProfile }));
 vi.mock("@/lib/data/leads", () => ({ getLead: mocks.getLead }));
 vi.mock("@/lib/data/drafts", () => ({ DRAFT_COLUMNS: "*", getDraft: mocks.getDraft, getRawDraft: mocks.getRawDraft }));
 vi.mock("@/lib/audit", () => ({ logUserAction: mocks.logUserAction }));
+vi.mock("@/lib/data/agent-config", async () => {
+  const { defaultConfig } = await import("@/lib/agent-config");
+  return { getAgentConfig: async () => defaultConfig() };
+});
 vi.mock("@/lib/env", () => ({
   env: { llm: { provider: "gemini", apiKey: "k", model: "gemini-test", dailyBudget: 20 }, resend: { from: "a@b.c" } },
 }));
@@ -72,6 +76,7 @@ const SIGNAL: SignalView = {
   id: "s-1",
   type: "hiring",
   category: "sales",
+  label: "Sales hire",
   title: "Founding Account Executive",
   excerpt: "You will build the outbound motion from scratch.",
   sourceName: "Greenhouse",
@@ -199,7 +204,7 @@ describe("POST /api/leads/[id]/draft", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("reserve_llm_call", expect.objectContaining({
       p_source: "regenerate", p_actor: "rep-1", p_daily_limit: 20, p_actor_hourly_limit: 5,
     }));
-    expect(mocks.generateJson.mock.calls[0][0]).toContain("1. Hiring: Founding Account Executive");
+    expect(mocks.generateJson.mock.calls[0][0]).toContain("1. Sales hire: Founding Account Executive");
     const row = mocks.inserts[0].row;
     expect(row).toMatchObject({ created_by: "rep-1", llm_call_id: "call-1", tokens_in: 700, passed: true });
     expect(row.trace).toMatchObject({ source: "regenerate", chosenAttempt: 1 });

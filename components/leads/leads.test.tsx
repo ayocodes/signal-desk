@@ -135,6 +135,7 @@ describe("Lead display components", () => {
       id: "sig-1",
       type: "hiring",
       category: "sales",
+      label: "Sales hire",
       title: "Founding Account Executive",
       excerpt: "Build our outbound motion from scratch and own the first $1M in pipeline.",
       sourceName: "Ashby job board",
@@ -151,7 +152,7 @@ describe("Lead display components", () => {
       expect(html).toContain("#1");
 
       // Type Tag uses the score-math words
-      expect(html).toContain("Hiring");
+      expect(html).toContain("Sales hire");
 
       // Title
       expect(html).toContain("Founding Account Executive");
@@ -180,6 +181,7 @@ describe("Lead display components", () => {
         id: "sig-2",
         type: "funding",
         category: null,
+        label: "YC recent",
         title: "YC Winter 2026 Batch",
         excerpt: null,
         sourceName: "Y Combinator",
@@ -264,6 +266,7 @@ describe("SignalCard labels and quoting (review of F3.1)", () => {
     id: "x",
     type: "hiring",
     category: "sales",
+    label: "Sales hire",
     title: "Hiring: Founding AE",
     excerpt: "Own the sales cycle.",
     sourceName: "Ashby",
@@ -271,17 +274,15 @@ describe("SignalCard labels and quoting (review of F3.1)", () => {
     occurredAt: "2026-10-20T10:00:00Z",
   };
 
-  it("names signals with the score-math words", () => {
-    expect(signalLabel(base)).toBe("Hiring");
-    expect(signalLabel({ ...base, category: "marketing" })).toBe("Marketing hire");
-    expect(signalLabel({ ...base, type: "launch", category: null })).toBe("Launch");
-    expect(signalLabel({ ...base, type: "funding", category: null })).toBe("YC recent");
+  it("names signals with the label the server computed from the org's rules", () => {
+    expect(signalLabel(base)).toBe("Sales hire");
+    expect(signalLabel({ ...base, label: "Paid acquisition hire" })).toBe("Paid acquisition hire");
   });
 
   it("quotes hiring excerpts only, since launch and YC excerpts are our own summaries", () => {
     expect(renderToStaticMarkup(<SignalCard  now={TEST_NOW}signal={base} />)).toContain("“Own the sales cycle.”");
     const launch = renderToStaticMarkup(
-      <SignalCard  now={TEST_NOW}signal={{ ...base, type: "launch", category: null, excerpt: "Show HN post with 42 points." }} />,
+      <SignalCard  now={TEST_NOW}signal={{ ...base, type: "launch", category: null, label: "Launch", excerpt: "Show HN post with 42 points." }} />,
     );
     expect(launch).not.toContain("“");
     expect(launch).toContain("Show HN post with 42 points.");

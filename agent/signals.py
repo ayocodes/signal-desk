@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime
 from functools import lru_cache
 from typing import Any
 
-from agent.config import HiringKeywords
+from agent.config import HiringRules
 from agent.sources.ats import ATS_LABEL, Ats, Job
 from agent.sources.hn import Story
 from agent.sources.yc import batch_start
@@ -39,36 +39,43 @@ def _contains(text: str, phrase: str) -> bool:
     return _phrase_pattern(phrase).search(text) is not None
 
 
-def classify_title(title: str, keywords: HiringKeywords) -> RoleMatch | None:
-    """The sales/GTM category a job title belongs to, or None if it isn't a sales/GTM role."""
+def classify_title(title: str, hiring: HiringRules) -> RoleMatch | None:
+    """The hiring category a job title belongs to (the first enabled one that matches), or None."""
     text = title.lower()
-    excepted = any(_contains(text, phrase) for phrase in keywords.exclude_exceptions)
-    if not excepted and any(_contains(text, phrase) for phrase in keywords.exclude):
+    excepted = any(_contains(text, phrase) for phrase in hiring.exclude_exceptions)
+    if not excepted and any(_contains(text, phrase) for phrase in hiring.exclude):
         return None
-    for category, phrases in keywords.categories.items():
-        if not any(_contains(text, phrase) for phrase in phrases):
+    for category in hiring.categories:
+        if not category.enabled or not any(_contains(text, phrase) for phrase in category.keywords):
             continue
-        if any(_contains(text, phrase) for phrase in keywords.category_exclude.get(category, ())):
+        if any(_contains(text, phrase) for phrase in category.exclusions):
             continue
-        founding = any(_contains(text, phrase) for phrase in keywords.founding)
-        return RoleMatch(category, founding)
+        founding = any(_contains(text, phrase) for phrase in hiring.founding)
+        return RoleMatch(category.id, founding)
     return None
 
 
-MARKETING = "marketing"
+def hiring_title(job_title: str, category: str | None, hiring: HiringRules) -> str:
+    """The signal title: "Sales hire: Founding AE"."""
+    return f"{hiring.label(category)}: {job_title}"
 
 
-def hiring_label(category: str) -> str:
-    """How a hiring signal is named in titles and score parts."""
-    return "Marketing hire" if category == MARKETING else "Hiring"
+def job_title_of(signal: dict[str, Any]) -> str:
+    """The job title behind a hiring signal. Signals from before Phase 4.5 only stored it after
+    the label ("Hiring: Founding AE"), so that prefix is stripped."""
+    meta = signal.get("meta")
+    stored = meta.get("job_title") if isinstance(meta, dict) else None
+    if isinstance(stored, str) and stored:
+        return stored
+    return signal["title"].split(": ", 1)[1] if ": " in signal["title"] else signal["title"]
 
 
-def excerpt_for(description: str, keywords: HiringKeywords) -> str | None:
+def excerpt_for(description: str, hiring: HiringRules) -> str | None:
     """The first relevant sentence of a job description, at most 220 characters."""
     sentences = [s.strip() for s in SENTENCE_END.split(description) if s.strip()]
     if not sentences:
         return None
-    hints = [p for phrases in keywords.categories.values() for p in phrases] + list(EXCERPT_HINTS)
+    hints = [p for category in hiring.categories for p in category.keywords] + list(EXCERPT_HINTS)
     chosen = next((s for s in sentences if any(_contains(s.lower(), h) for h in hints)), sentences[0])
     if len(chosen) <= EXCERPT_MAX:
         return chosen
@@ -89,12 +96,12 @@ def funding_fingerprint(company_id: str, batch: str) -> str:
 
 
 def hiring_signals(
-    org_id: str, company_id: str, ats: Ats, jobs: tuple[Job, ...], keywords: HiringKeywords, now: datetime
+    org_id: str, company_id: str, ats: Ats, jobs: tuple[Job, ...], hiring: HiringRules, now: datetime
 ) -> list[dict[str, Any]]:
-    """One hiring signal per sales/GTM role on the board."""
+    """One hiring signal per role on the board that matches an enabled hiring category."""
     rows: list[dict[str, Any]] = []
     for job in jobs:
-        match = classify_title(job.title, keywords)
+        match = classify_title(job.title, hiring)
         if match is None:
             continue
         rows.append(
@@ -102,8 +109,8 @@ def hiring_signals(
                 "org_id": org_id,
                 "company_id": company_id,
                 "type": "hiring",
-                "title": f"{hiring_label(match.category)}: {job.title}",
-                "excerpt": excerpt_for(job.description, keywords),
+                "title": hiring_title(job.title, match.category, hiring),
+                "excerpt": excerpt_for(job.description, hiring),
                 "source_name": ATS_LABEL[ats],
                 "source_url": job.url,
                 "occurred_at": (job.published_at or now).isoformat(),
@@ -111,6 +118,8 @@ def hiring_signals(
                 "meta": {
                     "category": match.category,
                     "founding": match.founding,
+                    # Kept so later runs can re-classify the job with the org's current rules.
+                    "job_title": job.title,
                     "location": job.location,
                     "ats": ats,
                     "job_id": job.id,

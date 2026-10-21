@@ -1,18 +1,24 @@
-"""The agent's rules, through one function: load_config(org_id).
+"""The agent's rules, through one function: load_config(org_id, db).
 
-ICP rules, scoring weights, the threshold, keyword lists and guardrail numbers are never
-read anywhere else (agent/tests/test_config.py enforces it). Today load_config returns the
-/shared JSON defaults for every organization; Phase 4.5 moves rules into the database per
-org (versioned), and only this module changes.
+ICP rules, scoring weights, the threshold, hiring categories, the offer and guardrail numbers
+are never read anywhere else (agent/tests/test_config.py enforces it).
+
+Each org's editable rules are one document per version in the database (agent_configs);
+agent/rules.py validates it. load_config merges the org's newest version with the locked
+parts that always come from /shared (built-in banned phrases, prompts, mailbox rules, LLM
+pacing). Without a database, or when an org has no valid version, it uses
+shared/defaults/rules.json (version 0) and says why in `problem`.
 """
 
 from __future__ import annotations
 
 import json
 from functools import lru_cache
+from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agent.rules import validate_rules
 from agent.settings import REPO_ROOT
 
 SHARED = REPO_ROOT / "shared"
@@ -27,12 +33,9 @@ class IcpPoints(_Model):
     partial: int
 
 
-class SignalPoints(_Model):
-    hiring_sales: int
-    hiring_founding_sales_bonus: int
-    hiring_marketing: int
-    launch: int
-    funding_yc_recent: int
+class SignalSource(_Model):
+    enabled: bool
+    points: int
 
 
 class FreshnessStep(_Model):
@@ -71,7 +74,8 @@ class ScoringConfig(_Model):
     # Display labels for ready leads (the web app shows them next to the score).
     score_bands: tuple[ScoreBand, ...] = Field(alias="scoreBands")
     icp: IcpPoints
-    signals: SignalPoints
+    launch: SignalSource
+    yc_recent: SignalSource = Field(alias="ycRecent")
     freshness: tuple[FreshnessStep, ...]
     stacked_per_extra_signal_type: int = Field(alias="stackedPerExtraSignalType")
     icp_rules: IcpRules = Field(alias="icpRules")
@@ -79,14 +83,31 @@ class ScoringConfig(_Model):
     signal_windows: SignalWindows = Field(alias="signalWindows")
 
 
-class HiringKeywords(_Model):
-    # Checked in order; the first category that matches wins (sales before gtm before marketing).
-    categories: dict[str, tuple[str, ...]]
-    # Phrases that disqualify a title from one category only (e.g. gtm skips "marketing" titles).
-    category_exclude: dict[str, tuple[str, ...]] = Field(default_factory=dict, alias="categoryExclude")
+class HiringCategory(_Model):
+    id: str
+    # Shown on signals and in the score math, e.g. "Sales hire".
+    name: str
+    enabled: bool
+    points: int
+    founding_bonus: int = Field(alias="foundingBonus")
+    keywords: tuple[str, ...]
+    exclusions: tuple[str, ...]
+
+
+class HiringRules(_Model):
+    # Checked in order; the first enabled category that matches a job title wins.
+    categories: tuple[HiringCategory, ...]
     founding: tuple[str, ...]
     exclude: tuple[str, ...]
     exclude_exceptions: tuple[str, ...] = Field(alias="excludeExceptions")
+
+    def category(self, category_id: str | None) -> HiringCategory | None:
+        return next((c for c in self.categories if c.id == category_id), None)
+
+    def label(self, category_id: str | None) -> str:
+        """How a hiring signal is named: its category, or plain "Hiring" if it no longer has one."""
+        category = self.category(category_id)
+        return category.name if category else "Hiring"
 
 
 class MailboxRules(_Model):
@@ -102,9 +123,11 @@ class InboxShare(_Model):
 
 
 class GuardrailsConfig(_Model):
+    # From the org's rules (40 to 150).
     max_body_words: int = Field(alias="maxBodyWords")
     require_closing_question: bool = Field(alias="requireClosingQuestion")
     banned_chars: tuple[str, ...] = Field(alias="bannedChars")
+    # The built-in list plus the org's extra phrases.
     banned_phrases: tuple[str, ...] = Field(alias="bannedPhrases")
     # Claims about customers; allowed only as part of a listed proof point (outreach.json).
     claim_phrases: tuple[str, ...] = Field(alias="claimPhrases")
@@ -154,44 +177,104 @@ class Prompts(_Model):
 class AgentConfig(_Model):
     """Every rule one agent run uses, for one organization."""
 
-    # Which rules produced a score: "defaults" for the /shared files; a database version id
-    # once rules are stored per org (Phase 4.5).
-    version: str
+    # The org's rules version that produced a score (stored on each lead); 0 means the defaults.
+    version: int
+    # Why the defaults were used instead of the org's stored rules, if they were.
+    problem: str | None = None
     scoring: ScoringConfig
-    keywords: HiringKeywords
+    hiring: HiringRules
     guardrails: GuardrailsConfig
     outreach: OutreachConfig
     prompts: Prompts
 
 
-DEFAULTS_VERSION = "defaults"
+DEFAULTS_VERSION = 0
 
 
-def _read(name: str) -> object:
+class RulesSource(Protocol):
+    """The part of agent/db.py's Database that load_config needs."""
+
+    def select_all(self, table: str, columns: str = "*", **equals: Any) -> list[dict[str, Any]]: ...
+
+
+def _read(name: str) -> Any:
     return json.loads((SHARED / name).read_text(encoding="utf-8"))
 
 
 @lru_cache(maxsize=1)
-def _load_defaults() -> AgentConfig:
-    return AgentConfig(
-        version=DEFAULTS_VERSION,
-        scoring=ScoringConfig.model_validate(_read("scoring.json")),
-        keywords=HiringKeywords.model_validate(_read("hiring_keywords.json")),
-        guardrails=GuardrailsConfig.model_validate(_read("guardrails.json")),
-        outreach=OutreachConfig.model_validate(_read("outreach.json")),
-        prompts=Prompts(
+def _locked() -> dict[str, Any]:
+    """The parts no org can change, read once."""
+    return {
+        "guardrails": _read("guardrails.json"),
+        "outreach": _read("outreach.json"),
+        "prompts": Prompts(
             draft=(SHARED / "prompts" / "draft.md").read_text(encoding="utf-8"),
             raw=(SHARED / "prompts" / "raw.md").read_text(encoding="utf-8"),
-            draft_schema=_read("prompts/draft_schema.json"),  # type: ignore[arg-type]
+            draft_schema=_read("prompts/draft_schema.json"),
         ),
+    }
+
+
+def default_rules() -> dict[str, Any]:
+    """Version 1 of every org's rules (also what `npm run seed` stores)."""
+    return _read("defaults/rules.json")
+
+
+def build_config(rules: dict[str, Any], version: int, problem: str | None = None) -> AgentConfig:
+    """Merges a valid rules document with the locked /shared parts."""
+    locked = _locked()
+    guardrails = locked["guardrails"]
+    outreach = locked["outreach"]
+    return AgentConfig(
+        version=version,
+        problem=problem,
+        scoring=ScoringConfig(
+            threshold=rules["threshold"],
+            weakSignalTypes=rules["weakSignalTypes"],
+            scoreBands=rules["scoreBands"],
+            icp=rules["icp"]["points"],
+            launch=rules["signals"]["launch"],
+            ycRecent=rules["signals"]["ycRecent"],
+            freshness=rules["freshness"],
+            stackedPerExtraSignalType=rules["stackedPerExtraSignalType"],
+            icpRules={k: v for k, v in rules["icp"].items() if k != "points"},
+            partialRules=rules["partial"],
+            signalWindows=rules["signalWindows"],
+        ),
+        hiring=HiringRules.model_validate(rules["hiring"]),
+        guardrails=GuardrailsConfig.model_validate({
+            **guardrails,
+            "maxBodyWords": rules["guardrails"]["maxBodyWords"],
+            # The built-in phrases are always banned; admins can only add to them.
+            "bannedPhrases": [*guardrails["bannedPhrases"], *rules["guardrails"]["extraBannedPhrases"]],
+        }),
+        outreach=OutreachConfig.model_validate({
+            **outreach,
+            "sender": {"name": rules["outreach"]["senderName"], "company": outreach["sender"]["company"]},
+            "offer": rules["outreach"]["offer"],
+            "proofPoints": rules["outreach"]["proofPoints"],
+        }),
+        prompts=locked["prompts"],
     )
 
 
-def load_config(org_id: str) -> AgentConfig:
-    """The rules for one organization's run.
+@lru_cache(maxsize=1)
+def _defaults() -> AgentConfig:
+    return build_config(default_rules(), DEFAULTS_VERSION)
 
-    Currently the /shared defaults for every org (org_id is unused until rules move into the
-    database in Phase 4.5, where this returns the org's current version, seeded from these).
-    """
-    del org_id  # part of the contract already, so callers don't change later
-    return _load_defaults()
+
+def load_config(org_id: str, db: RulesSource | None = None) -> AgentConfig:
+    """The rules for one organization's run: its newest saved version, merged with the locked
+    parts. Without a database (tests), or when the org has no valid version, the defaults."""
+    if db is None:
+        return _defaults()
+    versions = db.select_all("agent_configs", "version, rules", org_id=org_id)
+    if not versions:
+        return _defaults().model_copy(update={"problem": "No saved rules for this org yet; using the defaults."})
+    newest = max(versions, key=lambda row: row["version"])
+    errors = validate_rules(newest["rules"])
+    if errors:
+        first = errors[0]
+        problem = f"Rules version {newest['version']} is invalid ({first.path}: {first.code}); using the defaults."
+        return _defaults().model_copy(update={"problem": problem})
+    return build_config(newest["rules"], newest["version"])

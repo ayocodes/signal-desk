@@ -11,7 +11,7 @@ import hashlib
 import re
 from dataclasses import dataclass
 
-from agent.config import AgentConfig
+from agent.config import AgentConfig, HiringRules
 
 UNFILLED = re.compile(r"\{\{\w+\}\}")
 
@@ -43,10 +43,10 @@ class PromptFacts:
     signals: tuple[PromptSignal, ...]
 
 
-def signal_label(signal: PromptSignal) -> str:
-    """The same words the UI uses (components/leads/SignalCard.tsx signalLabel)."""
+def signal_label(signal: PromptSignal, hiring: HiringRules) -> str:
+    """The same words the UI uses: the hiring category's name, "Launch" or "YC recent"."""
     if signal.type == "hiring":
-        return "Marketing hire" if signal.category == "marketing" else "Hiring"
+        return hiring.label(signal.category)
     if signal.type == "launch":
         return "Launch"
     return "YC recent"
@@ -58,12 +58,12 @@ def _contact(contact: PromptContact | None) -> str:
     return f"{contact.name}, {contact.title}" if contact.title else contact.name
 
 
-def _signals(signals: tuple[PromptSignal, ...]) -> str:
+def _signals(signals: tuple[PromptSignal, ...], hiring: HiringRules) -> str:
     if not signals:
         return "None found."
     blocks = []
     for number, s in enumerate(signals, start=1):
-        lines = [f"{number}. {signal_label(s)}: {s.title.strip()}"]
+        lines = [f"{number}. {signal_label(s, hiring)}: {s.title.strip()}"]
         if s.excerpt and s.excerpt.strip():
             lines.append(f"   Excerpt: {s.excerpt.strip()}")
         lines.append(f"   Source: {s.source_name}")
@@ -102,7 +102,7 @@ def render_draft_prompt(facts: PromptFacts, cfg: AgentConfig) -> str:
             "proof_points": "\n".join(f"- {point}" for point in out.proof_points),
             "company_line": f"{facts.company_name} ({facts.domain})" if facts.domain else facts.company_name,
             "company_description": (facts.description or "").strip() or "Not known.",
-            "signals": _signals(facts.signals[: out.max_signals_in_prompt]),
+            "signals": _signals(facts.signals[: out.max_signals_in_prompt], cfg.hiring),
             "angles": f"- signal: {angles.signal}\n- peer: {angles.peer}\n- short: {angles.short}",
             "max_words": str(cfg.guardrails.max_body_words),
             "banned_phrases": ", ".join(f'"{p}"' for p in cfg.guardrails.banned_phrases),

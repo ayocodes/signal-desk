@@ -20,11 +20,10 @@ export function formatSignalAge(occurredAt: string, now: Date | number): string 
   return `${Math.round(diffDays / 365)}y ago`;
 }
 
-/** The same words the score math uses: Hiring, Marketing hire, Launch, YC recent. */
-export function signalLabel(signal: Pick<SignalView, "type" | "category">): string {
-  if (signal.type === "hiring") return signal.category === "marketing" ? "Marketing hire" : "Hiring";
-  if (signal.type === "launch") return "Launch";
-  return "YC recent";
+/** The same words the score math uses: the hiring category's name ("Sales hire"), Launch, YC recent.
+ *  Computed on the server from the org's rules (lib/agent-config.ts signalLabelFor). */
+export function signalLabel(signal: Pick<SignalView, "label">): string {
+  return signal.label;
 }
 
 export interface SignalCardProps extends React.HTMLAttributes<HTMLDivElement> {

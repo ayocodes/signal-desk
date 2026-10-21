@@ -13,13 +13,16 @@ export type ScorePart = [label: string, points: number];
 /** ScoreBadge colors: Strong, Good, Borderline/Filtered. */
 export type ScoreTier = "hi" | "md" | "lo";
 
-/** Hiring signals carry the keyword category that matched the job title. */
-export type HiringCategory = "sales" | "gtm" | "marketing";
+/** Hiring signals carry the id of the org's hiring category that matched the job title. */
+export type HiringCategory = string;
 
 export type SignalView = {
   id: string;
   type: SignalType;
+  /** Hiring signals: the org's hiring category id ("sales", "marketing", ...), if it still matches one. */
   category: HiringCategory | null;
+  /** How the signal is named everywhere: the hiring category's name, "Launch" or "YC recent". */
+  label: string;
   title: string;
   excerpt: string | null;
   sourceName: string;

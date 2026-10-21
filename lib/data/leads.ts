@@ -2,7 +2,7 @@
 // Every query runs as the signed-in user (anon key + session), so RLS decides what comes back:
 // an admin gets the whole org, a rep only the leads assigned to them.
 import "server-only";
-import { getAgentConfig } from "@/lib/agent-config";
+import { getAgentConfig } from "@/lib/data/agent-config";
 import { requireProfile } from "@/lib/auth";
 import { toDetail, toListItem, type LeadRow, type SignalRow } from "@/lib/leads-mapping";
 import { createSupabaseServerClient } from "@/lib/supabase/server";

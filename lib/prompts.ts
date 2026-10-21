@@ -4,7 +4,7 @@
 // shared/fixtures/prompt_cases.json. Templates are passed in (read on the server by
 // lib/prompt-templates.ts), which keeps this file pure.
 import { createHash } from "node:crypto";
-import type { AgentConfig } from "@/lib/agent-config";
+import { signalLabelFor, type AgentConfig } from "@/lib/agent-config";
 
 export type PromptTemplates = { draft: string; raw: string };
 
@@ -19,11 +19,9 @@ export type PromptFacts = {
 
 const UNFILLED = /\{\{\w+\}\}/g;
 
-/** The same words the UI uses (components/leads/SignalCard.tsx signalLabel). */
-export function signalLabel(signal: Pick<PromptFacts["signals"][number], "type" | "category">): string {
-  if (signal.type === "hiring") return signal.category === "marketing" ? "Marketing hire" : "Hiring";
-  if (signal.type === "launch") return "Launch";
-  return "YC recent";
+/** The same words the UI uses: the hiring category's name, "Launch" or "YC recent". */
+export function signalLabel(signal: Pick<PromptFacts["signals"][number], "type" | "category">, config: AgentConfig): string {
+  return signalLabelFor(signal.type, signal.category, config);
 }
 
 function contactLine(contact: PromptFacts["contact"]): string {
@@ -31,11 +29,11 @@ function contactLine(contact: PromptFacts["contact"]): string {
   return contact.title ? `${contact.name}, ${contact.title}` : contact.name;
 }
 
-function signalLines(signals: PromptFacts["signals"]): string {
+function signalLines(signals: PromptFacts["signals"], config: AgentConfig): string {
   if (signals.length === 0) return "None found.";
   return signals
     .map((s, i) => {
-      const lines = [`${i + 1}. ${signalLabel(s)}: ${s.title.trim()}`];
+      const lines = [`${i + 1}. ${signalLabel(s, config)}: ${s.title.trim()}`];
       if (s.excerpt?.trim()) lines.push(`   Excerpt: ${s.excerpt.trim()}`);
       lines.push(`   Source: ${s.sourceName}`);
       return lines.join("\n");
@@ -69,7 +67,7 @@ export function renderDraftPrompt(facts: PromptFacts, config: AgentConfig, templ
     proof_points: out.proofPoints.map((point) => `- ${point}`).join("\n"),
     company_line: facts.domain ? `${facts.companyName} (${facts.domain})` : facts.companyName,
     company_description: facts.description?.trim() || "Not known.",
-    signals: signalLines(facts.signals.slice(0, out.maxSignalsInPrompt)),
+    signals: signalLines(facts.signals.slice(0, out.maxSignalsInPrompt), config),
     angles: `- signal: ${out.angles.signal}\n- peer: ${out.angles.peer}\n- short: ${out.angles.short}`,
     max_words: String(config.guardrails.maxBodyWords),
     banned_phrases: config.guardrails.bannedPhrases.map((p) => `"${p}"`).join(", "),

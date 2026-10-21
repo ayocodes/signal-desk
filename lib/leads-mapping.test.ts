@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAgentConfig, scoreBand } from "@/lib/agent-config";
+import { defaultConfig, scoreBand } from "@/lib/agent-config";
 import {
   bySignalStrength,
   latestDrafts,
@@ -11,7 +11,7 @@ import {
   type SignalRow,
 } from "@/lib/leads-mapping";
 
-const config = await getAgentConfig("test-org");
+const config = defaultConfig();
 
 function signal(overrides: Partial<SignalRow>): SignalRow {
   return {
@@ -77,10 +77,10 @@ describe("scoreBand", () => {
 
 describe("signals", () => {
   it("reads the hiring category from meta and falls back to the detection date", () => {
-    const view = toSignalView(signal({ occurred_at: null, meta: { category: "marketing" } }));
+    const view = toSignalView(signal({ occurred_at: null, meta: { category: "marketing" } }), config);
     expect(view.category).toBe("marketing");
     expect(view.occurredAt).toBe("2026-10-20T10:00:00Z");
-    expect(toSignalView(signal({ meta: null })).category).toBeNull();
+    expect(toSignalView(signal({ meta: null }), config).category).toBeNull();
   });
 
   it("orders hiring, then launch, then funding, newest first within a type", () => {
@@ -89,7 +89,7 @@ describe("signals", () => {
       signal({ id: "launch", type: "launch", occurred_at: "2026-10-19T00:00:00Z" }),
       signal({ id: "old-hire", occurred_at: "2026-09-01T00:00:00Z" }),
       signal({ id: "new-hire", occurred_at: "2026-10-10T00:00:00Z" }),
-    ].map(toSignalView);
+    ].map((row) => toSignalView(row, config));
     expect(views.sort(bySignalStrength).map((s) => s.id)).toEqual(["new-hire", "old-hire", "launch", "fund"]);
   });
 });
@@ -124,6 +124,17 @@ describe("toListItem / toDetail", () => {
   });
 });
 
+
+describe("signal labels", () => {
+  it("names hiring signals after the org's category, and other types plainly", () => {
+    const label = (overrides: Partial<SignalRow>) => toSignalView(signal(overrides), config).label;
+    expect(label({ type: "hiring", meta: { category: "sales" } })).toBe("Sales hire");
+    expect(label({ type: "hiring", meta: { category: "marketing" } })).toBe("Marketing hire");
+    expect(label({ type: "hiring", meta: { category: "gone" } })).toBe("Hiring"); // no longer a category
+    expect(label({ type: "launch", meta: {} })).toBe("Launch");
+    expect(label({ type: "funding", meta: {} })).toBe("YC recent");
+  });
+});
 
 describe("latestDrafts", () => {
   const row = (angle: DraftRow["angle"], createdAt: string, subject: string = angle): DraftRow => ({

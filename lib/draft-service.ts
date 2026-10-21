@@ -6,7 +6,8 @@
 // passed the guardrails here on the server. approve_lead() re-checks access in the database.
 import "server-only";
 import { z } from "zod";
-import { getAgentConfig, type AgentConfig } from "@/lib/agent-config";
+import type { AgentConfig } from "@/lib/agent-config";
+import { getAgentConfig } from "@/lib/data/agent-config";
 import type { ApiError } from "@/lib/api";
 import { logUserAction } from "@/lib/audit";
 import type { Profile } from "@/lib/auth";
@@ -170,7 +171,7 @@ export async function generateDraft(profile: Profile, leadId: string, angle: Dra
         ? [] // the baseline prompt carries no signals
         : facts.signals
             .slice(0, config.outreach.maxSignalsInPrompt)
-            .map((s) => ({ label: signalLabel(s), title: s.title })),
+            .map((s) => ({ label: signalLabel(s, config), title: s.title })),
     attempts: [
       {
         attempt: 1,

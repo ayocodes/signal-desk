@@ -10,11 +10,12 @@ from agent.sources.yc import YcCompany
 NOW = datetime(2026, 10, 20, 12, tzinfo=UTC)
 TODAY = date(2026, 10, 20)
 CFG = load_config("test-org").scoring
+HIRING = load_config("test-org").hiring
 
 
 # Row 1: full | none | 40 | no | ICP match 40 | Score 40, under 50: no buying signals yet
 def test_row1_full_none() -> None:
-    result = score_lead("full", [], NOW, CFG)
+    result = score_lead("full", [], NOW, CFG, HIRING)
     assert result.score == 40
     assert result.ready is False
     assert result.parts == (("ICP match", 40),)
@@ -31,10 +32,10 @@ def test_row2_partial_sales_hire_30_days() -> None:
             category="sales",
         )
     ]
-    result = score_lead("partial", signals, NOW, CFG)
+    result = score_lead("partial", signals, NOW, CFG, HIRING)
     assert result.score == 50
     assert result.ready is True
-    assert result.parts == (("Partial ICP match", 20), ("Hiring", 30))
+    assert result.parts == (("Partial ICP match", 20), ("Sales hire", 30))
     assert result.filtered_reason is None
 
 
@@ -47,7 +48,7 @@ def test_row3_partial_launch_30h() -> None:
             title="Launch HN: Test",
         )
     ]
-    result = score_lead("partial", signals, NOW, CFG)
+    result = score_lead("partial", signals, NOW, CFG, HIRING)
     assert result.score == 49
     assert result.ready is False
     assert result.parts == (
@@ -70,7 +71,7 @@ def test_row4_full_funding_weak_signal() -> None:
             title="YC Fall 2026",
         )
     ]
-    result = score_lead("full", signals, NOW, CFG)
+    result = score_lead("full", signals, NOW, CFG, HIRING)
     assert result.score == 50
     assert result.ready is False
     assert result.parts == (("ICP match", 40), ("YC recent", 10))
@@ -92,12 +93,12 @@ def test_row5_full_sales_hire_10h_and_funding_40_days() -> None:
             title="YC Fall 2026",
         ),
     ]
-    result = score_lead("full", signals, NOW, CFG)
+    result = score_lead("full", signals, NOW, CFG, HIRING)
     assert result.score == 102
     assert result.ready is True
     assert result.parts == (
         ("ICP match", 40),
-        ("Hiring", 30),
+        ("Sales hire", 30),
         ("YC recent", 10),
         ("Fresh (under 24h)", 15),
         ("2 signal types", 7),
@@ -120,12 +121,12 @@ def test_row6_partial_sales_hire_60h_and_launch_200h() -> None:
             title="Launch HN: Test",
         ),
     ]
-    result = score_lead("partial", signals, NOW, CFG)
+    result = score_lead("partial", signals, NOW, CFG, HIRING)
     assert result.score == 83
     assert result.ready is True
     assert result.parts == (
         ("Partial ICP match", 20),
-        ("Hiring", 30),
+        ("Sales hire", 30),
         ("Launch", 18),
         ("Fresh (under 3 days)", 8),
         ("2 signal types", 7),
@@ -154,13 +155,13 @@ def test_row7_full_founding_sales_hire_launch_and_funding() -> None:
             title="YC Fall 2026",
         ),
     ]
-    result = score_lead("full", signals, NOW, CFG)
+    result = score_lead("full", signals, NOW, CFG, HIRING)
     assert result.score == 121
     assert result.ready is True
     assert result.parts == (
         ("ICP match", 40),
-        ("Hiring", 30),
-        ("Founding sales role", 5),
+        ("Sales hire", 30),
+        ("Founding sales hire", 5),
         ("Launch", 18),
         ("YC recent", 10),
         ("Fresh (under 7 days)", 4),
@@ -179,7 +180,7 @@ def test_row8_full_marketing_hire_30_days() -> None:
             category="marketing",
         )
     ]
-    result = score_lead("full", signals, NOW, CFG)
+    result = score_lead("full", signals, NOW, CFG, HIRING)
     assert result.score == 60
     assert result.ready is True
     assert result.parts == (("ICP match", 40), ("Marketing hire", 20))

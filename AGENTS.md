@@ -55,10 +55,12 @@ agent/                  Python worker
   scoring.py  drafting.py  guardrails.py  sequences.py  deliverability.py  llm.py  db.py
   tests/
 shared/                 single source of truth, read by BOTH Python and TypeScript
-  prompts/draft.md
-  guardrails.json
-  scoring.json
-  hiring_keywords.json
+  defaults/rules.json   each org's editable rules, version 1 (orgs save newer versions in agent_configs)
+  prompts/              draft.md, raw.md, draft_schema.json
+  guardrails.json       locked checks (built-in banned phrases, dashes, claims)
+  outreach.json         locked outreach parts (sender company, angles, LLM pacing)
+  sequence.json
+  fixtures/             cases both languages must agree on (guardrails, prompts, rules)
 supabase/
   migrations/
   seed.sql

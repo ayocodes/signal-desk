@@ -38,14 +38,14 @@ def test_slug_guesses_are_capped() -> None:
         ("SDR (Remote)", "sales", False),
         ("Head of Sales, EMEA", "sales", False),
         ("Sales Development Representative", "sales", False),
-        ("GTM Engineer", "gtm", False),
-        ("Head of Growth", "gtm", False),
-        ("Revenue Operations Lead", "gtm", False),
+        ("GTM Engineer", "sales", False),
+        ("Head of Growth", "sales", False),
+        ("Revenue Operations Lead", "sales", False),
         ("First Sales Hire", "sales", True),
     ],
 )
 def test_sales_and_gtm_titles_are_classified(title: str, category: str, founding: bool) -> None:
-    match = classify_title(title, load_config("test-org").keywords)
+    match = classify_title(title, load_config("test-org").hiring)
     assert match is not None
     assert (match.category, match.founding) == (category, founding)
 
@@ -55,14 +55,14 @@ def test_sales_and_gtm_titles_are_classified(title: str, category: str, founding
     ["Senior Software Engineer", "Salesforce Developer", "Sales Engineer", "Product Designer", "Sales Intern", "Wholesale Buyer"],
 )
 def test_other_titles_are_not_sales_signals(title: str) -> None:
-    assert classify_title(title, load_config("test-org").keywords) is None
+    assert classify_title(title, load_config("test-org").hiring) is None
 
 
 def test_excerpt_picks_the_first_relevant_sentence_and_caps_length() -> None:
     text = "We are a small team in Austin. You will own outbound pipeline from first touch to close. Benefits are great."
-    assert excerpt_for(text, load_config("test-org").keywords) == "You will own outbound pipeline from first touch to close."
+    assert excerpt_for(text, load_config("test-org").hiring) == "You will own outbound pipeline from first touch to close."
     long = "Sales " + "word " * 80 + "end."
-    excerpt = excerpt_for(long, load_config("test-org").keywords)
+    excerpt = excerpt_for(long, load_config("test-org").hiring)
     assert excerpt is not None and len(excerpt) <= 220 and excerpt.endswith("…")
 
 
@@ -107,9 +107,10 @@ def test_hiring_signals_only_for_sales_roles_with_stable_fingerprints() -> None:
         {"id": "j1", "title": "Founding Account Executive", "jobUrl": "https://j/1", "descriptionPlain": "Own the sales cycle."},
         {"id": "j2", "title": "Backend Engineer", "jobUrl": "https://j/2", "descriptionPlain": "Build APIs."},
     ]})
-    rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").keywords, NOW)
+    rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").hiring, NOW)
     assert len(rows) == 1
-    assert rows[0]["title"] == "Hiring: Founding Account Executive"
+    assert rows[0]["title"] == "Sales hire: Founding Account Executive"
+    assert rows[0]["meta"]["job_title"] == "Founding Account Executive"
     assert rows[0]["source_name"] == "Ashby"
     assert rows[0]["fingerprint"] == hiring_fingerprint("co", "ashby", "j1") == "hiring:co:ashby:j1"
     assert rows[0]["meta"]["founding"] is True
@@ -125,12 +126,12 @@ def test_hiring_signals_only_for_sales_roles_with_stable_fingerprints() -> None:
         ("Founding Marketing Hire", "marketing"),
         ("Demand Generation Manager", "marketing"),
         ("Head of Growth Marketing", "marketing"),  # not gtm: gtm skips marketing titles
-        ("Head of Growth", "gtm"),
+        ("Head of Growth", "sales"),
         ("Head of Sales & Marketing", "sales"),  # matches both: the higher one wins
     ],
 )
 def test_marketing_titles(title: str, category: str) -> None:
-    match = classify_title(title, load_config("test-org").keywords)
+    match = classify_title(title, load_config("test-org").hiring)
     assert match is not None and match.category == category
 
 
@@ -140,12 +141,12 @@ def test_marketing_titles(title: str, category: str) -> None:
      "Head of Product Marketing", "Brand Marketing Lead", "Marketing Intern"],
 )
 def test_junior_product_and_brand_marketing_dont_count(title: str) -> None:
-    assert classify_title(title, load_config("test-org").keywords) is None
+    assert classify_title(title, load_config("test-org").hiring) is None
 
 
 def test_marketing_signals_are_named_marketing_hire() -> None:
     jobs = parse_jobs("ashby", {"jobs": [{"id": "m1", "title": "Marketing Lead", "jobUrl": "https://j/m1", "descriptionPlain": "Own demand generation."}]})
-    rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").keywords, NOW)
+    rows = hiring_signals("org", "co", "ashby", jobs, load_config("test-org").hiring, NOW)
     assert rows[0]["title"] == "Marketing hire: Marketing Lead"
     assert rows[0]["meta"]["category"] == "marketing"
 

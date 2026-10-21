@@ -24,6 +24,7 @@ const lead: LeadListItem = {
     id: "s1",
     type: "hiring",
     category: "marketing",
+    label: "Marketing hire",
     title: "Marketing hire: Head of Marketing",
     excerpt: null,
     sourceName: "Ashby",

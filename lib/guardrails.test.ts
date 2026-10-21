@@ -1,6 +1,6 @@
 // Runs every shared guardrail case; agent/tests/test_guardrails.py runs the same file and must agree.
 import { describe, expect, it } from "vitest";
-import { getAgentConfig } from "@/lib/agent-config";
+import { defaultConfig } from "@/lib/agent-config";
 import { contains, guardrailRules, passed, runGuardrails, type GuardrailInput } from "@/lib/guardrails";
 import fixtures from "@/shared/fixtures/guardrails_cases.json";
 
@@ -13,7 +13,7 @@ type Case = {
 };
 
 const cases = fixtures.cases as Case[];
-const rules = guardrailRules(await getAgentConfig("any-org"));
+const rules = guardrailRules(defaultConfig());
 
 describe("guardrails: shared cases", () => {
   it.each(cases.map((c) => [c.name, c] as const))("%s", (_name, c) => {

@@ -1,5 +1,5 @@
 // Database rows -> UI shapes (lib/types.ts). Pure functions, so they're unit-tested without a database.
-import { scoreBand, type AgentConfig } from "@/lib/agent-config";
+import { scoreBand, signalLabelFor, type AgentConfig } from "@/lib/agent-config";
 import type { Json } from "@/lib/database.types";
 import type { CheckResult } from "@/lib/guardrails";
 import type {
@@ -7,7 +7,6 @@ import type {
   DraftAngle,
   DraftTrace,
   DraftView,
-  HiringCategory,
   IcpTier,
   LeadDetail,
   LeadListItem,
@@ -63,15 +62,15 @@ export type LeadRow = {
 };
 
 const TYPE_PRIORITY: Record<SignalType, number> = { hiring: 0, launch: 1, funding: 2 };
-const CATEGORIES = new Set<string>(["sales", "gtm", "marketing"]);
-
-export function toSignalView(row: SignalRow): SignalView {
+/** A signal for the UI, named with the org's current rules ("Sales hire", "Launch", ...). */
+export function toSignalView(row: SignalRow, config: AgentConfig): SignalView {
   const meta = row.meta && typeof row.meta === "object" && !Array.isArray(row.meta) ? row.meta : {};
-  const category = typeof meta.category === "string" && CATEGORIES.has(meta.category) ? meta.category : null;
+  const category = typeof meta.category === "string" ? meta.category : null;
   return {
     id: row.id,
     type: row.type,
-    category: category as HiringCategory | null,
+    category,
+    label: signalLabelFor(row.type, category, config),
     title: row.title,
     excerpt: row.excerpt,
     sourceName: row.source_name,
@@ -97,7 +96,7 @@ function stringList(value: Json): string[] {
 }
 
 export function toListItem(row: LeadRow, signals: SignalRow[], config: AgentConfig): LeadListItem {
-  const views = signals.map(toSignalView).sort(bySignalStrength);
+  const views = signals.map((s) => toSignalView(s, config)).sort(bySignalStrength);
   const { label, tier } = scoreBand(row.score, row.status, config);
   const newest = views.reduce<string | null>((latest, s) => (latest === null || s.occurredAt > latest ? s.occurredAt : latest), null);
   return {
@@ -144,7 +143,7 @@ export function toDetail(row: LeadRow, signals: SignalRow[], config: AgentConfig
         }
       : null,
     filteredReason: row.filtered_reason,
-    signals: signals.map(toSignalView).sort(bySignalStrength),
+    signals: signals.map((s) => toSignalView(s, config)).sort(bySignalStrength),
   };
 }
 

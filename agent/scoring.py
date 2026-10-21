@@ -1,10 +1,11 @@
-"""Explainable lead scoring (weights come from load_config; defaults: shared/scoring.json).
+"""Explainable lead scoring (weights come from load_config: the org's rules version).
 
-score = ICP points + one entry per signal type present + freshness of the newest signal
-        + a bonus for each extra signal type ("stacked" signals)
+score = ICP points + one entry per hiring category and signal source present
+        + freshness of the newest signal + a bonus for each extra signal type ("stacked")
 
-The parts are kept in order so the UI can print the math:
-"ICP match 40 + Hiring 30 + Fresh 15 + 2 signal types 7 = 92".
+Only signals that count are used: hiring signals in an enabled category, and launch or YC
+signals whose source is switched on. The parts are kept in order so the UI can print the math:
+"ICP match 40 + Sales hire 30 + Fresh 15 + 2 signal types 7 = 92".
 A lead is ready when score >= threshold AND it has at least one signal that isn't "weak"
 (weakSignalTypes: a recent YC batch adds points but can't qualify a lead alone).
 So partial 20 + one sales hire 30 = 50 is ready; full 40 + YC recent 10 = 50 is not.
@@ -17,7 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from agent.config import ScoringConfig
+from agent.config import HiringRules, ScoringConfig
 
 SignalType = Literal["hiring", "launch", "funding"]
 
@@ -28,12 +29,9 @@ class SignalFacts:
     occurred_at: datetime
     title: str
     founding: bool = False
-    # For hiring signals: "sales" | "gtm" | "marketing" (from the keyword category).
+    # For hiring signals: the hiring category id ("sales", "marketing", ...), or None when the
+    # job no longer matches any enabled category.
     category: str | None = None
-
-
-def _is_marketing(signal: SignalFacts) -> bool:
-    return signal.type == "hiring" and signal.category == "marketing"
 
 
 @dataclass(frozen=True)
@@ -66,23 +64,37 @@ def _filtered_reason(score: int, cfg: ScoringConfig, tier: str, signals: Sequenc
     return f"{head}: signals aren't strong or fresh enough yet"
 
 
-def score_lead(tier: Literal["full", "partial"], signals: Sequence[SignalFacts], now: datetime, cfg: ScoringConfig) -> ScoreResult:
+def counted(signals: Sequence[SignalFacts], cfg: ScoringConfig, hiring: HiringRules) -> list[SignalFacts]:
+    """The signals these rules count: switched-off categories and sources add nothing."""
+    enabled = {c.id for c in hiring.categories if c.enabled}
+    keep = {"launch": cfg.launch.enabled, "funding": cfg.yc_recent.enabled}
+    return [s for s in signals if (s.category in enabled if s.type == "hiring" else keep[s.type])]
+
+
+def score_lead(
+    tier: Literal["full", "partial"],
+    all_signals: Sequence[SignalFacts],
+    now: datetime,
+    cfg: ScoringConfig,
+    hiring: HiringRules,
+) -> ScoreResult:
+    signals = counted(all_signals, cfg, hiring)
     parts: list[tuple[str, int]] = []
     parts.append(("ICP match", cfg.icp.full) if tier == "full" else ("Partial ICP match", cfg.icp.partial))
 
+    # Each hiring category counts once, highest points first; all of them are one signal type.
+    for category in sorted(hiring.categories, key=lambda c: -c.points):
+        matches = [s for s in signals if s.type == "hiring" and s.category == category.id]
+        if not matches:
+            continue
+        parts.append((category.name, category.points))
+        if category.founding_bonus and any(s.founding for s in matches):
+            parts.append((f"Founding {category.name.lower()}", category.founding_bonus))
     types = {s.type for s in signals}
-    sales_hires = [s for s in signals if s.type == "hiring" and not _is_marketing(s)]
-    if sales_hires:
-        parts.append(("Hiring", cfg.signals.hiring_sales))
-        if any(s.founding for s in sales_hires):
-            parts.append(("Founding sales role", cfg.signals.hiring_founding_sales_bonus))
-    if any(_is_marketing(s) for s in signals):
-        # Its own part, worth less; sales and marketing hires are still one signal type.
-        parts.append(("Marketing hire", cfg.signals.hiring_marketing))
     if "launch" in types:
-        parts.append(("Launch", cfg.signals.launch))
+        parts.append(("Launch", cfg.launch.points))
     if "funding" in types:
-        parts.append(("YC recent", cfg.signals.funding_yc_recent))
+        parts.append(("YC recent", cfg.yc_recent.points))
 
     if signals:
         fresh = _freshness(max(s.occurred_at for s in signals), now, cfg)
