@@ -7,8 +7,13 @@ import {
   StatusPill,
 } from "@/components/leads";
 import { EmailEditor } from "@/components/drafts";
+import { RecoveryPanel } from "@/components/queue/RecoveryPanel";
 import { cn } from "@/components/ui/utils";
-import type { DraftWorkspace, LeadDetail as LeadDetailType } from "@/lib/types";
+import type {
+  DraftWorkspace,
+  LeadDetail as LeadDetailType,
+  RecoveryProposal,
+} from "@/lib/types";
 
 export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   lead: LeadDetailType;
@@ -16,12 +21,15 @@ export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   now: number;
   /** Draft workspace for the email editor (ready leads). */
   workspace?: DraftWorkspace;
+  /** Recovery proposal for bounced leads. */
+  recoveryProposal?: RecoveryProposal | null;
 }
 
 export function LeadDetail({
   lead,
   now,
   workspace,
+  recoveryProposal,
   className,
   ...props
 }: LeadDetailProps) {
@@ -209,6 +217,14 @@ export function LeadDetail({
           key={`${lead.id}:${workspace.drafts.map((d) => d.id).join(",")}`}
           lead={lead}
           workspace={workspace}
+        />
+      )}
+
+      {/* Recovery panel (for bounced leads) */}
+      {lead.status === "bounced" && recoveryProposal && (
+        <RecoveryPanel
+          leadId={lead.id}
+          proposal={recoveryProposal}
         />
       )}
     </div>

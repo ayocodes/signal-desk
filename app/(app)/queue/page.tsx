@@ -1,5 +1,6 @@
 import { listQueue, leadCounts, listFiltered, getLead } from "@/lib/data/leads";
 import { getDraftWorkspace } from "@/lib/data/drafts";
+import { getRecoveryProposal } from "@/lib/data/sequences";
 import { requestTime } from "@/lib/request-time";
 import { QueueList, SplitView, LiveStatus } from "@/components/queue";
 import { LeadDetail } from "@/components/queue/LeadDetail";
@@ -34,12 +35,13 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
 
   const selectedLeadId = typeof params.lead === "string" ? params.lead : undefined;
 
-  const [leads, counts, filtered, selectedLead, workspace] = await Promise.all([
+  const [leads, counts, filtered, selectedLead, workspace, recoveryProposal] = await Promise.all([
     listQueue({ tab: currentTab, signalTypes: currentSignals }),
     leadCounts(),
     listFiltered({ limit: 50 }),
     selectedLeadId ? getLead(selectedLeadId) : Promise.resolve(null),
     selectedLeadId ? getDraftWorkspace(selectedLeadId) : Promise.resolve(null),
+    selectedLeadId ? getRecoveryProposal(selectedLeadId) : Promise.resolve(null),
   ]);
 
   return (
@@ -63,7 +65,12 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
         }
         detail={
           selectedLead ? (
-            <LeadDetail lead={selectedLead} workspace={workspace ?? undefined} now={now} />
+            <LeadDetail
+              lead={selectedLead}
+              workspace={workspace ?? undefined}
+              recoveryProposal={recoveryProposal}
+              now={now}
+            />
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted min-h-[300px]">
               <p className="text-body font-medium text-text">
