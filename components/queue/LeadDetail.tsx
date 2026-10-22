@@ -7,8 +7,13 @@ import {
   StatusPill,
 } from "@/components/leads";
 import { EmailEditor } from "@/components/drafts";
+import { SequenceTimeline } from "@/components/sequences";
 import { cn } from "@/components/ui/utils";
-import type { DraftWorkspace, LeadDetail as LeadDetailType } from "@/lib/types";
+import type {
+  DraftWorkspace,
+  LeadDetail as LeadDetailType,
+  SequenceTimeline as SequenceTimelineType,
+} from "@/lib/types";
 
 export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   lead: LeadDetailType;
@@ -16,12 +21,15 @@ export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   now: number;
   /** Draft workspace for the email editor (ready leads). */
   workspace?: DraftWorkspace;
+  /** Sequence timeline for leads that have a sequence. */
+  timeline?: SequenceTimelineType | null;
 }
 
 export function LeadDetail({
   lead,
   now,
   workspace,
+  timeline,
   className,
   ...props
 }: LeadDetailProps) {
@@ -211,6 +219,14 @@ export function LeadDetail({
           workspace={workspace}
         />
       )}
+
+      {/* Sequence timeline (for leads that have a sequence) */}
+      {(lead.status === "enrolled" ||
+        lead.status === "bounced" ||
+        lead.status === "replied" ||
+        lead.status === "halted" ||
+        lead.status === "completed") &&
+        timeline && <SequenceTimeline timeline={timeline} />}
     </div>
   );
 }
