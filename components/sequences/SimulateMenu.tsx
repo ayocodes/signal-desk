@@ -10,13 +10,9 @@ import { cn } from "@/components/ui/utils";
 import { fastForward, simulateOpen, simulateReply } from "@/lib/api";
 import type { SequenceTimeline } from "@/lib/types";
 
-function useSafeRouter() {
-  try {
-    return useRouter();
-  } catch {
-    return { refresh: () => {} };
-  }
-}
+// A GitHub run usually starts within a minute or two; stop polling after 3 minutes.
+const POLL_MS = 5000;
+const MAX_POLLS = 36;
 
 export interface SimulateMenuProps
   extends React.HTMLAttributes<HTMLDivElement> {
@@ -30,7 +26,7 @@ export function SimulateMenu({
   className,
   ...props
 }: SimulateMenuProps) {
-  const router = useSafeRouter();
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState<
     "reply" | "open" | "fastForward" | null
@@ -38,6 +34,12 @@ export function SimulateMenu({
   const pollTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const fastForwardStepRef = React.useRef<string | null>(null);
   const menuRef = React.useRef<HTMLDivElement>(null);
+  // The newest timeline from the server: each router.refresh() re-renders with fresh props,
+  // and the poll reads them here (a closure would keep the one from the click).
+  const timelineRef = React.useRef(timeline);
+  React.useEffect(() => {
+    timelineRef.current = timeline;
+  }, [timeline]);
 
   // Close dropdown on click outside or Escape
   React.useEffect(() => {
@@ -128,23 +130,21 @@ export function SimulateMenu({
     let pollCount = 0;
     pollTimerRef.current = setInterval(() => {
       pollCount += 1;
-      router.refresh();
-      // Check if the step is no longer pending or if we reached maximum polls
-      const stepObj = timeline?.steps.find(
-        (s) =>
-          s.label === fastForwardStepRef.current ||
-          s.key === fastForwardStepRef.current
+      // Stop once the fast-forwarded step has been handled (sent, done, or failed).
+      const stepObj = timelineRef.current?.steps.find(
+        (s) => s.label === fastForwardStepRef.current
       );
-      const isCompleted = stepObj && stepObj.status !== "pending";
+      const isCompleted = stepObj !== undefined && stepObj.status !== "pending";
+      if (!isCompleted) router.refresh();
 
-      if (isCompleted || pollCount >= 6) {
+      if (isCompleted || pollCount >= MAX_POLLS) {
         if (pollTimerRef.current) {
           clearInterval(pollTimerRef.current);
           pollTimerRef.current = null;
         }
         fastForwardStepRef.current = null;
       }
-    }, 5000);
+    }, POLL_MS);
   };
 
   return (

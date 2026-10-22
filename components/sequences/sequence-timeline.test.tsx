@@ -1,8 +1,13 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { SequenceTimeline } from "./SequenceTimeline";
 import type { SequenceTimeline as SequenceTimelineType } from "@/lib/types";
+
+// The admin's send-address row has a client control that uses the router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+}));
 
 describe("SequenceTimeline component", () => {
   const sampleTimeline: SequenceTimelineType = {

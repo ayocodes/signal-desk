@@ -1,10 +1,15 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { LeadDetail } from "@/components/queue/LeadDetail";
 import QueueLoading from "./loading";
 import QueueError from "./error";
 import type { LeadDetail as LeadDetailType } from "@/lib/types";
+
+// The admin's send-address row has a client control that uses the router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
+}));
 
 // A fixed request time, so relative ages ("6h ago") are deterministic.
 const TEST_NOW = Date.parse("2026-10-21T12:00:00Z");

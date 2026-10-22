@@ -7,14 +7,6 @@ import { showToast } from "@/components/ui/Toast";
 import { cn } from "@/components/ui/utils";
 import { setTestInbox } from "@/lib/api";
 
-function useSafeRouter() {
-  try {
-    return useRouter();
-  } catch {
-    return { refresh: () => {} };
-  }
-}
-
 export interface TestInboxControlProps
   extends React.HTMLAttributes<HTMLDivElement> {
   leadId: string;
@@ -29,7 +21,7 @@ export function TestInboxControl({
   className,
   ...props
 }: TestInboxControlProps) {
-  const router = useSafeRouter();
+  const router = useRouter();
   const [overrideAddress, setOverrideAddress] = React.useState<string | null>(
     null
   );
