@@ -952,7 +952,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p5): bounce recovery UI"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F5.1.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F5.2 Sequence timeline + Sequences page
@@ -975,7 +975,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
   git commit -m "flash(p5): sequence timeline and sequences page"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F5.2.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F5.3 Simulate controls (admin)
