@@ -20,7 +20,7 @@ How this project is run, beyond what AGENTS.md and TASKS.md say:
   - Panels that disappear right after an action succeeds, because their condition was the old status.
   - Two cards editing the same file (`LeadDetail.tsx`, `queue/page.tsx`): expect merge conflicts and keep both sides.
   - Copy in title case or with dashes: the house style is sentence case, no em or en dashes.
-- **After merging:** run `npm run check`, open the changed pages on the dev server as admin and as a rep (`Demo Rep 1` sees only their own leads), tick the card in TASKS.md, delete the branch.
+- **After merging:** run `npm run check`, open the changed pages on the dev server as admin and as a rep (the demo rep sees only their own leads), tick the card in TASKS.md, delete the branch.
 - **Next.js 16 traps already hit:** request-time data needs `connection()` (already in the Supabase server client); admin guards sit inside `<Suspense>`; instant-navigation validation errors in dev usually mean uncached data outside Suspense. Read `node_modules/next/dist/docs/` before guessing at an API.
 
 ## Log
