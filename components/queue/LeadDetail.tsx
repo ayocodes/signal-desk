@@ -8,11 +8,13 @@ import {
 } from "@/components/leads";
 import { EmailEditor } from "@/components/drafts";
 import { SequenceTimeline } from "@/components/sequences";
+import { RecoveryPanel } from "@/components/queue/RecoveryPanel";
 import { cn } from "@/components/ui/utils";
 import type {
   DraftWorkspace,
   LeadDetail as LeadDetailType,
   SequenceTimeline as SequenceTimelineType,
+  RecoveryProposal,
 } from "@/lib/types";
 
 export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -23,6 +25,8 @@ export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   workspace?: DraftWorkspace;
   /** Sequence timeline for leads that have a sequence. */
   timeline?: SequenceTimelineType | null;
+  /** Recovery proposal for bounced leads. */
+  recoveryProposal?: RecoveryProposal | null;
 }
 
 export function LeadDetail({
@@ -30,6 +34,7 @@ export function LeadDetail({
   now,
   workspace,
   timeline,
+  recoveryProposal,
   className,
   ...props
 }: LeadDetailProps) {
@@ -218,6 +223,11 @@ export function LeadDetail({
           lead={lead}
           workspace={workspace}
         />
+      )}
+
+      {/* Bounce recovery: the action while bounced, and the confirmation once resent. */}
+      {recoveryProposal && (lead.status === "bounced" || recoveryProposal.status === "approved") && (
+        <RecoveryPanel leadId={lead.id} proposal={recoveryProposal} />
       )}
 
       {/* Sequence timeline (for leads that have a sequence) */}

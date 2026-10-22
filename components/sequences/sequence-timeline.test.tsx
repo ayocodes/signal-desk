@@ -101,7 +101,8 @@ describe("SequenceTimeline component", () => {
     const html = renderToStaticMarkup(<SequenceTimeline timeline={sampleTimeline} />);
 
     expect(html).toContain("Branch:");
-    expect(html).toContain("d4_followup_signal2");
+    expect(html).toContain("Follow-up on another signal"); // readable label, not the raw key
+    expect(html).not.toContain(">d4_followup_signal2<");
     expect(html).toContain("opened 1 time");
   });
 

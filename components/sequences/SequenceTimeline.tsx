@@ -2,6 +2,7 @@ import * as React from "react";
 import { Pill, type PillTone } from "@/components/ui/Pill";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/components/ui/utils";
+import { stepLabel } from "@/lib/sequence-labels";
 import type {
   SequenceStatus,
   SequenceTimeline as SequenceTimelineType,
@@ -87,7 +88,7 @@ function StepRow({ step, index }: { step: TimelineStep; index: number }) {
       {step.branch && (
         <div className="text-meta text-muted flex items-center gap-1.5 flex-wrap">
           <span className="font-medium text-text">Branch:</span>
-          <span className="font-mono text-text">{step.branch.chosen}</span>
+          <span className="text-text">{stepLabel(step.branch.chosen)}</span>
           {step.branch.reason && (
             <span className="text-subtle">({step.branch.reason})</span>
           )}
