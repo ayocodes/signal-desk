@@ -3,12 +3,14 @@ import { Pill, type PillTone } from "@/components/ui/Pill";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/components/ui/utils";
 import { stepLabel } from "@/lib/sequence-labels";
+import type { Role } from "@/lib/auth";
 import type {
   SequenceStatus,
   SequenceTimeline as SequenceTimelineType,
   StepStatus,
   TimelineStep,
 } from "@/lib/types";
+import { SimulateMenu } from "./SimulateMenu";
 
 export function formatTimestamp(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -159,10 +161,14 @@ function StepRow({ step, index }: { step: TimelineStep; index: number }) {
 export interface SequenceTimelineProps
   extends React.HTMLAttributes<HTMLDivElement> {
   timeline: SequenceTimelineType;
+  leadId?: string;
+  viewerRole?: Role;
 }
 
 export function SequenceTimeline({
   timeline,
+  leadId,
+  viewerRole,
   className,
   ...props
 }: SequenceTimelineProps) {
@@ -183,9 +189,14 @@ export function SequenceTimeline({
             <span className="text-meta text-subtle">(edited)</span>
           )}
         </div>
-        <Pill tone={sequenceStatusTone(timeline.status)}>
-          {timeline.status}
-        </Pill>
+        <div className="flex items-center gap-2">
+          {viewerRole === "admin" && leadId && (
+            <SimulateMenu leadId={leadId} timeline={timeline} />
+          )}
+          <Pill tone={sequenceStatusTone(timeline.status)}>
+            {timeline.status}
+          </Pill>
+        </div>
       </div>
 
       {timeline.approvedAt && (

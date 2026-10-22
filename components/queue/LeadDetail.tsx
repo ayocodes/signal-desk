@@ -7,7 +7,7 @@ import {
   StatusPill,
 } from "@/components/leads";
 import { EmailEditor } from "@/components/drafts";
-import { SequenceTimeline } from "@/components/sequences";
+import { SequenceTimeline, TestInboxControl } from "@/components/sequences";
 import { RecoveryPanel } from "@/components/queue/RecoveryPanel";
 import { cn } from "@/components/ui/utils";
 import type { Role } from "@/lib/auth";
@@ -156,19 +156,26 @@ export function LeadDetail({
           Contact and buyer check
         </span>
         <BuyerCheck contact={contact} />
-        {contact && (
-          <div className="flex flex-wrap items-baseline gap-2 pt-2 border-t border-border/60 text-meta">
-            <span className="text-muted">Send address:</span>
-            <span className="font-mono text-text bg-surface-2 px-2 py-0.5 rounded-control border border-border">
-              {contact.sendAddress}
-            </span>
-            {isPlaceholderContact && (
-              <span className="text-subtle italic">
-                (a test inbox: we never email real people)
+        {contact &&
+          (viewerRole === "admin" ? (
+            <TestInboxControl
+              leadId={lead.id}
+              initialAddress={contact.sendAddress}
+              isPlaceholder={isPlaceholderContact}
+            />
+          ) : (
+            <div className="flex flex-wrap items-baseline gap-2 pt-2 border-t border-border/60 text-meta">
+              <span className="text-muted">Send address:</span>
+              <span className="font-mono text-text bg-surface-2 px-2 py-0.5 rounded-control border border-border">
+                {contact.sendAddress}
               </span>
-            )}
-          </div>
-        )}
+              {isPlaceholderContact && (
+                <span className="text-subtle italic">
+                  (a test inbox: we never email real people)
+                </span>
+              )}
+            </div>
+          ))}
       </div>
 
       {/* ICP evaluation reasons */}
@@ -240,7 +247,13 @@ export function LeadDetail({
         lead.status === "replied" ||
         lead.status === "halted" ||
         lead.status === "completed") &&
-        timeline && <SequenceTimeline timeline={timeline} />}
+        timeline && (
+          <SequenceTimeline
+            timeline={timeline}
+            leadId={lead.id}
+            viewerRole={viewerRole}
+          />
+        )}
     </div>
   );
 }
