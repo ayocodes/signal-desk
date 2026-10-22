@@ -1006,13 +1006,13 @@ Rules move into the database per org, versioned, edited by admins in the app and
   - After one `--once` run, `email_events` holds real Resend events for a `bounced+` and a `complained+` address.
 
   Report the results to the user.
-- [ ] **U5.2** In the browser, check PLAN.md Phase 5 "Done when":
+- [x] **U5.2** (done 2026-10-22; the rep check moved into U6.2) In the browser, check PLAN.md Phase 5 "Done when":
   - As admin: the lead routed to `bounced+…` is in the Bounced tab with the bounce code and a proposed corrected address. Nothing resends until you click "Resend to corrected address".
   - As admin: the mailbox that got the complaint shows a higher complaint rate in Supabase `mailboxes` (Ops shows this from Phase 6).
   - As admin: on an enrolled lead, "Simulate reply" halts the sequence, and the timeline labels it "Simulated".
   - As rep: there's no Simulate menu anywhere.
   - Tell Claude what passed and what didn't.
-- [ ] **C5.8** After U5.2 passes: tick PLAN.md Phase 5, add a PROGRESS.md entry, commit.
+- [x] **C5.8** After U5.2 passes: tick PLAN.md Phase 5, add a PROGRESS.md entry, commit.
 
 ---
 

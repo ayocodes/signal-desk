@@ -4,7 +4,7 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 5. Backend done and proven live (C5.7). F5.2 and F5.1 merged (2026-10-22). Next: Flash builds F5.3 (Simulate menu + Test inbox control), Claude reviews and merges it, the user's browser check (U5.2), then C5.8 closes the phase. After that: Phase 6 (Ops), the Stretch cards, Phase 7.
+- Phase: 6 (Ops). Plan agreed 2026-10-22: C6.1 (ops data + mailbox Resume), skip C6.2 (Run agent now), Flash F6.1 to F6.3, U6.2 (includes the Phase 5 rep check), C6.4. Then Phase 7: C7.1 seed reset, Flash F7.1 README (with a plain glossary of sales terms), C7.2 checks the README. Stretch cards skipped (Claude usage is limited).
 - Blockers: none. Gemini's daily quota runs out quickly on the free tier (follow-ups fall back to templates, labelled). Google's quota resets at midnight Pacific.
 
 ## Notes for a new Claude session
@@ -24,6 +24,10 @@ How this project is run, beyond what AGENTS.md and TASKS.md say:
 - **Next.js 16 traps already hit:** request-time data needs `connection()` (already in the Supabase server client); admin guards sit inside `<Suspense>`; instant-navigation validation errors in dev usually mean uncached data outside Suspense. Read `node_modules/next/dist/docs/` before guessing at an API.
 
 ## Log
+
+### 2026-10-22: Phase 5 closed (F5.1 to F5.3, U5.2, C5.8)
+- Done: Flash's timeline, Sequences page, recovery panel, Simulate menu and Test inbox control merged with review fixes (readable branch labels; the recovery confirmation stays after a resend; fast-forward polling reads fresh timelines). The queue page passes `viewerRole` to LeadDetail. U5.2: simulated reply halts and is labelled, Test inbox works, outbound-3 shows its complaint rate. The Bounced tab was empty because Garage's bounce was already recovered (proven live in C5.7). The rep check moves into U6.2.
+- User feedback for later (only if usage allows): the Sequences page should show the timeline itself (split view, Flash-only); a simulated reply should carry a sample reply text.
 
 ### 2026-10-22: Phase 5 live checks (C5.7)
 - Real runs against Resend, the deployed webhook and the database:

@@ -150,14 +150,14 @@ The agent's rules (ICP, signal types and weights, keyword lists, threshold, fres
 ## Phase 5: Sending, webhooks, deliverability
 
 - [x] **First, verify:** can the Resend sandbox sender (`onboarding@resend.dev`) send to `delivered@`, `bounced@` and `complained@resend.dev`? Which webhook events does each produce (delivered, opened, bounced, complained)? Report before building. If the sandbox blocks test addresses, stop and tell me.
-- [ ] Sequence engine in the agent: due steps, branch evaluation, mailbox rotation, Resend send with idempotency key
-- [ ] Webhook route with signature verification, event storage (unique provider id), step and mailbox updates
-- [ ] You: add the webhook in Resend pointing at `https://<your-vercel-url>/api/webhooks/resend`, copy the signing secret into Vercel + `.env.local`
-- [ ] Bounce recovery: lead moves to Bounced tab with the bounce code and a proposed corrected address; "Approve and resend" requires a human
-- [ ] Deliverability: per-mailbox rates from real events, auto-pause rules, daily reset, DNS auth lookup for the sending domain
-- [ ] Admin-only Simulate actions (reply, open, fast-forward sequence), labeled "Simulated", using the same code paths as real events
-- [ ] Reply halts the sequence at any step
-- [ ] pytest + vitest: branching, idempotent sends, webhook dedupe, auto-pause thresholds
+- [x] Sequence engine in the agent: due steps, branch evaluation, mailbox rotation, Resend send with idempotency key
+- [x] Webhook route with signature verification, event storage (unique provider id), step and mailbox updates
+- [x] You: add the webhook in Resend pointing at `https://<your-vercel-url>/api/webhooks/resend`, copy the signing secret into Vercel + `.env.local`
+- [x] Bounce recovery: lead moves to Bounced tab with the bounce code and a proposed corrected address; "Approve and resend" requires a human
+- [x] Deliverability: per-mailbox rates from real events, auto-pause rules, daily reset, DNS auth lookup for the sending domain
+- [x] Admin-only Simulate actions (reply, open, fast-forward sequence), labeled "Simulated", using the same code paths as real events
+- [x] Reply halts the sequence at any step
+- [x] pytest + vitest: branching, idempotent sends, webhook dedupe, auto-pause thresholds
 
 **Done when:** a lead routed to `bounced+...` produces a real webhook, lands in Bounced with recovery; a complaint pushes a mailbox toward pause; a simulated reply halts a sequence.
 
