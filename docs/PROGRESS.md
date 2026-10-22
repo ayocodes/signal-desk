@@ -4,10 +4,17 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4.5, everything built. Waiting on the user's browser recheck (U4.5.1); then C4.5.7 closes the phase. Next: Phase 5 (sending, webhooks, deliverability).
+- Phase: 4.5 done (2026-10-22). Next: Phase 5, sending, webhooks, deliverability (sequence engine, Resend to test inboxes, simulated replies, Sequences page).
+- Next step: Claude plans Phase 5's C cards (plan mode, wait for "go").
 - Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-22: Phase 4.5 closed (U4.5.1, C4.5.7)
+- User checked the editor, history, restore, reset, rules page and the 403. Last fixes: apply status as toasts instead of a card, freshness rows as a grid (the shared Input's w-full made the boxes overlap).
+- Explained, not a bug: lowering the threshold to 49 doesn't queue the 50-point leads, because they only have a YC-recent signal, which is weak and can't qualify a lead alone (Phase 2 decision).
+- User wants to move on: the configurable agent is a demo, not an app they'll use day to day.
+- Next step (exact): plan Phase 5.
 
 ### 2026-10-21: F4.5.7 merged; apply-on-save proven end to end
 - Done: F4.5.7 (apply status, Reset to defaults, Restore wording) reviewed and merged; review fixes: no router.refresh() racing the apply-status navigation, the URL's version and apply values are validated. The user created the GitHub token (Actions read/write, this repo only) and set it locally and in Vercel.

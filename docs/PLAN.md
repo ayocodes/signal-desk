@@ -129,15 +129,15 @@ Then add the phase's extra notes (below each phase) if any.
 
 The agent's rules (ICP, signal types and weights, keyword lists, threshold, freshness) move from `/shared` files into the database, per organization and versioned, with an admin editor. The agent already reads every rule through `load_config(org_id)` (Phase 2), so only that function changes on the Python side.
 
-- [ ] One rules document validated in TypeScript (zod) and Python (pydantic), with shared accept/reject fixtures that both must agree on
-- [ ] Rules stored per org in the database, versioned (who, when, what changed), every change audit logged; `/shared` JSON becomes the default seed (version 1)
-- [ ] Hiring categories are admin-defined (name, keywords, exclusions, points, on/off; seeded Sales hire, Marketing hire, Paid acquisition hire off); launch and YC-recent signals switchable and re-weighted; threshold, bands and freshness editable
-- [ ] Offer, sender name and proof points editable; email guardrails: extra banned phrases and max body words (40 to 150), while grounding, the invented-facts checks and the dash ban stay locked
-- [ ] Each lead records the config version that scored it
-- [ ] Agent loads the org's current version each run (falls back to the `/shared` defaults); the next run re-scores `ready`/`filtered` leads; enrolled and later leads keep their score
-- [ ] Admin settings page to edit the rules, with version history and revert (a revert creates a new version)
-- [ ] Read-only "What our agent looks for" page for reps
-- [ ] Threshold preview from stored scores ("N leads in the queue at this threshold, was M"); other changes show "Effect shows after the next agent run"; LLM pacing stays a deploy setting, shown in Ops
+- [x] One rules document validated in TypeScript (zod) and Python (pydantic), with shared accept/reject fixtures that both must agree on
+- [x] Rules stored per org in the database, versioned (who, when, what changed), every change audit logged; `/shared` JSON becomes the default seed (version 1)
+- [x] Hiring categories are admin-defined (name, keywords, exclusions, points, on/off; seeded Sales hire, Marketing hire, Paid acquisition hire off); launch and YC-recent signals switchable and re-weighted; threshold, bands and freshness editable
+- [x] Offer, sender name and proof points editable; email guardrails: extra banned phrases and max body words (40 to 150), while grounding, the invented-facts checks and the dash ban stay locked
+- [x] Each lead records the config version that scored it
+- [x] Agent loads the org's current version each run (falls back to the `/shared` defaults); the next run re-scores `ready`/`filtered` leads; enrolled and later leads keep their score
+- [x] Admin settings page to edit the rules, with version history and revert (a revert creates a new version)
+- [x] Read-only "What our agent looks for" page for reps
+- [x] Threshold preview from stored scores ("N leads in the queue at this threshold, was M"); other changes show "Effect shows after the next agent run"; LLM pacing stays a deploy setting, shown in Ops
 
 **Who builds what:** see this phase in `docs/TASKS.md`. Storage, versioning, RLS, validation and agent loading are Claude's; the settings form, history and rep page UI are Flash's.
 
