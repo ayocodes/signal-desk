@@ -138,6 +138,22 @@ async function checkAgentRules(rep: SupabaseClient, admin: SupabaseClient): Prom
   check("admin passes the role check for saving rules", adminSave?.code === "22023", adminSave ? `stopped at validation (${adminSave.code})` : "saved");
 }
 
+// Sending (Phase 5): events, steps and recovery proposals are written only by the server
+// (webhook, agent, approved routes); members can't write them or touch mailbox health.
+async function checkSendingTables(rep: SupabaseClient, admin: SupabaseClient): Promise<void> {
+  const zero = "00000000-0000-0000-0000-000000000000";
+  for (const [client, who] of [[rep, "rep"], [admin, "admin"]] as const) {
+    const { error: eventError } = await client.from("email_events").insert({ org_id: zero, type: "replied", source: "simulated" });
+    check(`${who} can't insert email events directly`, eventError !== null, eventError ? `blocked (${eventError.code})` : "insert succeeded");
+    const { error: proposalError } = await client.from("recovery_proposals").insert({
+      org_id: zero, lead_id: zero, sequence_id: zero, step_id: zero, original_address: "a", proposed_address: "b", reason: "x",
+    });
+    check(`${who} can't insert recovery proposals directly`, proposalError !== null, proposalError ? `blocked (${proposalError.code})` : "insert succeeded");
+  }
+  const { error: healthError } = await rep.rpc("refresh_mailbox_health", { p_mailbox: zero, p_bounce_pct: 4, p_complaint_pct: 0.3, p_min_sends: 20 });
+  check("rep can't call refresh_mailbox_health", healthError?.code === "42501", healthError ? `blocked (${healthError.code})` : "call succeeded");
+}
+
 async function main(): Promise<void> {
   // Logged out: the anon role has no table privileges at all.
   const anon = anonClient();
@@ -189,6 +205,7 @@ async function main(): Promise<void> {
   await checkLeadsPerRep(rep, admin, repId);
   await checkServerOnlyFunctions(rep, repId);
   await checkAgentRules(rep, admin);
+  await checkSendingTables(rep, admin);
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}  (${r.detail})`);
   const failed = results.filter((r) => !r.ok).length;

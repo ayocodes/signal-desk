@@ -212,3 +212,67 @@ export type LlmPacing = {
   minSecondsBetweenCalls: number;
   regeneratePerUserPerHour: number;
 };
+
+// Sequences (Phase 5) ---------------------------------------------------------------------
+
+export type SequenceStatus = Database["public"]["Enums"]["sequence_status"];
+export type StepStatus = Database["public"]["Enums"]["step_status"];
+
+/** One event on a sent email. Simulated ones (admin actions) carry a "Simulated" tag. */
+export type SequenceEvent = { type: string; source: "resend" | "simulated"; at: string };
+
+export type TimelineStep = {
+  id: string;
+  key: string;
+  /** "Opening email", "Day 3 check", ... (lib/sequence-labels.ts). */
+  label: string;
+  status: StepStatus;
+  scheduledFor: string;
+  sentAt: string | null;
+  subject: string | null;
+  body: string | null;
+  /** The mailbox label; null for reps (mailboxes are admin-only) and for unsent steps. */
+  mailbox: string | null;
+  messageId: string | null;
+  /** Who wrote it: the approved email, the AI, or the fallback template (with why). */
+  writtenBy: "approved" | "ai" | "template" | null;
+  writtenReason: string | null;
+  /** Check steps: which step they chose and why. */
+  branch: { chosen: string; reason: string; opens: number } | null;
+  events: SequenceEvent[];
+};
+
+export type SequenceTimeline = {
+  sequenceId: string;
+  status: SequenceStatus;
+  approvedAt: string | null;
+  approvedBy: { id: string; name: string } | null;
+  edited: boolean;
+  /** In send order. */
+  steps: TimelineStep[];
+};
+
+/** A row of the Sequences page. */
+export type SequenceRow = {
+  sequenceId: string;
+  leadId: string;
+  company: { name: string; domain: string };
+  assignee: { id: string; name: string } | null;
+  status: SequenceStatus;
+  /** Label of the last step that ran. */
+  currentStep: string | null;
+  nextStep: { label: string; scheduledFor: string } | null;
+  lastEvent: SequenceEvent | null;
+  approvedAt: string | null;
+};
+
+/** A bounced email's proposed fix (a person approves before anything resends). */
+export type RecoveryProposal = {
+  id: string;
+  originalAddress: string;
+  proposedAddress: string;
+  bounceCode: string | null;
+  reason: string;
+  status: "pending" | "approved";
+  createdAt: string;
+};

@@ -1,5 +1,6 @@
-// Applying a rules change right away: after an admin saves, restores or resets the rules, a
-// re-score-only agent run starts on GitHub (.github/workflows/rescore.yml). Server only.
+// Quick agent runs on GitHub (.github/workflows/rescore.yml), started by the web app. Server only.
+//   rescore    after an admin saves, restores or resets the rules: re-score the leads now
+//   sequences  after a fast-forward or an approved resend: send the steps that are due now
 //
 // Safeguards (user decision 2026-10-21):
 // - workflow_dispatch with a token that only has Actions read/write (GITHUB_DISPATCH_TOKEN);
@@ -17,7 +18,14 @@ import type { ApplyStart, ApplyState } from "@/lib/types";
 const COOLDOWN_MS = 2 * 60 * 1000;
 // A dispatch whose run never started this long after is treated as lost.
 const LOST_AFTER_MS = 15 * 60 * 1000;
-const DISPATCH_ACTION = "agent.rescore_dispatched";
+type Mode = "rescore" | "sequences";
+const DISPATCH_ACTIONS: Record<Mode, string> = {
+  rescore: "agent.rescore_dispatched",
+  sequences: "agent.sequences_dispatched",
+};
+// Both modes share one queue per org, so they share the join and cooldown rules too.
+const ALL_DISPATCH_ACTIONS = Object.values(DISPATCH_ACTIONS);
+const QUICK_TRIGGERS = ["rescore", "sequences"];
 
 type RunRow = { started_at: string; finished_at: string | null; errors: unknown; config_version: number | null };
 
@@ -27,7 +35,7 @@ async function lastDispatchAt(orgId: string): Promise<number | null> {
     .from("audit_log")
     .select("created_at")
     .eq("org_id", orgId)
-    .eq("action", DISPATCH_ACTION)
+    .in("action", ALL_DISPATCH_ACTIONS)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -35,14 +43,14 @@ async function lastDispatchAt(orgId: string): Promise<number | null> {
   return data ? Date.parse(data.created_at) : null;
 }
 
-/** The first re-score run that started after a dispatch, if any. */
+/** The first quick run (re-score or sequences) that started after a dispatch, if any. */
 async function runAfter(orgId: string, since: number): Promise<RunRow | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("agent_runs")
     .select("started_at, finished_at, errors, config_version")
     .eq("org_id", orgId)
-    .eq("trigger", "rescore")
+    .in("trigger", QUICK_TRIGGERS)
     .gte("started_at", new Date(since).toISOString())
     .order("started_at", { ascending: true })
     .limit(1)
@@ -51,7 +59,7 @@ async function runAfter(orgId: string, since: number): Promise<RunRow | null> {
   return data;
 }
 
-async function dispatch(orgId: string): Promise<boolean> {
+async function dispatch(orgId: string, mode: Mode): Promise<boolean> {
   const github = env.githubDispatch;
   if (!github) return false;
   const response = await fetch(
@@ -64,7 +72,7 @@ async function dispatch(orgId: string): Promise<boolean> {
         "X-GitHub-Api-Version": "2022-11-28",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ ref: "main", inputs: { org_id: orgId } }),
+      body: JSON.stringify({ ref: "main", inputs: { org_id: orgId, mode } }),
       signal: AbortSignal.timeout(15_000),
     },
   ).catch((error: unknown) => {
@@ -75,23 +83,37 @@ async function dispatch(orgId: string): Promise<boolean> {
   return response?.status === 204;
 }
 
-/** Starts (or joins) a re-score after rules version `version` was saved. Never throws for GitHub. */
-export async function startRescore(profile: Profile, version: number, now = Date.now()): Promise<ApplyStart> {
+async function start(profile: Profile, mode: Mode, detail: Record<string, number | string>, now: number): Promise<ApplyStart> {
   if (!env.githubDispatch) return "failed";
   const last = await lastDispatchAt(profile.orgId);
+  // A queued or running quick run will pick this up: re-scores loop to the newest rules, and
+  // a sequences run sends whatever is due when it starts.
   if (last !== null && now - last < LOST_AFTER_MS) {
     const run = await runAfter(profile.orgId, last);
-    if (!run || !run.finished_at) return "joined";
+    if (!run || !run.finished_at) return mode === "rescore" ? "joined" : await queueBehind(profile, mode, detail);
   }
   if (last !== null && now - last < COOLDOWN_MS) return "deferred";
-  if (!(await dispatch(profile.orgId))) return "failed";
-  await logUserAction(profile, {
-    action: DISPATCH_ACTION,
-    entityType: "organization",
-    entityId: profile.orgId,
-    detail: { version },
-  });
+  if (!(await dispatch(profile.orgId, mode))) return "failed";
+  await logUserAction(profile, { action: DISPATCH_ACTIONS[mode], entityType: "organization", entityId: profile.orgId, detail });
   return "dispatched";
+}
+
+/** A sequences run can't be folded into a running re-score, so it queues behind it (GitHub's
+ *  per-org concurrency group keeps one waiting). */
+async function queueBehind(profile: Profile, mode: Mode, detail: Record<string, number | string>): Promise<ApplyStart> {
+  if (!(await dispatch(profile.orgId, mode))) return "failed";
+  await logUserAction(profile, { action: DISPATCH_ACTIONS[mode], entityType: "organization", entityId: profile.orgId, detail });
+  return "dispatched";
+}
+
+/** Starts (or joins) a re-score after rules version `version` was saved. Never throws for GitHub. */
+export function startRescore(profile: Profile, version: number, now = Date.now()): Promise<ApplyStart> {
+  return start(profile, "rescore", { version }, now);
+}
+
+/** Starts a run that sends the sequence steps due now (fast-forward, approved resend). */
+export function startSequencesRun(profile: Profile, leadId: string, now = Date.now()): Promise<ApplyStart> {
+  return start(profile, "sequences", { lead_id: leadId }, now);
 }
 
 function scoringFailed(errors: unknown): boolean {

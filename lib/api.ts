@@ -95,3 +95,22 @@ export function applyStatus(version: number): Promise<ApiResult<ApplyState>> {
 export function previewThreshold(threshold: number): Promise<ApiResult<ThresholdPreview>> {
   return request(`/api/agent-config/preview?threshold=${threshold}`, { method: "GET" }, (json) => json.preview as ThresholdPreview);
 }
+
+/** Admin demo actions, stored as "Simulated" events (same handling as real ones). */
+export function simulateReply(leadId: string): Promise<ApiResult<{ step: string }>> {
+  return post("/api/simulate/reply", { leadId }, (json) => ({ step: json.step as string }));
+}
+
+export function simulateOpen(leadId: string): Promise<ApiResult<{ step: string }>> {
+  return post("/api/simulate/open", { leadId }, (json) => ({ step: json.step as string }));
+}
+
+/** Makes the next step due now and starts a run that sends it (apply works like saving rules). */
+export function fastForward(leadId: string): Promise<ApiResult<{ step: string; apply: ApplyStart }>> {
+  return post("/api/simulate/fast-forward", { leadId }, (json) => ({ step: json.step as string, apply: json.apply as ApplyStart }));
+}
+
+/** After a bounce: a person approves resending to the proposed address. */
+export function resendToCorrected(leadId: string, proposalId: string): Promise<ApiResult<{ apply: ApplyStart }>> {
+  return post(`/api/leads/${leadId}/resend`, { proposalId }, (json) => ({ apply: json.apply as ApplyStart }));
+}

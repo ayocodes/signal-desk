@@ -25,6 +25,7 @@ vi.mock("@/lib/supabase/server", () => ({
       const chain = {
         select: () => chain,
         eq: (column: string, value: unknown) => (filters.push(`${column}=${value}`), chain),
+        in: (column: string) => (filters.push(`${column} in`), chain),
         gte: (column: string) => (filters.push(`${column}>=`), chain),
         not: (column: string) => (filters.push(`${column} not`), chain),
         order: () => chain,
@@ -32,7 +33,7 @@ vi.mock("@/lib/supabase/server", () => ({
         maybeSingle: async () => {
           if (table === "audit_log") return { data: state.lastDispatch, error: null };
           // agent_runs: "first re-score run after the dispatch" vs "a finished run with this version"
-          if (filters.includes("trigger=rescore")) return { data: state.runAfterDispatch, error: null };
+          if (filters.includes("trigger in")) return { data: state.runAfterDispatch, error: null };
           return { data: state.finishedRun, error: null };
         },
       };
@@ -41,7 +42,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-const { startRescore, applyState } = await import("@/lib/rescore");
+const { startRescore, startSequencesRun, applyState } = await import("@/lib/rescore");
 const ADMIN = { id: "a", orgId: "org-1", fullName: "Admin", email: "a@x", role: "admin" as const, theme: "system" };
 
 beforeEach(() => {
@@ -59,7 +60,7 @@ describe("startRescore", () => {
     expect(await startRescore(ADMIN, 4, NOW)).toBe("dispatched");
     const [url, init] = state.fetch.mock.calls[0];
     expect(url).toBe("https://api.github.com/repos/owner/repo/actions/workflows/rescore.yml/dispatches");
-    expect(JSON.parse(init.body)).toEqual({ ref: "main", inputs: { org_id: "org-1" } });
+    expect(JSON.parse(init.body)).toEqual({ ref: "main", inputs: { org_id: "org-1", mode: "rescore" } });
     expect(init.headers.Authorization).toBe("Bearer t");
     expect(state.logUserAction).toHaveBeenCalledWith(ADMIN, expect.objectContaining({ action: "agent.rescore_dispatched", detail: { version: 4 } }));
   });
@@ -96,6 +97,26 @@ describe("startRescore", () => {
     state.fetchStatus = 403;
     expect(await startRescore(ADMIN, 5, NOW)).toBe("failed");
     expect(state.logUserAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("startSequencesRun", () => {
+  it("dispatches the sequences mode and logs it as its own action", async () => {
+    expect(await startSequencesRun(ADMIN, "lead-1", NOW)).toBe("dispatched");
+    expect(JSON.parse(state.fetch.mock.calls[0][1].body).inputs).toEqual({ org_id: "org-1", mode: "sequences" });
+    expect(state.logUserAction).toHaveBeenCalledWith(ADMIN, expect.objectContaining({ action: "agent.sequences_dispatched", detail: { lead_id: "lead-1" } }));
+  });
+
+  it("queues behind a run that is still going instead of joining it", async () => {
+    state.lastDispatch = { created_at: ago(1) };
+    state.runAfterDispatch = { started_at: ago(0.5), finished_at: null };
+    expect(await startSequencesRun(ADMIN, "lead-1", NOW)).toBe("dispatched");
+  });
+
+  it("shares the cooldown with re-scores", async () => {
+    state.lastDispatch = { created_at: ago(1) };
+    state.runAfterDispatch = { started_at: ago(1), finished_at: ago(0.5) };
+    expect(await startSequencesRun(ADMIN, "lead-1", NOW)).toBe("deferred");
   });
 });
 
