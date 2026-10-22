@@ -142,3 +142,36 @@ export async function resendToCorrected(
   });
   return { ok: true, data: { apply: await startSequencesRun(profile, lead.id) } };
 }
+
+export type TestInbox = "delivered" | "bounced" | "complained";
+
+/** delivered+2b56@resend.dev -> complained+2b56@resend.dev (the +label is kept). */
+export function withTestInbox(address: string, inbox: TestInbox): string {
+  const label = /^(?:delivered|bounced|complained)(\+[A-Za-z0-9._-]+)?@resend\.dev$/i.exec(address.trim())?.[1] ?? "";
+  return `${inbox}${label}@resend.dev`;
+}
+
+/** Admin demo control: which Resend test inbox this lead's contact uses, so a demo can show a
+ *  real delivery, bounce or complaint on purpose. The events that follow are real Resend events. */
+export async function setTestInbox(
+  profile: Profile,
+  leadId: string,
+  inbox: TestInbox,
+): Promise<ServiceResult<{ sendAddress: string }>> {
+  const lead = await getLead(leadId);
+  if (!lead) return fail(404, "not_found", "Lead not found.");
+  if (!lead.contact) return fail(409, "not_ready", "This lead has no contact.");
+  const db = createSupabaseAdminClient();
+  const { data: row, error } = await db.from("leads").select("contact_id").eq("id", lead.id).single();
+  if (error) throw new Error(`Loading the lead failed: ${error.message}`);
+  const sendAddress = withTestInbox(lead.contact.sendAddress, inbox);
+  const { error: updateError } = await db.from("contacts").update({ send_address: sendAddress }).eq("id", row.contact_id ?? "");
+  if (updateError) throw new Error(`Changing the test inbox failed: ${updateError.message}`);
+  await logUserAction(profile, {
+    action: "lead.test_inbox_changed",
+    entityType: "lead",
+    entityId: lead.id,
+    detail: { from: lead.contact.sendAddress, to: sendAddress },
+  });
+  return { ok: true, data: { sendAddress } };
+}

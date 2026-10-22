@@ -53,6 +53,8 @@ vi.mock("@/lib/audit", () => ({ logUserAction: state.logUserAction }));
 
 const { POST: simulateRoute } = await import("@/app/api/simulate/[action]/route");
 const { POST: resendRoute } = await import("@/app/api/leads/[id]/resend/route");
+const { POST: testInboxRoute } = await import("@/app/api/leads/[id]/test-inbox/route");
+const { withTestInbox } = await import("@/lib/sequence-service");
 
 const LEAD = "11111111-1111-4111-8111-111111111111";
 const ADMIN = { id: "admin-1", orgId: "org-1", role: "admin" };
@@ -132,5 +134,29 @@ describe("POST /api/leads/[id]/resend", () => {
     state.lead = { id: LEAD };
     state.proposal = { ...state.proposal, status: "approved" };
     expect((await resend()).status).toBe(409);
+  });
+});
+
+describe("POST /api/leads/[id]/test-inbox", () => {
+  const call = (inbox: string) =>
+    testInboxRoute(new Request("http://x", { method: "POST", body: JSON.stringify({ inbox }) }), { params: Promise.resolve({ id: LEAD }) });
+
+  it("lets an admin route the contact to another test inbox, keeping its label", async () => {
+    state.lead = { id: LEAD, contact: { sendAddress: "delivered+2b56@resend.dev" } };
+    const response = await call("complained");
+    expect(await response.json()).toEqual({ sendAddress: "complained+2b56@resend.dev" });
+    expect(state.ops.find((o) => o.table === "contacts")?.values).toEqual({ send_address: "complained+2b56@resend.dev" });
+    expect(state.logUserAction).toHaveBeenCalledWith(ADMIN, expect.objectContaining({ action: "lead.test_inbox_changed" }));
+  });
+
+  it("is admins only and accepts only the three test inboxes", async () => {
+    expect((await call("jane@acme.dev")).status).toBe(400);
+    state.profile = REP;
+    expect((await call("bounced")).status).toBe(403);
+  });
+
+  it("never produces anything but a Resend test inbox", () => {
+    expect(withTestInbox("bounced@resend.dev", "delivered")).toBe("delivered@resend.dev");
+    expect(withTestInbox("jane@acme.dev", "bounced")).toBe("bounced@resend.dev");
   });
 });

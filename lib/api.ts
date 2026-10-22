@@ -114,3 +114,11 @@ export function fastForward(leadId: string): Promise<ApiResult<{ step: string; a
 export function resendToCorrected(leadId: string, proposalId: string): Promise<ApiResult<{ apply: ApplyStart }>> {
   return post(`/api/leads/${leadId}/resend`, { proposalId }, (json) => ({ apply: json.apply as ApplyStart }));
 }
+
+/** Admin demo control: route this lead's contact to a delivered, bounced or complained test inbox. */
+export function setTestInbox(
+  leadId: string,
+  inbox: "delivered" | "bounced" | "complained",
+): Promise<ApiResult<{ sendAddress: string }>> {
+  return post(`/api/leads/${leadId}/test-inbox`, { inbox }, (json) => ({ sendAddress: json.sendAddress as string }));
+}
