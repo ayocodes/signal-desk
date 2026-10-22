@@ -1,0 +1,9 @@
+{
+  "type": "object",
+  "properties": {
+    "subject": { "type": "string" },
+    "body": { "type": "string" },
+    "grounded_phrases": { "type": "array", "items": { "type": "string" } }
+  },
+  "required": ["subject", "body", "grounded_phrases"]
+}

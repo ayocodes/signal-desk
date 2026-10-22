@@ -1,0 +1,33 @@
+{
+  "_about": "Follow-up instructions for the AI, and the fallback template sent when the AI budget is used up or its draft fails the checks. Placeholders: {{first_name}} (or 'there'), {{company}}, {{signal_title}} (the job or launch title, the grounded phrase), {{proof_point}} (the first listed proof point), {{subject}} (the opening email's subject). agent/tests checks every filled template passes the guardrails.",
+  "steps": {
+    "d4_followup_signal2": {
+      "instructions": "A different public signal than the first email used. Two or three sentences, in the same thread.",
+      "template": {
+        "subject": "Re: {{subject}}",
+        "body": "Hi {{first_name}}, one more thing I noticed at {{company}}: {{signal_title}}. Would it help to see how a signal like that turns into a first email your team only has to approve?"
+      }
+    },
+    "d4_new_subject": {
+      "instructions": "They didn't engage with the first email. A fresh angle on the same signal with a new subject line, two sentences, low pressure.",
+      "template": {
+        "subject": "A quick thought on {{signal_title}}",
+        "body": "Hi {{first_name}}, a short follow-up about {{signal_title}} at {{company}}. {{proof_point}}, so it stays light for a small team. Open to a quick look?"
+      }
+    },
+    "d7_case": {
+      "instructions": "One short note on how the offer works for a team at their stage, using only the listed proof points. Never invent a customer story.",
+      "template": {
+        "subject": "Re: {{subject}}",
+        "body": "Hi {{first_name}}, one detail that matters while {{company}} works on {{signal_title}}: {{proof_point}}. Worth a short look this week?"
+      }
+    },
+    "d11_close": {
+      "instructions": "A polite close-the-loop. One or two sentences; make it easy to say not now.",
+      "template": {
+        "subject": "Re: {{subject}}",
+        "body": "Hi {{first_name}}, I'll stop following up here. If {{signal_title}} turns into an outbound push later, should I reach back out then?"
+      }
+    }
+  }
+}

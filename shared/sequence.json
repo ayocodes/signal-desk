@@ -4,5 +4,13 @@
     { "key": "d3_check", "dayOffset": 3 },
     { "key": "d7_case", "dayOffset": 7 },
     { "key": "d11_close", "dayOffset": 11 }
-  ]
+  ],
+  "checkSteps": ["d3_check"],
+  "branch": {
+    "opensForSignalFollowup": 2,
+    "openedEnough": { "key": "d4_followup_signal2", "dayOffset": 4 },
+    "otherwise": { "key": "d4_new_subject", "dayOffset": 4 }
+  },
+  "sameThreadSteps": ["d4_followup_signal2", "d4_new_subject", "d7_case", "d11_close"],
+  "newSubjectSteps": ["d4_new_subject"]
 }

@@ -569,38 +569,50 @@ export type Database = {
       mailboxes: {
         Row: {
           auth: Json
+          bounce_rate: number
+          complaint_rate: number
           created_at: string
           daily_cap: number
           id: string
           label: string
           org_id: string
           pause_reason: string | null
+          paused_at: string | null
           send_via: string
           sent_today: number
+          sent_today_date: string | null
           status: Database["public"]["Enums"]["mailbox_status"]
         }
         Insert: {
           auth?: Json
+          bounce_rate?: number
+          complaint_rate?: number
           created_at?: string
           daily_cap: number
           id?: string
           label: string
           org_id: string
           pause_reason?: string | null
+          paused_at?: string | null
           send_via: string
           sent_today?: number
+          sent_today_date?: string | null
           status?: Database["public"]["Enums"]["mailbox_status"]
         }
         Update: {
           auth?: Json
+          bounce_rate?: number
+          complaint_rate?: number
           created_at?: string
           daily_cap?: number
           id?: string
           label?: string
           org_id?: string
           pause_reason?: string | null
+          paused_at?: string | null
           send_via?: string
           sent_today?: number
+          sent_today_date?: string | null
           status?: Database["public"]["Enums"]["mailbox_status"]
         }
         Relationships: [
@@ -669,45 +681,141 @@ export type Database = {
           },
         ]
       }
+      recovery_proposals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          bounce_code: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          org_id: string
+          original_address: string
+          proposed_address: string
+          reason: string
+          sequence_id: string
+          status: string
+          step_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          bounce_code?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          org_id: string
+          original_address: string
+          proposed_address: string
+          reason: string
+          sequence_id: string
+          status?: string
+          step_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          bounce_code?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          org_id?: string
+          original_address?: string
+          proposed_address?: string
+          reason?: string
+          sequence_id?: string
+          status?: string
+          step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recovery_proposals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recovery_proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recovery_proposals_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recovery_proposals_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recovery_proposals_step_id_fkey"
+            columns: ["step_id"]
+            isOneToOne: true
+            referencedRelation: "sequence_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sequence_steps: {
         Row: {
+          body: string | null
           created_at: string
           id: string
           idempotency_key: string
           mailbox_id: string | null
           message_id: string | null
+          meta: Json
           org_id: string
           scheduled_for: string
+          sent_at: string | null
           sequence_id: string
           signal_id: string | null
           status: Database["public"]["Enums"]["step_status"]
           step_key: string
+          subject: string | null
         }
         Insert: {
+          body?: string | null
           created_at?: string
           id?: string
           idempotency_key: string
           mailbox_id?: string | null
           message_id?: string | null
+          meta?: Json
           org_id: string
           scheduled_for: string
+          sent_at?: string | null
           sequence_id: string
           signal_id?: string | null
           status?: Database["public"]["Enums"]["step_status"]
           step_key: string
+          subject?: string | null
         }
         Update: {
+          body?: string | null
           created_at?: string
           id?: string
           idempotency_key?: string
           mailbox_id?: string | null
           message_id?: string | null
+          meta?: Json
           org_id?: string
           scheduled_for?: string
+          sent_at?: string | null
           sequence_id?: string
           signal_id?: string | null
           status?: Database["public"]["Enums"]["step_status"]
           step_key?: string
+          subject?: string | null
         }
         Relationships: [
           {
@@ -901,6 +1009,15 @@ export type Database = {
         }[]
       }
       llm_calls_today: { Args: never; Returns: number }
+      refresh_mailbox_health: {
+        Args: {
+          p_bounce_pct: number
+          p_complaint_pct: number
+          p_mailbox: string
+          p_min_sends: number
+        }
+        Returns: undefined
+      }
       reserve_llm_call: {
         Args: {
           p_actor: string
@@ -947,7 +1064,7 @@ export type Database = {
       mailbox_status: "healthy" | "near_cap" | "paused" | "held"
       sequence_status: "active" | "paused" | "halted" | "completed"
       signal_type: "hiring" | "launch" | "funding"
-      step_status: "pending" | "sent" | "skipped" | "cancelled"
+      step_status: "pending" | "sent" | "skipped" | "cancelled" | "done"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1095,7 +1212,7 @@ export const Constants = {
       mailbox_status: ["healthy", "near_cap", "paused", "held"],
       sequence_status: ["active", "paused", "halted", "completed"],
       signal_type: ["hiring", "launch", "funding"],
-      step_status: ["pending", "sent", "skipped", "cancelled"],
+      step_status: ["pending", "sent", "skipped", "cancelled", "done"],
     },
   },
 } as const

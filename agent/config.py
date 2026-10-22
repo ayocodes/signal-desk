@@ -170,8 +170,43 @@ class OutreachConfig(_Model):
 class Prompts(_Model):
     draft: str
     raw: str
-    # JSON schema the model's answer must follow (Gemini's structured output).
+    followup: str
+    # JSON schemas the model's answers must follow (Gemini's structured output).
     draft_schema: dict[str, object]
+    followup_schema: dict[str, object]
+
+
+class SequenceStep(_Model):
+    key: str
+    day_offset: int = Field(alias="dayOffset")
+
+
+class SequenceBranch(_Model):
+    # At the day-3 check: this many opens means a follow-up on another signal.
+    opens_for_signal_followup: int = Field(alias="opensForSignalFollowup")
+    opened_enough: SequenceStep = Field(alias="openedEnough")
+    otherwise: SequenceStep
+
+
+class SequenceRules(_Model):
+    """The default sequence (shared/sequence.json): steps, the day-3 branch, threading."""
+
+    steps: tuple[SequenceStep, ...]
+    check_steps: tuple[str, ...] = Field(alias="checkSteps")
+    branch: SequenceBranch
+    same_thread_steps: tuple[str, ...] = Field(alias="sameThreadSteps")
+    new_subject_steps: tuple[str, ...] = Field(alias="newSubjectSteps")
+
+
+class FollowupTemplate(_Model):
+    subject: str
+    body: str
+
+
+class FollowupStep(_Model):
+    # What the AI is asked to write for this step, and the pre-checked fallback.
+    instructions: str
+    template: FollowupTemplate
 
 
 class AgentConfig(_Model):
@@ -186,6 +221,8 @@ class AgentConfig(_Model):
     guardrails: GuardrailsConfig
     outreach: OutreachConfig
     prompts: Prompts
+    sequence: SequenceRules
+    followups: dict[str, FollowupStep]
 
 
 DEFAULTS_VERSION = 0
@@ -210,8 +247,12 @@ def _locked() -> dict[str, Any]:
         "prompts": Prompts(
             draft=(SHARED / "prompts" / "draft.md").read_text(encoding="utf-8"),
             raw=(SHARED / "prompts" / "raw.md").read_text(encoding="utf-8"),
+            followup=(SHARED / "prompts" / "followup.md").read_text(encoding="utf-8"),
             draft_schema=_read("prompts/draft_schema.json"),
+            followup_schema=_read("prompts/followup_schema.json"),
         ),
+        "sequence": SequenceRules.model_validate(_read("sequence.json")),
+        "followups": {k: FollowupStep.model_validate(v) for k, v in _read("followups.json")["steps"].items()},
     }
 
 
@@ -255,6 +296,8 @@ def build_config(rules: dict[str, Any], version: int, problem: str | None = None
             "proofPoints": rules["outreach"]["proofPoints"],
         }),
         prompts=locked["prompts"],
+        sequence=locked["sequence"],
+        followups=locked["followups"],
     )
 
 

@@ -6,7 +6,8 @@ from agent.config import DEFAULTS_VERSION, default_rules, load_config
 AGENT = Path(__file__).resolve().parent.parent
 SHARED_FILES = (
     "scoring.json", "hiring_keywords.json", "guardrails.json", "outreach.json",
-    "draft.md", "raw.md", "draft_schema.json", "rules.json",
+    "draft.md", "raw.md", "draft_schema.json", "rules.json", "sequence.json", "followups.json",
+    "followup.md", "followup_schema.json",
 )
 
 
