@@ -3,6 +3,7 @@ import { getDraftWorkspace } from "@/lib/data/drafts";
 import { getSequenceTimeline } from "@/lib/data/sequences";
 import { getRecoveryProposal } from "@/lib/data/sequences";
 import { requestTime } from "@/lib/request-time";
+import { requireProfile } from "@/lib/auth";
 import { QueueList, SplitView, LiveStatus } from "@/components/queue";
 import { LeadDetail } from "@/components/queue/LeadDetail";
 import type { QueueTab, SignalType } from "@/lib/types";
@@ -36,7 +37,8 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
 
   const selectedLeadId = typeof params.lead === "string" ? params.lead : undefined;
 
-  const [leads, counts, filtered, selectedLead, workspace, timeline, recoveryProposal] = await Promise.all([
+  const [profile, leads, counts, filtered, selectedLead, workspace, timeline, recoveryProposal] = await Promise.all([
+    requireProfile(),
     listQueue({ tab: currentTab, signalTypes: currentSignals }),
     leadCounts(),
     listFiltered({ limit: 50 }),
@@ -72,6 +74,7 @@ export default async function QueuePage({ searchParams }: QueuePageProps) {
               workspace={workspace ?? undefined}
               timeline={timeline}
               recoveryProposal={recoveryProposal}
+              viewerRole={profile.role}
               now={now}
             />
           ) : (

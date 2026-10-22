@@ -168,7 +168,7 @@ describe("SequenceTimeline component", () => {
     };
 
     const html = renderToStaticMarkup(
-      <LeadDetail lead={enrolledLead} now={Date.now()} timeline={sampleTimeline} />
+      <LeadDetail lead={enrolledLead} viewerRole="admin" now={Date.now()} timeline={sampleTimeline} />
     );
 
     expect(html).toContain("Sequence timeline");

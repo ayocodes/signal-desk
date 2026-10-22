@@ -10,6 +10,7 @@ import { EmailEditor } from "@/components/drafts";
 import { SequenceTimeline } from "@/components/sequences";
 import { RecoveryPanel } from "@/components/queue/RecoveryPanel";
 import { cn } from "@/components/ui/utils";
+import type { Role } from "@/lib/auth";
 import type {
   DraftWorkspace,
   LeadDetail as LeadDetailType,
@@ -27,6 +28,8 @@ export interface LeadDetailProps extends React.HTMLAttributes<HTMLDivElement> {
   timeline?: SequenceTimelineType | null;
   /** Recovery proposal for bounced leads. */
   recoveryProposal?: RecoveryProposal | null;
+  /** The viewer's role. Admin-only controls (Simulate, Test inbox) render only for "admin". */
+  viewerRole: Role;
 }
 
 export function LeadDetail({
@@ -35,6 +38,7 @@ export function LeadDetail({
   workspace,
   timeline,
   recoveryProposal,
+  viewerRole,
   className,
   ...props
 }: LeadDetailProps) {

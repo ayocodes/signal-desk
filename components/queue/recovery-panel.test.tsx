@@ -103,6 +103,7 @@ describe("RecoveryPanel component", () => {
     const html = renderToStaticMarkup(
       <LeadDetail
         lead={bouncedLead}
+        viewerRole="admin"
         now={Date.now()}
         recoveryProposal={pendingProposal}
       />

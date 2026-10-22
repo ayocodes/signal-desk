@@ -90,7 +90,7 @@ describe("LeadDetail component", () => {
   };
 
   it("renders header with company name, contact, domain in mono, and StatusPill", () => {
-    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail now={TEST_NOW} viewerRole="admin" lead={sampleLead} />);
 
     expect(html).toContain("Ledgerline");
     expect(html).toContain("ledgerline.co");
@@ -103,7 +103,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders ScoreMath breakdown row with parts and total", () => {
-    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail now={TEST_NOW} viewerRole="admin" lead={sampleLead} />);
 
     expect(html).toContain("ICP match");
     expect(html).toContain("40");
@@ -114,7 +114,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders BuyerCheck row and contact with mono test inbox address", () => {
-    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail now={TEST_NOW} viewerRole="admin" lead={sampleLead} />);
 
     expect(html).toContain("Buyer verified");
     expect(html).toContain("Founder at a 12-person team usually runs outbound");
@@ -122,7 +122,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders ICP reasons", () => {
-    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail now={TEST_NOW} viewerRole="admin" lead={sampleLead} />);
 
     expect(html).toContain("ICP criteria");
     expect(html).toContain("B2B industry (Sales)");
@@ -131,7 +131,7 @@ describe("LeadDetail component", () => {
   });
 
   it("renders numbered SignalCards", () => {
-    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={sampleLead} />);
+    const html = renderToStaticMarkup(<LeadDetail now={TEST_NOW} viewerRole="admin" lead={sampleLead} />);
 
     expect(html).toContain("#1");
     expect(html).toContain("Founding Account Executive");
@@ -147,7 +147,7 @@ describe("LeadDetail component", () => {
       filteredReason: "Score 40, under 50: no buying signals yet",
     };
 
-    const html = renderToStaticMarkup(<LeadDetail  now={TEST_NOW}lead={filteredLead} />);
+    const html = renderToStaticMarkup(<LeadDetail now={TEST_NOW} viewerRole="admin" lead={filteredLead} />);
 
     expect(html).toContain("Filtered reason");
     expect(html).toContain("Score 40, under 50: no buying signals yet");
