@@ -31,8 +31,12 @@ def first_name(contact: PromptContact | None) -> str:
 
 
 def job_title(signal: PromptSignal) -> str:
-    """The grounded phrase a template quotes: the signal's title without our label prefix."""
-    return signal.title.split(": ", 1)[1] if ": " in signal.title else signal.title
+    """The grounded phrase a template quotes. Hiring titles start with our own label
+    ("Sales hire: Founding AE"), which is dropped; other titles ("Launch HN: Acme ...") are
+    the source's own words and stay whole."""
+    if signal.type == "hiring" and ": " in signal.title:
+        return signal.title.split(": ", 1)[1]
+    return signal.title
 
 
 def fill_template(step_key: str, facts: FollowupFacts, cfg: AgentConfig) -> tuple[str, str, list[str]]:

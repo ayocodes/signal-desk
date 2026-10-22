@@ -39,6 +39,7 @@ def test_templates_greet_by_first_name_or_there() -> None:
 def test_job_title_drops_our_label() -> None:
     assert job_title(SIGNALS[0]) == "Founding Account Executive"
     assert job_title(PromptSignal("funding", None, "YC W26", None, "YC directory")) == "YC W26"
+    assert job_title(SIGNALS[1]) == "Launch HN: Acme (YC W26) - billing for vertical SaaS"  # the source's own words
 
 
 def test_the_followup_prompt_carries_the_step_and_the_first_email() -> None:

@@ -52,4 +52,4 @@ def test_the_loop_stops_after_three_rounds(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_rescore_needs_an_org_uuid(capsys: pytest.CaptureFixture[str]) -> None:
     assert main.main(["--rescore", "--org", "not-a-uuid"]) == 2
-    assert "--rescore needs --org" in capsys.readouterr().err
+    assert "need --org" in capsys.readouterr().err

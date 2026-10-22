@@ -21,6 +21,7 @@ from agent.http_client import PoliteClient
 from agent.contacts import placeholder_contact
 from agent.icp import evaluate
 from agent.llm import LlmProvider
+from agent.resend_client import ResendClient
 from agent.run import RunRecorder
 from agent.scoring import SignalFacts, score_lead
 from agent.settings import Settings
@@ -41,6 +42,7 @@ class Context:
     now: datetime
     config: AgentConfig  # loaded once per org run via load_config(org_id)
     llm: LlmProvider | None = None  # None in dry runs: they never call the model
+    email: ResendClient | None = None  # None in dry runs: they never send
     sleep: Callable[[float], None] = time.sleep  # replaced in tests
 
 

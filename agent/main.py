@@ -18,11 +18,12 @@ import sys
 import uuid
 from collections.abc import Callable
 
-from agent import drafting, steps
+from agent import drafting, sequences, steps
 from agent.config import load_config
 from agent.db import Database
 from agent.http_client import PoliteClient
 from agent.llm import provider_from_settings
+from agent.resend_client import ResendClient
 from agent.run import RunRecorder, utc_now
 from agent.settings import SettingsError, load_settings
 
@@ -34,6 +35,7 @@ STEPS: list[tuple[str, Callable[[steps.Context], None]]] = [
     ("detect_yc_recency", steps.detect_yc_recency),
     ("score_leads", steps.score_leads),
     ("draft_leads", drafting.draft_leads),
+    ("run_sequences", sequences.run_sequences),
 ]
 CORE_STEPS = {"discover", "score_leads"}
 
@@ -46,6 +48,7 @@ def run_org(settings, db: Database, client: PoliteClient, org: dict, dry_run: bo
         settings=settings, db=db, client=client, run=run, org_id=org["id"], now=utc_now(),
         config=load_config(org["id"], db),
         llm=None if dry_run else provider_from_settings(settings.llm),
+        email=None if dry_run else ResendClient(settings.resend_api_key),
     )
     if ctx.config.problem:
         run.errors.append({"step": "load_config", "message": ctx.config.problem})
@@ -88,6 +91,24 @@ def rescore_org(settings, db: Database, org: dict) -> RunRecorder:  # type: igno
     return run
 
 
+def sequences_org(settings, db: Database, client: PoliteClient, org: dict) -> RunRecorder:  # type: ignore[no-untyped-def,type-arg]
+    """Sends due sequence steps for one org, nothing else (started by fast-forward: rescore.yml)."""
+    run = RunRecorder(db, org["id"], "sequences")
+    run.start()
+    config = load_config(org["id"], db)
+    if config.problem:
+        run.errors.append({"step": "load_config", "message": config.problem})
+    ctx = steps.Context(
+        settings=settings, db=db, client=client, run=run, org_id=org["id"], now=utc_now(), config=config,
+        llm=provider_from_settings(settings.llm), email=ResendClient(settings.resend_api_key),
+    )
+    with run.step("run_sequences"):
+        sequences.run_sequences(ctx)
+    run.config_version = config.version
+    run.finish()
+    return run
+
+
 def print_summary(org: dict, run: RunRecorder, db: Database) -> None:  # type: ignore[type-arg]
     print(f"\n== {org['name']} ({run.trigger}, rules: {run.config_version}, job boards: {', '.join(run.job_boards)}) ==")
     print("stats:   " + json.dumps(dict(sorted(run.stats.items()))))
@@ -103,13 +124,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--once", action="store_true", help="run one tick (the default)")
     parser.add_argument("--dry-run", action="store_true", help="read and fetch, but write nothing to the database")
     parser.add_argument("--rescore", action="store_true", help="only re-score leads with the org's newest rules")
-    parser.add_argument("--org", help="the organization id to re-score (with --rescore)")
+    parser.add_argument("--sequences", action="store_true", help="only send due sequence steps")
+    parser.add_argument("--org", help="the organization id (with --rescore or --sequences)")
     args = parser.parse_args(argv)
-    if args.rescore:
+    if args.rescore or args.sequences:
         try:
             org_id = str(uuid.UUID(args.org or ""))
         except ValueError:
-            print("--rescore needs --org <organization uuid>", file=sys.stderr)
+            print("--rescore and --sequences need --org <organization uuid>", file=sys.stderr)
             return 2
 
     try:
@@ -119,11 +141,16 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     db = Database.from_settings(settings, dry_run=args.dry_run)
-    if args.rescore:
+    if args.rescore or args.sequences:
         orgs = db.select_all("organizations", "id,name", id=org_id)
         if not orgs:
             print(f"No organization {org_id}", file=sys.stderr)
             return 2
+        if args.sequences:
+            with PoliteClient(settings.user_agent) as client:
+                run = sequences_org(settings, db, client, orgs[0])
+            print_summary(orgs[0], run, db)
+            return 1 if any(error["step"] == "run_sequences" for error in run.errors) else 0
         run = rescore_org(settings, db, orgs[0])
         print_summary(orgs[0], run, db)
         return 1 if any(error["step"].startswith("score_leads") for error in run.errors) else 0

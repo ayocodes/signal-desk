@@ -1,5 +1,7 @@
-# Re-scores one org's leads with its newest rules, started by the web app when an admin saves,
-# restores or resets the rules (lib/rescore.ts). No scraping and no LLM calls: only scoring.
+# One org, one quick job, started by the web app (lib/rescore.ts):
+#   mode=rescore    re-score the leads with the newest rules (after a save, restore or reset)
+#   mode=sequences  send the sequence steps that are due (after an admin fast-forward)
+# No scraping. Both modes share one queue per org.
 name: rescore
 
 on:
@@ -9,6 +11,12 @@ on:
         description: "Organization id (uuid)"
         required: true
         type: string
+      mode:
+        description: "rescore or sequences"
+        required: false
+        default: rescore
+        type: choice
+        options: [rescore, sequences]
 
 permissions:
   contents: read
@@ -35,12 +43,15 @@ jobs:
       - name: Install the agent
         run: pip install -r agent/requirements.txt
 
-      - name: Re-score the org's leads
-        # The org id goes through an env variable, never pasted into the command, so input
-        # can't inject shell; the agent also refuses anything that isn't a uuid.
-        run: python -m agent.main --rescore --org "$ORG_ID"
+      - name: Run the job
+        # Inputs go through env variables, never pasted into the command, so they can't inject
+        # shell; the mode must be one of the two below and the agent refuses a non-uuid org id.
+        run: |
+          case "$MODE" in rescore|sequences) ;; *) echo "Unknown mode" >&2; exit 2 ;; esac
+          python -m agent.main "--$MODE" --org "$ORG_ID"
         env:
           ORG_ID: ${{ inputs.org_id }}
+          MODE: ${{ inputs.mode }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
