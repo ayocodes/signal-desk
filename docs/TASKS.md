@@ -916,8 +916,9 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 ### Claude
 
-- [ ] **C5.1** **Stop gate:** verify that the Resend sandbox sends to `delivered@`, `bounced@` and `complained@resend.dev`, and list which webhook events each one produces. Report before building anything.
-- [ ] **C5.2** Sequence engine: due steps, branch evaluation, mailbox rotation, sends with idempotency keys.
+- [x] **C5.1** **Stop gate (passed 2026-10-22: the sandbox sends to all three; the dashboard showed Delivered, Bounced, Complained; open tracking isn't available on the sandbox sender, so opens are simulated):** verify that the Resend sandbox sends to `delivered@`, `bounced@` and `complained@resend.dev`, and list which webhook events each one produces. Report before building anything.
+- [ ] **C5.2** Migration 010 (step subject/body/sent_at/meta, step status `done`, mailbox rates and daily reset date, `recovery_proposals`, `refresh_mailbox_health()`), `shared/prompts/followup.md`, `shared/followups.json` (pre-checked fallback templates), d4 branch steps in `sequence.json`.
+- [ ] **C5.2b** Sequence engine (`agent/sequences.py`): due steps, day-3 branch, mailbox rotation and caps, Resend sends with the step's idempotency key, a refusal to send anywhere but `@resend.dev`, AI follow-ups inside the agent's budget share with a template fallback (decision 2026-10-22), daily reset, DNS TXT auth lookup, `--sequences --org` mode through `rescore.yml`.
 - [ ] **C5.3** `POST /api/webhooks/resend`:
   - signature verification; rejects every request when `RESEND_WEBHOOK_SECRET` isn't set (see C1.1)
   - event storage (unique provider id)

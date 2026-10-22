@@ -4,11 +4,15 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 4.5 done (2026-10-22). Next: Phase 5, sending, webhooks, deliverability (sequence engine, Resend to test inboxes, simulated replies, Sequences page).
-- Next step: Claude plans Phase 5's C cards (plan mode, wait for "go").
+- Phase: 5 in progress (plan approved 2026-10-22). Gate C5.1 passed.
+- Next step (exact): C5.2 migration 010 and shared files, then C5.2b sequence engine, C5.4 webhook (user pushes, adds the Resend webhook: U5.1), C5.5 simulate/resend/data, C5.6 tests.
 - Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-22: Phase 5 planned; gate C5.1 passed
+- Gate: the Resend sandbox sender sent to delivered+, bounced+ and complained+@resend.dev; the user's Resend dashboard showed Delivered, Bounced, Complained. The API key is send-only (it can't read emails back), which is the safer setup; events arrive by webhook. Open tracking needs a verified domain, so opens are simulated (labelled).
+- Decisions (and why): follow-ups are written by AI when their day comes, inside the agent's budget share, with a pre-checked template when the budget is used up or the draft fails the checks (the timeline says which). Branches are fixed rules, not AI: predictable, explainable, free. Complaints halt a sequence.
 
 ### 2026-10-22: Phase 4.5 closed (U4.5.1, C4.5.7)
 - User checked the editor, history, restore, reset, rules page and the 403. Last fixes: apply status as toasts instead of a card, freshness rows as a grid (the shared Input's w-full made the boxes overlap).

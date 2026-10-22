@@ -149,7 +149,7 @@ The agent's rules (ICP, signal types and weights, keyword lists, threshold, fres
 
 ## Phase 5: Sending, webhooks, deliverability
 
-- [ ] **First, verify:** can the Resend sandbox sender (`onboarding@resend.dev`) send to `delivered@`, `bounced@` and `complained@resend.dev`? Which webhook events does each produce (delivered, opened, bounced, complained)? Report before building. If the sandbox blocks test addresses, stop and tell me.
+- [x] **First, verify:** can the Resend sandbox sender (`onboarding@resend.dev`) send to `delivered@`, `bounced@` and `complained@resend.dev`? Which webhook events does each produce (delivered, opened, bounced, complained)? Report before building. If the sandbox blocks test addresses, stop and tell me.
 - [ ] Sequence engine in the agent: due steps, branch evaluation, mailbox rotation, Resend send with idempotency key
 - [ ] Webhook route with signature verification, event storage (unique provider id), step and mailbox updates
 - [ ] You: add the webhook in Resend pointing at `https://<your-vercel-url>/api/webhooks/resend`, copy the signing secret into Vercel + `.env.local`
