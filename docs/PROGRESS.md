@@ -4,8 +4,24 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 5. Backend done and proven live (C5.7). Flash: F5.2, F5.1, then F5.3 (now with the Test inbox control). Then the user's browser check (U5.2) and C5.8 closes the phase.
-- Blockers: none. Gemini's daily quota runs out quickly on the free tier (follow-ups fall back to templates, labelled).
+- Phase: 5. Backend done and proven live (C5.7). F5.2 and F5.1 merged (2026-10-22). Next: Flash builds F5.3 (Simulate menu + Test inbox control), Claude reviews and merges it, the user's browser check (U5.2), then C5.8 closes the phase. After that: Phase 6 (Ops), the Stretch cards, Phase 7.
+- Blockers: none. Gemini's daily quota runs out quickly on the free tier (follow-ups fall back to templates, labelled). Google's quota resets at midnight Pacific.
+
+## Notes for a new Claude session
+
+How this project is run, beyond what AGENTS.md and TASKS.md say:
+
+- **The user:** asks for clarifying questions before you act, but check this file for an existing decision first (they've had to repeat decisions before). Ask before `git push`; the user pushes. Tell them when they can try something in the browser, with exact steps. Don't ask about setup that's already done; check env, gh and git yourself. Keep explanations plain; the user must be able to explain every part in an interview. They don't want more time spent on the agent settings page: it exists to show the skill, not as a product.
+- **Giving Flash a card:** paste the TASKS.md "Prompt to paste into Antigravity" with the card id. For a card that depends on Claude's work, add one or two lines naming the exact helpers and types it should use (from `lib/api.ts` and `lib/types.ts`), and any user decision recorded here. Give one card at a time unless the cards touch different files.
+- **What Flash tends to get wrong** (check for these in review):
+  - Stale client state: an editor or form that keeps the previous lead's or version's values. Fix with a `key` on lead id, draft ids or version.
+  - `router.refresh()` racing a `router.push`/`replace`.
+  - Raw keys shown to users (`d4_followup_signal2`): use the label helpers (`stepLabel`, `signalLabelFor`).
+  - Panels that disappear right after an action succeeds, because their condition was the old status.
+  - Two cards editing the same file (`LeadDetail.tsx`, `queue/page.tsx`): expect merge conflicts and keep both sides.
+  - Copy in title case or with dashes: the house style is sentence case, no em or en dashes.
+- **After merging:** run `npm run check`, open the changed pages on the dev server as admin and as a rep (`Demo Rep 1` sees only their own leads), tick the card in TASKS.md, delete the branch.
+- **Next.js 16 traps already hit:** request-time data needs `connection()` (already in the Supabase server client); admin guards sit inside `<Suspense>`; instant-navigation validation errors in dev usually mean uncached data outside Suspense. Read `node_modules/next/dist/docs/` before guessing at an API.
 
 ## Log
 
