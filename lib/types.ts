@@ -276,3 +276,87 @@ export type RecoveryProposal = {
   status: "pending" | "approved";
   createdAt: string;
 };
+
+// ---- Ops (admin only; lib/data/ops.ts) ----
+// `simulated: true` marks a number that includes simulated events (a reply or open made by an
+// admin's Simulate action), so the page can label it "Simulated".
+
+export type MailboxStatus = Database["public"]["Enums"]["mailbox_status"];
+
+/** A count out of a total, with the percentage (null when the total is 0). */
+export type Ratio = { count: number; total: number; pct: number | null };
+
+export type OpsKpis = {
+  /** Leads the agent scored in today's runs (UTC); null when no full run has finished today. */
+  leadsScoredToday: number | null;
+  /** Sequences started (first emails approved), all time. */
+  enrolled: number;
+  /** Approved first emails a person edited before sending. */
+  editedBeforeSend: Ratio;
+  /** Bounces whose corrected-address resend was approved. */
+  bouncesRecovered: Ratio;
+  /** Sequences with a reply, out of sequences that sent at least one email. */
+  replyRate: Ratio & { simulated: boolean };
+};
+
+/** Reply rate for leads whose company has this signal type (a lead with two types counts in both). */
+export type SignalReplyRate = Ratio & { type: SignalType; simulated: boolean };
+
+export type MailboxHealth = {
+  id: string;
+  label: string;
+  sendVia: string;
+  status: MailboxStatus;
+  /** Why it's paused, e.g. "Complaint rate 50.00% (limit 0.3%) after 20 sends". */
+  pauseReason: string | null;
+  pausedAt: string | null;
+  /** 0 when the last send was on an earlier UTC day (the agent resets the counter on its next run). */
+  sentToday: number;
+  dailyCap: number;
+  /** Percent, counted from `ratesSince` (the last resume) or from the first send. */
+  bounceRate: number;
+  complaintRate: number;
+  ratesSince: string | null;
+  /** SPF and DMARC from public DNS, checked once a day; null before the first check. */
+  auth: { domain: string; spf: string | null; dmarc: string | null; dkim: string; checkedOn: string } | null;
+};
+
+export type EngineStats = {
+  lastRun: { trigger: string; startedAt: string; finishedAt: string | null; errors: number } | null;
+  /** Full agent runs measured (the last 50 finished, quick re-score and sequence runs excluded). */
+  runs: number;
+  p50Ms: number | null;
+  p95Ms: number | null;
+  /** Leads scored per full run, on average. */
+  leadsPerRun: number | null;
+  /** LLM tokens (in + out) per lead that got an AI call. */
+  tokensPerLead: number | null;
+  /** Measured runs that recorded at least one error. */
+  errorRate: Ratio;
+  /** AI drafts still failing the guardrails after their retry, so they can't be approved
+   *  (Unconstrained drafts excluded: they never send). */
+  draftsBlocked: Ratio;
+};
+
+export type BoardCoverage = {
+  /** Companies the agent tracks (ICP full or partial). */
+  companies: number;
+  sites: { site: "greenhouse" | "lever" | "ashby"; checked: number }[];
+  /** Ashby is checked only on local runs; null when there has been none. */
+  lastLocalRun: string | null;
+};
+
+export type AuditFilter = { actorType?: "agent" | "user"; actionGroup?: string };
+
+export type AuditRow = {
+  id: string;
+  createdAt: string;
+  actorType: "agent" | "user";
+  /** The user's name; null for the agent. */
+  actorName: string | null;
+  /** e.g. "lead.created", "email.bounced". The group is the part before the dot. */
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  detail: Record<string, unknown>;
+};

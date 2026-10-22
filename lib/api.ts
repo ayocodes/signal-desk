@@ -3,7 +3,7 @@
 // can show as is (for example the daily budget being used up).
 import type { CheckResult } from "@/lib/guardrails";
 import type { RuleError, RulesDoc } from "@/lib/rules";
-import type { ApplyStart, ApplyState, DraftAngle, DraftView, ThresholdPreview } from "@/lib/types";
+import type { ApplyStart, ApplyState, DraftAngle, DraftView, MailboxStatus, ThresholdPreview } from "@/lib/types";
 
 export type ApiErrorCode =
   | "unauthorized"
@@ -121,4 +121,9 @@ export function setTestInbox(
   inbox: "delivered" | "bounced" | "complained",
 ): Promise<ApiResult<{ sendAddress: string }>> {
   return post(`/api/leads/${leadId}/test-inbox`, { inbox }, (json) => ({ sendAddress: json.sendAddress as string }));
+}
+
+/** Ops: resume a paused mailbox. Its rates restart from now; returns the status after a health check. */
+export function resumeMailbox(mailboxId: string): Promise<ApiResult<{ status: MailboxStatus }>> {
+  return post(`/api/mailboxes/${mailboxId}/resume`, {}, (json) => ({ status: json.status as MailboxStatus }));
 }

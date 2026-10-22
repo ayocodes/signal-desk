@@ -140,6 +140,17 @@ async function checkAgentRules(rep: SupabaseClient, admin: SupabaseClient): Prom
 
 // Sending (Phase 5): events, steps and recovery proposals are written only by the server
 // (webhook, agent, approved routes); members can't write them or touch mailbox health.
+// Ops reads these four tables; a rep must get nothing back from any of them (Phase 6).
+async function checkOpsTables(rep: SupabaseClient, admin: SupabaseClient): Promise<void> {
+  for (const table of ["agent_runs", "audit_log", "mailboxes", "llm_calls"]) {
+    const repRows = await rowCount(rep, table);
+    const adminRows = await rowCount(admin, table);
+    check(`rep reads no ${table} rows (Ops)`, repRows === 0 && typeof adminRows === "number" && adminRows > 0, `rep ${repRows}, admin ${adminRows}`);
+  }
+  const { data: resumed, error } = await admin.from("mailboxes").update({ status: "healthy" }).neq("id", "00000000-0000-0000-0000-000000000000").select("id");
+  check("admin can't change mailboxes directly (Resume goes through the server)", error !== null || resumed?.length === 0, error ? `blocked (${error.code})` : `${resumed?.length ?? 0} rows changed`);
+}
+
 async function checkSendingTables(rep: SupabaseClient, admin: SupabaseClient): Promise<void> {
   const zero = "00000000-0000-0000-0000-000000000000";
   for (const [client, who] of [[rep, "rep"], [admin, "admin"]] as const) {
@@ -206,6 +217,7 @@ async function main(): Promise<void> {
   await checkServerOnlyFunctions(rep, repId);
   await checkAgentRules(rep, admin);
   await checkSendingTables(rep, admin);
+  await checkOpsTables(rep, admin);
 
   for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}  (${r.detail})`);
   const failed = results.filter((r) => !r.ok).length;

@@ -1020,7 +1020,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 ### Claude
 
-- [ ] **C6.1** `lib/data/ops.ts`, admin-only on the server and enforced by RLS, with typed return shapes in `lib/types.ts`:
+- [x] **C6.1** (done 2026-10-22) `lib/data/ops.ts`, admin-only on the server and enforced by RLS, with typed return shapes in `lib/types.ts`:
   - `getKpis()`
   - `getReplyRateBySignal()`
   - `getMailboxHealth()`
@@ -1029,11 +1029,13 @@ Rules move into the database per org, versioned, edited by admins in the app and
   - `listAuditLog({ actorType, action })`
 
   Simulated-derived numbers carry a `simulated: true` flag.
-- [ ] **C6.2** (Optional) `POST /api/agent/run` via GitHub `repository_dispatch`, admin-only, with the token kept on the server. Needs U6.1. The page gets `canRunAgent: true` only when `GITHUB_DISPATCH_TOKEN` and `GITHUB_REPO` are both set (see C1.1).
+
+  Built: `getKpis`, `getReplyRateBySignal`, `getMailboxHealth`, `getEngineStats`, `getBoardCoverage`, `listAuditLog(filter)` and `auditActionGroups()` (the filter's choices). Types in `lib/types.ts` under "Ops": `OpsKpis`, `Ratio` ({count, total, pct}), `SignalReplyRate`, `MailboxHealth`, `EngineStats`, `BoardCoverage`, `AuditFilter`, `AuditRow`. Also **Resume** for a paused mailbox: `resumeMailbox(mailboxId)` in `lib/api.ts` (admin only, audit logged); the mailbox's rates restart from that moment (`ratesSince`, migration 20261022150000), and it returns the status after a fresh health check.
+- [ ] **C6.2** (Optional; skipped 2026-10-22 to save Claude usage) `POST /api/agent/run` via GitHub `repository_dispatch`, admin-only, with the token kept on the server. Needs U6.1. The page gets `canRunAgent: true` only when `GITHUB_DISPATCH_TOKEN` and `GITHUB_REPO` are both set (see C1.1).
 
 ### You
 
-- [ ] **U6.1** (Optional) Create a fine-grained GitHub token with Actions write access on this repo only, and put it in Vercel as `GITHUB_DISPATCH_TOKEN`.
+- [ ] **U6.1** (Optional; skipped with C6.2) Create a fine-grained GitHub token with Actions write access on this repo only, and put it in Vercel as `GITHUB_DISPATCH_TOKEN`.
 
 ### Flash
 
@@ -1062,9 +1064,9 @@ Rules move into the database per org, versioned, edited by admins in the app and
 #### F6.2 Mailbox health + engine panel + audit log
 - **Starts after:** F6.1
 - **Build:** in `components/ops/`:
-  - `MailboxHealthTable`: auth (SPF, DMARC, DKIM), a sent/cap bar, bounce %, complaint %, and a status Pill with every pause reason.
+  - `MailboxHealthTable`: auth (SPF, DMARC, DKIM), a sent/cap bar, bounce %, complaint %, and a status Pill with every pause reason. A paused mailbox gets a "Resume" button (`resumeMailbox` from `lib/api.ts`; show its error message in a toast, then `router.refresh()`), with the note "Its bounce and complaint rates restart from now." When `ratesSince` is set, show "Rates since <date>".
   - `EnginePanel`: last run, p50/p95, leads per run, tokens per lead, error rate, drafts blocked, and job-board coverage from `getBoardCoverage()` (e.g. "Ashby checked for 120 of 1,060 companies, last local run 2 hours ago", with a note that Ashby is checked only on local runs).
-  - `AuditLogStream`: filters for agent/user and action type, mono timestamps.
+  - `AuditLogStream`: filters for agent/user and action group (choices from `auditActionGroups()`), mono timestamps. The filters live in the URL (`?actor=agent&group=lead`) so the server page can pass them to `listAuditLog`.
 - **Touch only:** `components/ops/*`
 - **Start:**
   ```bash
@@ -1083,8 +1085,8 @@ Rules move into the database per org, versioned, edited by admins in the app and
 - **Review notes:** `docs/reviews/F6.2.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F6.3 Ops page assembly
-- **Starts after:** F6.2 (and C6.2, if the "Run agent now" button is wanted)
-- **Build:** `app/(app)/ops/page.tsx`. Lay out the five sections in the order DESIGN.md gives, with a skeleton (`loading.tsx`) and an error state. The rep check lives in `proxy.ts` and `app/(app)/ops/layout.tsx`; don't touch them. If C6.2 exists, add a "Run agent now" button that renders only when the page gets `canRunAgent: true`.
+- **Starts after:** F6.2 (no "Run agent now" button: C6.2 was skipped)
+- **Build:** `app/(app)/ops/page.tsx`. Lay out the five sections in the order DESIGN.md gives, with a skeleton (`loading.tsx`) and an error state. Load the data with the functions in `lib/data/ops.ts` (one `Promise.all`), read the audit filters from `searchParams`, and keep the existing `LlmBudgetTile` and `LlmPacingTile` (put them in the engine section). Remove the "No operational telemetry" empty state. The rep check lives in `proxy.ts` and `app/(app)/ops/layout.tsx`; don't touch them.
 - **Touch only:** `app/(app)/ops/*`
 - **Start:**
   ```bash

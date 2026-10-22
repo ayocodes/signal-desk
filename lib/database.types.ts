@@ -578,6 +578,7 @@ export type Database = {
           org_id: string
           pause_reason: string | null
           paused_at: string | null
+          rates_since: string | null
           send_via: string
           sent_today: number
           sent_today_date: string | null
@@ -594,6 +595,7 @@ export type Database = {
           org_id: string
           pause_reason?: string | null
           paused_at?: string | null
+          rates_since?: string | null
           send_via: string
           sent_today?: number
           sent_today_date?: string | null
@@ -610,6 +612,7 @@ export type Database = {
           org_id?: string
           pause_reason?: string | null
           paused_at?: string | null
+          rates_since?: string | null
           send_via?: string
           sent_today?: number
           sent_today_date?: string | null
