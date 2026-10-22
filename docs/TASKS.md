@@ -980,7 +980,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 #### F5.3 Simulate controls (admin)
 - **Starts after:** F5.2
-- **Build:** a "Simulate" menu on leads with a sequence, three actions: Simulate reply (`simulateReply`), Simulate open (`simulateOpen`), Fast-forward to next step (`fastForward`, from `lib/api.ts`). It renders only for admins (pass the role from the page), and every action is labeled "Simulated". Show error messages as returned (e.g. "Nothing has been sent to this lead yet."). Fast-forward returns `apply` like saving rules: "Sending the next step..." while it runs, refresh the timeline when done (poll the page with `router.refresh()` every 5 s for up to the run's completion, then stop). Reply and open refresh right away.
+- **Build:** a "Simulate" menu on leads with a sequence, three actions: Simulate reply (`simulateReply`), Simulate open (`simulateOpen`), Fast-forward to next step (`fastForward`, from `lib/api.ts`). It renders only for admins (pass the role from the page), and every action is labeled "Simulated". Show error messages as returned (e.g. "Nothing has been sent to this lead yet."). Fast-forward returns `apply` like saving rules: "Sending the next step..." while it runs, refresh the timeline when done (poll the page with `router.refresh()` every 5 s for up to the run's completion, then stop). Reply and open refresh right away. Also a "Test inbox" control for admins (user decision 2026-10-22): three choices, Delivered, Bounced, Complained, showing the contact's current `sendAddress`; it calls `setTestInbox(leadId, inbox)` from `lib/api.ts` and says "Real Resend events follow: a bounce or complaint here is genuine, only the inbox was chosen."
 - **Touch only:** `components/sequences/*`, `components/queue/LeadDetail.tsx`
 - **Start:**
   ```bash
@@ -1000,7 +1000,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 ### Phase gate
 
-- [ ] **C5.7** Automated checks:
+- [x] **C5.7** Automated checks (done 2026-10-22, live results in PROGRESS.md):
   - `npm run check` and `.venv/bin/python -m pytest agent/tests` (branching, idempotent sends, webhook dedupe, auto-pause).
   - Webhook tests: a bad signature is rejected, and so is any request when `RESEND_WEBHOOK_SECRET` is missing.
   - After one `--once` run, `email_events` holds real Resend events for a `bounced+` and a `complained+` address.

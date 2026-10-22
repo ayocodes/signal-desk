@@ -4,11 +4,21 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 5. Claude cards C5.2 to C5.6 done. Flash cards F5.1, F5.2 can start (F5.3 after F5.2).
-- Next step (exact): user pushes main, then adds the Resend webhook (U5.1) and its secret in Vercel and .env.local (redeploy); Claude then runs the live checks (C5.7): the three enrolled leads' day-1 emails, a bounced+ lead, a complained+ lead, a simulated reply.
-- Blockers: the webhook secret (U5.1). Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
+- Phase: 5. Backend done and proven live (C5.7). Flash: F5.2, F5.1, then F5.3 (now with the Test inbox control). Then the user's browser check (U5.2) and C5.8 closes the phase.
+- Blockers: none. Gemini's daily quota runs out quickly on the free tier (follow-ups fall back to templates, labelled).
 
 ## Log
+
+### 2026-10-22: Phase 5 live checks (C5.7)
+- Real runs against Resend, the deployed webhook and the database:
+  - Day-1 emails for Garage, FurtherAI, AfterQuery sent, rotated over outbound-1/2/3; Resend's real sent and delivered events reached the webhook.
+  - Garage: 2 simulated opens, fast-forward: the day-3 check chose the follow-up on another signal; the AI wrote it ("Re:", grounded on a different signal) through outbound-4; delivered.
+  - FurtherAI: a simulated reply halted the sequence, cancelled the rest, lead replied.
+  - Garage switched to its bounced+ inbox: a real hard bounce ("Permanent / General"), sequence paused, lead Bounced, recovery proposal to delivered+; approved, the retry went out with its own idempotency key and was delivered; sequence resumed.
+  - AfterQuery switched to complained+: a real complaint, sequence halted, lead halted, outbound-3's complaint rate 50%.
+  - Template fallback used for real when Google's daily quota ran out (reason recorded on the step). DNS lookup found resend.dev's SPF and DMARC.
+- Decisions (and why): an admin "Test inbox" switch (delivered, bounced, complained) so a demo can show a bounce or complaint on purpose; the events that follow are real Resend events (user decision). The ~7% fixed routing left no ready lead on complained+.
+- Gemini's free quota (per Pacific day) runs out fast: the web draft route said "used up" even after an agent call succeeded minutes before.
 
 ### 2026-10-22: Phase 5 Claude cards (C5.2 to C5.6)
 - Done: migration 010 and shared follow-up files (C5.2); the sequence engine with a refusal to send anywhere but Resend test inboxes (C5.2b); the Resend webhook with Svix signature checks and a shared event handler (C5.4); simulate, resend and the sequence data for the UI (C5.5); tests (C5.6). 392 web tests, 437 agent tests, 29 RLS checks.
