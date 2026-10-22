@@ -121,27 +121,12 @@ describe("AgentRulesEditor", () => {
     expect(html).toContain("First version, from the defaults");
   });
 
-  it("renders applying changes status line when applying version is dispatched", () => {
+  it("shows the apply status as toasts, not as a card in the page", () => {
+    // The toasts come from an effect (browser only); the server render must not include them.
     const html = renderToStaticMarkup(
-      <AgentRulesEditor
-        config={sampleConfig}
-        initialApplyingVersion={2}
-        initialApplyStart="dispatched"
-      />
+      <AgentRulesEditor config={sampleConfig} initialApplyingVersion={2} initialApplyStart="dispatched" />
     );
-    expect(html).toContain("Applying your changes...");
-  });
-
-  it("renders deferred/failed apply message when apply was deferred", () => {
-    const html = renderToStaticMarkup(
-      <AgentRulesEditor
-        config={sampleConfig}
-        initialApplyingVersion={2}
-        initialApplyStart="deferred"
-      />
-    );
-    expect(html).toContain(
-      "Couldn&#x27;t apply right now. Your changes are saved and will apply on the next scheduled run."
-    );
+    expect(html).not.toContain("Applying your changes...");
+    expect(html).not.toContain('data-testid="apply-status"');
   });
 });

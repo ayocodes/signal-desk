@@ -6,7 +6,6 @@ import {
   AlertCircle,
   ArrowDown,
   ArrowUp,
-  Check,
   Loader2,
   Lock,
   Plus,
@@ -19,9 +18,9 @@ import {
   Button,
   Input,
   Pill,
+  dismissToast,
   showToast,
 } from "@/components/ui";
-import { cn } from "@/components/ui/utils";
 import {
   applyStatus as applyStatusApi,
   previewThreshold,
@@ -40,6 +39,8 @@ import type {
   ThresholdPreview,
 } from "@/lib/types";
 import { VersionHistory } from "./VersionHistory";
+
+const COULD_NOT_APPLY = "Couldn't apply right now. Your changes are saved and will apply on the next scheduled run.";
 
 export interface AgentRulesEditorProps {
   config: CurrentRules;
@@ -191,61 +192,39 @@ export function AgentRulesEditor({
   const [preview, setPreview] = React.useState<ThresholdPreview | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
 
-  // Apply status state
-  const [applyStatus, setApplyStatus] = React.useState<
-    "applying" | "applied" | "failed" | null
-  >(() => {
-    if (!initialApplyingVersion) return null;
-    if (initialApplyStart === "deferred" || initialApplyStart === "failed") {
-      return "failed";
-    }
-    if (initialApplyStart === "dispatched" || initialApplyStart === "joined") {
-      return "applying";
-    }
-    return "applying";
-  });
-
+  // After a save, restore or reset, the page reloads with ?applying=N&apply=...; the status
+  // shows as toasts (bottom of the screen), not a card. Polling stops once it's settled, and
+  // the URL is cleaned so a reload doesn't show it again.
   React.useEffect(() => {
     if (!initialApplyingVersion) return;
+    const done = () => router.replace("/settings/agent", { scroll: false });
     if (initialApplyStart === "deferred" || initialApplyStart === "failed") {
+      showToast(COULD_NOT_APPLY, { tone: "bad", duration: 8000 });
+      done();
       return;
     }
 
     let active = true;
-
-    const check = async () => {
-      try {
-        const res = await applyStatusApi(initialApplyingVersion);
-        if (!active) return true;
-        if (res.ok) {
-          if (res.data === "applied") {
-            setApplyStatus("applied");
-            return true;
-          }
-          if (res.data === "failed") {
-            setApplyStatus("failed");
-            return true;
-          }
-          setApplyStatus("applying");
-        }
-      } catch {
-        // Continue polling on error
-      }
-      return false;
+    const pending = showToast("Applying your changes...", { duration: 0 });
+    const check = async (): Promise<boolean> => {
+      const res = await applyStatusApi(initialApplyingVersion);
+      if (!active || !res.ok || res.data === "applying") return false;
+      dismissToast(pending);
+      if (res.data === "applied") showToast("Applied", { tone: "good" });
+      else showToast(COULD_NOT_APPLY, { tone: "bad", duration: 8000 });
+      done();
+      return true;
     };
-
-    check();
-
+    void check();
     const interval = setInterval(async () => {
-      const done = await check();
-      if (done) clearInterval(interval);
+      if (await check()) clearInterval(interval);
     }, 5000);
-
     return () => {
       active = false;
       clearInterval(interval);
+      dismissToast(pending);
     };
-  }, [initialApplyingVersion, initialApplyStart]);
+  }, [initialApplyingVersion, initialApplyStart, router]);
 
   // Validate on every change
   const errors = React.useMemo(() => validateRules(rules), [rules]);
@@ -508,42 +487,6 @@ export function AgentRulesEditor({
               Cancel
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* Apply status line */}
-      {applyStatus && (
-        <div
-          data-testid="apply-status"
-          className={cn(
-            "flex items-center gap-2 px-3.5 py-2.5 rounded-control text-meta border transition-colors",
-            applyStatus === "applying" &&
-              "border-accent/40 bg-accent-soft/20 text-text",
-            applyStatus === "applied" &&
-              "border-good/40 bg-good/10 text-good",
-            applyStatus === "failed" && "border-warn/40 bg-warn/10 text-warn"
-          )}
-        >
-          {applyStatus === "applying" && (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin text-accent shrink-0" />
-              <span>Applying your changes...</span>
-            </>
-          )}
-          {applyStatus === "applied" && (
-            <>
-              <Check className="h-4 w-4 text-good shrink-0" />
-              <span>Applied</span>
-            </>
-          )}
-          {applyStatus === "failed" && (
-            <>
-              <AlertCircle className="h-4 w-4 text-warn shrink-0" />
-              <span>
-                Couldn&apos;t apply right now. Your changes are saved and will apply on the next scheduled run.
-              </span>
-            </>
-          )}
         </div>
       )}
 
@@ -1306,41 +1249,36 @@ export function AgentRulesEditor({
           )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {rules.freshness.map((step, idx) => (
+              // A small grid, so each number box keeps its own column ("Under [24] h [15] pts").
               <div
                 key={idx}
-                className="rounded-control border border-border bg-surface-2/40 p-2.5 flex items-center justify-between gap-2 text-meta"
+                className="rounded-control border border-border bg-surface-2/40 p-2.5 grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto] items-center gap-2 text-meta"
               >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted">Under</span>
-                  <Input
-                    type="number"
-                    value={step.maxHours}
-                    onChange={(e) => {
-                      const next = [...rules.freshness];
-                      next[idx] = {
-                        ...next[idx],
-                        maxHours: Number(e.target.value),
-                      };
-                      setRules((prev) => ({ ...prev, freshness: next }));
-                    }}
-                    // Wide enough for "168" next to the browser's up/down arrows.
-                    className="h-8 w-24 shrink-0 text-meta font-mono"
-                  />
-                  <span className="text-muted">hours:</span>
-                </div>
+                <span className="text-muted">Under</span>
                 <Input
                   type="number"
+                  aria-label={`Freshness step ${idx + 1}: hours`}
+                  value={step.maxHours}
+                  onChange={(e) => {
+                    const next = [...rules.freshness];
+                    next[idx] = { ...next[idx], maxHours: Number(e.target.value) };
+                    setRules((prev) => ({ ...prev, freshness: next }));
+                  }}
+                  className="h-8 text-meta font-mono"
+                />
+                <span className="text-muted">h</span>
+                <Input
+                  type="number"
+                  aria-label={`Freshness step ${idx + 1}: points`}
                   value={step.points}
                   onChange={(e) => {
                     const next = [...rules.freshness];
-                    next[idx] = {
-                      ...next[idx],
-                      points: Number(e.target.value),
-                    };
+                    next[idx] = { ...next[idx], points: Number(e.target.value) };
                     setRules((prev) => ({ ...prev, freshness: next }));
                   }}
-                  className="h-8 w-16 text-meta font-mono"
+                  className="h-8 text-meta font-mono"
                 />
+                <span className="text-muted">pts</span>
               </div>
             ))}
           </div>
