@@ -917,17 +917,17 @@ Rules move into the database per org, versioned, edited by admins in the app and
 ### Claude
 
 - [x] **C5.1** **Stop gate (passed 2026-10-22: the sandbox sends to all three; the dashboard showed Delivered, Bounced, Complained; open tracking isn't available on the sandbox sender, so opens are simulated):** verify that the Resend sandbox sends to `delivered@`, `bounced@` and `complained@resend.dev`, and list which webhook events each one produces. Report before building anything.
-- [ ] **C5.2** Migration 010 (step subject/body/sent_at/meta, step status `done`, mailbox rates and daily reset date, `recovery_proposals`, `refresh_mailbox_health()`), `shared/prompts/followup.md`, `shared/followups.json` (pre-checked fallback templates), d4 branch steps in `sequence.json`.
-- [ ] **C5.2b** Sequence engine (`agent/sequences.py`): due steps, day-3 branch, mailbox rotation and caps, Resend sends with the step's idempotency key, a refusal to send anywhere but `@resend.dev`, AI follow-ups inside the agent's budget share with a template fallback (decision 2026-10-22), daily reset, DNS TXT auth lookup, `--sequences --org` mode through `rescore.yml`.
-- [ ] **C5.3** `POST /api/webhooks/resend`:
+- [x] **C5.2** Migration 010 (step subject/body/sent_at/meta, step status `done`, mailbox rates and daily reset date, `recovery_proposals`, `refresh_mailbox_health()`), `shared/prompts/followup.md`, `shared/followups.json` (pre-checked fallback templates), d4 branch steps in `sequence.json`.
+- [x] **C5.2b** Sequence engine (`agent/sequences.py`): due steps, day-3 branch, mailbox rotation and caps, Resend sends with the step's idempotency key, a refusal to send anywhere but `@resend.dev`, AI follow-ups inside the agent's budget share with a template fallback (decision 2026-10-22), daily reset, DNS TXT auth lookup, `--sequences --org` mode through `rescore.yml`.
+- [x] **C5.3** `POST /api/webhooks/resend`:
   - signature verification; rejects every request when `RESEND_WEBHOOK_SECRET` isn't set (see C1.1)
   - event storage (unique provider id)
   - step and mailbox updates
   - bounce recovery proposal
   - a reply halts the sequence
-- [ ] **C5.4** Deliverability: per-mailbox rates, auto-pause, daily reset, DNS TXT auth lookup.
-- [ ] **C5.5** Admin-only routes `POST /api/simulate/{reply,open,fast-forward}`, which use the same handler as real events and store `source = 'simulated'`. Plus `POST /api/leads/[id]/resend` (human-approved bounce recovery). Client helpers in `lib/api.ts`.
-- [ ] **C5.6** pytest + vitest: branching, idempotent sends, webhook dedupe, auto-pause thresholds.
+- [x] **C5.4** Deliverability: per-mailbox rates, auto-pause, daily reset, DNS TXT auth lookup.
+- [x] **C5.5** Admin-only routes `POST /api/simulate/{reply,open,fast-forward}`, which use the same handler as real events and store `source = 'simulated'`. Plus `POST /api/leads/[id]/resend` (human-approved bounce recovery). Client helpers in `lib/api.ts`.
+- [x] **C5.6** pytest + vitest: branching, idempotent sends, webhook dedupe, auto-pause thresholds.
 
 ### You
 
@@ -937,8 +937,8 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 #### F5.1 Bounced tab + recovery UI
 - **Starts after:** C5.5, F4.2
-- **Build:** in LeadDetail for bounced leads, a recovery panel showing the bounce code, the original address, the proposed corrected address (all mono) and the reason, plus a "Resend to corrected address" button. The button calls the resend helper and is never automatic. Add an empty state for the Bounced tab.
-- **Touch only:** `components/queue/*`, `components/drafts/*`
+- **Build:** in LeadDetail for bounced leads, a recovery panel from `getRecoveryProposal(leadId)` (`lib/data/sequences.ts`, wire it into `app/(app)/queue/page.tsx` next to the other lead data): the bounce code, the original address, the proposed corrected address (all mono) and the reason, plus a "Resend to corrected address" button calling `resendToCorrected(leadId, proposalId)` from `lib/api.ts`. It is never automatic; it returns `apply` like saving rules ("dispatched" or "joined": show "Resending..." in a toast; "deferred" or "failed": "Couldn't send right now. It will go out on the next scheduled run."). An approved proposal shows "Resent to {address}". Add an empty state for the Bounced tab.
+- **Touch only:** `components/queue/*`, `components/drafts/*`, `app/(app)/queue/page.tsx`
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
@@ -958,10 +958,10 @@ Rules move into the database per org, versioned, edited by admins in the app and
 #### F5.2 Sequence timeline + Sequences page
 - **Starts after:** C5.5
 - **Build:**
-  - `components/sequences/SequenceTimeline.tsx`: steps from ARCHITECTURE.md's sequence table, with status, scheduled time (mono), the branch taken, mailbox and message id. Simulated events carry a "Simulated" Tag.
-  - Show the timeline in LeadDetail for enrolled leads.
-  - `app/(app)/sequences/page.tsx`: a table of sequences (company, current step, status, next send) using the data function Claude names in C5.5.
-- **Touch only:** `components/sequences/*`, `components/queue/LeadDetail.tsx`, `app/(app)/sequences/*`
+  - `components/sequences/SequenceTimeline.tsx` from `getSequenceTimeline(leadId)` (`SequenceTimeline` in `lib/types.ts`): one row per step with its label, status, scheduled or sent time (mono), the branch a check chose and its reason, who wrote it ("Approved", "AI", or "Template" with its reason), mailbox and message id (admins only; null for reps), the sent subject and body (collapsible), and its events. Simulated events carry a "Simulated" Tag.
+  - Show the timeline in LeadDetail for leads that have a sequence (enrolled, bounced, replied, halted, completed); wire `getSequenceTimeline` into `app/(app)/queue/page.tsx`.
+  - `app/(app)/sequences/page.tsx`: a table from `listSequences()` (company, assignee, status, current step, next step and when, last event); a row opens `/queue?lead=<id>`.
+- **Touch only:** `components/sequences/*`, `components/queue/LeadDetail.tsx`, `app/(app)/sequences/*`, `app/(app)/queue/page.tsx`
 - **Start:**
   ```bash
   git status --short  # must print nothing; if it does, stop and tell the user
@@ -980,7 +980,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 #### F5.3 Simulate controls (admin)
 - **Starts after:** F5.2
-- **Build:** a "Simulate" menu on enrolled leads with three actions: Simulate reply, Simulate open, Fast-forward to next step. It renders only when `role === 'admin'`, and every action is labeled "Simulated". It calls the C5.5 helpers and refreshes the timeline.
+- **Build:** a "Simulate" menu on leads with a sequence, three actions: Simulate reply (`simulateReply`), Simulate open (`simulateOpen`), Fast-forward to next step (`fastForward`, from `lib/api.ts`). It renders only for admins (pass the role from the page), and every action is labeled "Simulated". Show error messages as returned (e.g. "Nothing has been sent to this lead yet."). Fast-forward returns `apply` like saving rules: "Sending the next step..." while it runs, refresh the timeline when done (poll the page with `router.refresh()` every 5 s for up to the run's completion, then stop). Reply and open refresh right away.
 - **Touch only:** `components/sequences/*`, `components/queue/LeadDetail.tsx`
 - **Start:**
   ```bash

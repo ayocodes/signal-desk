@@ -4,11 +4,19 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 5 in progress (plan approved 2026-10-22). Gate C5.1 passed.
-- Next step (exact): C5.2 migration 010 and shared files, then C5.2b sequence engine, C5.4 webhook (user pushes, adds the Resend webhook: U5.1), C5.5 simulate/resend/data, C5.6 tests.
-- Blockers: none. Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
+- Phase: 5. Claude cards C5.2 to C5.6 done. Flash cards F5.1, F5.2 can start (F5.3 after F5.2).
+- Next step (exact): user pushes main, then adds the Resend webhook (U5.1) and its secret in Vercel and .env.local (redeploy); Claude then runs the live checks (C5.7): the three enrolled leads' day-1 emails, a bounced+ lead, a complained+ lead, a simulated reply.
+- Blockers: the webhook secret (U5.1). Gemini 3.8 Flash's real RPD not confirmed yet; LLM_DAILY_BUDGET stays 20.
 
 ## Log
+
+### 2026-10-22: Phase 5 Claude cards (C5.2 to C5.6)
+- Done: migration 010 and shared follow-up files (C5.2); the sequence engine with a refusal to send anywhere but Resend test inboxes (C5.2b); the Resend webhook with Svix signature checks and a shared event handler (C5.4); simulate, resend and the sequence data for the UI (C5.5); tests (C5.6). 392 web tests, 437 agent tests, 29 RLS checks.
+- Decisions (and why):
+  - Same-thread follow-ups use "Re:" on the opening subject. No In-Reply-To header: Resend returns its own id, not the SMTP Message-ID, so the header would be wrong.
+  - A paused mailbox stays paused until a person resumes it (Ops, Phase 6), so a recovering rate can't silently restart sending.
+  - The quick-run workflow gained a sequences mode for fast-forward and approved resends; it shares the per-org queue and the 2-minute cooldown with re-scores.
+- Bug found by tests: follow-up templates stripped "Launch HN:" from launch titles (only hiring titles carry our label); fixed.
 
 ### 2026-10-22: Phase 5 planned; gate C5.1 passed
 - Gate: the Resend sandbox sender sent to delivered+, bounced+ and complained+@resend.dev; the user's Resend dashboard showed Delivered, Bounced, Complained. The API key is send-only (it can't read emails back), which is the safer setup; events arrive by webhook. Open tracking needs a verified domain, so opens are simulated (labelled).
