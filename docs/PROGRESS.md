@@ -4,7 +4,7 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 6 (Ops). Plan agreed 2026-10-22: C6.1 (ops data + mailbox Resume), skip C6.2 (Run agent now), Flash F6.1 to F6.3, U6.2 (includes the Phase 5 rep check), C6.4. Then Phase 7: C7.1 seed reset, Flash F7.1 README (with a plain glossary of sales terms), C7.2 checks the README. Stretch cards skipped (Claude usage is limited).
+- Phase: 7 (Polish and ship). Phase 6 closed 2026-10-23. C7.1 (`npm run seed:reset`) done. Next: Flash F7.1 README (with glossary), Claude reviews it with C7.2 (check every claim against the code), then C7.3 checks (ask the user before running `npm run seed:reset -- --yes`), U7.1 live check, C7.4 close, U7.2 video. F7.2 and F7.3 optional. Stretch cards skipped (Claude usage is limited).
 - Blockers: none. Gemini's daily quota runs out quickly on the free tier (follow-ups fall back to templates, labelled). Google's quota resets at midnight Pacific.
 
 ## Notes for a new Claude session
@@ -24,6 +24,10 @@ How this project is run, beyond what AGENTS.md and TASKS.md say:
 - **Next.js 16 traps already hit:** request-time data needs `connection()` (already in the Supabase server client); admin guards sit inside `<Suspense>`; instant-navigation validation errors in dev usually mean uncached data outside Suspense. Read `node_modules/next/dist/docs/` before guessing at an API.
 
 ## Log
+
+### 2026-10-23: Phase 6 closed (C6.1 to C6.4, F6.1 to F6.3, U6.2); C7.1 done
+- Done: Ops page from real queries (KPIs, reply rate by signal, mailbox health with Resume, engine panel with job-board coverage, audit log with URL filters). Review fixes: SPF/DMARC say found or missing (we only check the record exists), DKIM shows its value, last run shows when; error pages on ops, leads and queue call `retry()` (re-fetches) instead of `reset()`; the theme script renders through `components/InlineScript.tsx` (no dev warning). Loading placeholders added for /sequences and /agent (dev instant-navigation errors). 466 tests, RLS 34/34. U6.2 passed.
+- C7.1: `npm run seed:reset` deletes the demo org's sequences (steps and recovery proposals cascade) and email events, returns those leads to ready, clears mailbox counters, rates and pauses, and writes a `demo.reset` audit row. Keeps companies, signals, drafts, runs, rules and the audit log. Asks for "RESET" unless `-- --yes`. Contact addresses changed by the Test inbox control are not reverted.
 
 ### 2026-10-22: Phase 5 closed (F5.1 to F5.3, U5.2, C5.8)
 - Done: Flash's timeline, Sequences page, recovery panel, Simulate menu and Test inbox control merged with review fixes (readable branch labels; the recovery confirmation stays after a resend; fast-forward polling reads fresh timelines). The queue page passes `viewerRole` to LeadDetail. U5.2: simulated reply halts and is labelled, Test inbox works, outbound-3 shows its complaint rate. The Bounced tab was empty because Garage's bounce was already recovered (proven live in C5.7). The rep check moves into U6.2.
