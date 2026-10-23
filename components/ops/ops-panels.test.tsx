@@ -104,8 +104,8 @@ describe("MailboxHealthTable component", () => {
       <MailboxHealthTable mailboxes={sampleMailboxes} />
     );
 
-    expect(html).toContain("SPF pass");
-    expect(html).toContain("DMARC pass");
+    expect(html).toContain("SPF found");
+    expect(html).toContain("DMARC found");
     expect(html).toContain("DKIM");
     expect(html).toContain("No data yet");
   });

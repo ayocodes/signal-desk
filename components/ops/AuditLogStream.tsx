@@ -16,13 +16,8 @@ export interface AuditLogStreamProps
 
 export function formatTimestamp(iso: string | null | undefined): string {
   if (!iso) return "";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toISOString().replace("T", " ").slice(0, 16) + " UTC";
-  } catch {
-    return iso;
-  }
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toISOString().replace("T", " ").slice(0, 16) + " UTC";
 }
 
 export function actorTone(actorType: "agent" | "user"): PillTone {

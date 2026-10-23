@@ -40,13 +40,8 @@ export function mailboxStatusTone(status: MailboxStatus): PillTone {
 
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return "No data yet";
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return iso;
-  }
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toISOString().slice(0, 10);
 }
 
 export function MailboxHealthTable({
@@ -178,7 +173,7 @@ export function MailboxHealthTable({
                                 : "bg-bad/15 text-bad"
                             )}
                           >
-                            SPF {box.auth.spf ? "pass" : "fail"}
+                            SPF {box.auth.spf ? "found" : "missing"}
                           </span>
                           <span
                             className={cn(
@@ -188,10 +183,10 @@ export function MailboxHealthTable({
                                 : "bg-bad/15 text-bad"
                             )}
                           >
-                            DMARC {box.auth.dmarc ? "pass" : "fail"}
+                            DMARC {box.auth.dmarc ? "found" : "missing"}
                           </span>
                           <span className="px-1.5 py-0.5 rounded-control text-label font-mono font-medium bg-surface-2 text-muted">
-                            DKIM
+                            DKIM {box.auth.dkim || "not checked"}
                           </span>
                         </div>
                       ) : (

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/components/ui/utils";
-import type { BoardCoverage, EngineStats, Ratio } from "@/lib/types";
+import type { BoardCoverage, EngineStats } from "@/lib/types";
+import { formatRatio } from "./KpiStrip";
 
 export interface EnginePanelProps extends React.HTMLAttributes<HTMLDivElement> {
   stats: EngineStats;
@@ -14,13 +15,6 @@ const SITE_LABELS: Record<string, string> = {
   ashby: "Ashby",
 };
 
-function formatRatio(ratio: Ratio): string {
-  if (ratio.total === 0 || ratio.pct === null) {
-    return "No data yet";
-  }
-  return `${ratio.count} of ${ratio.total}, ${ratio.pct}%`;
-}
-
 function formatDurationMs(ms: number | null): string {
   if (ms === null) return "No data yet";
   return `${(ms / 1000).toFixed(1)} s`;
@@ -31,19 +25,15 @@ export function formatTimeAgo(
   now = Date.now()
 ): string {
   if (!iso) return "never";
-  try {
-    const diffMs = now - new Date(iso).getTime();
-    if (isNaN(diffMs)) return iso;
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"} ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
-    const days = Math.floor(hours / 24);
-    return `${days} ${days === 1 ? "day" : "days"} ago`;
-  } catch {
-    return iso;
-  }
+  const diffMs = now - new Date(iso).getTime();
+  if (isNaN(diffMs)) return iso;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} ${mins === 1 ? "minute" : "minutes"} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
 }
 
 export function EnginePanel({
@@ -58,7 +48,7 @@ export function EnginePanel({
         stats.lastRun.errors === 0
           ? "0 errors"
           : `${stats.lastRun.errors} ${stats.lastRun.errors === 1 ? "error" : "errors"}`
-      }`
+      }, ${formatTimeAgo(stats.lastRun.startedAt, now)}`
     : "No data yet";
 
   return (
