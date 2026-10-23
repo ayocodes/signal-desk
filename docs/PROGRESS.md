@@ -4,7 +4,7 @@ Agents: add an entry at the end of every working session. Newest at the top. Kee
 
 ## Current state
 
-- Phase: 7 (Polish and ship). Phase 6 closed 2026-10-23. C7.1 (`npm run seed:reset`) done. Next: Flash F7.1 README (with glossary), Claude reviews it with C7.2 (check every claim against the code), then C7.3 checks (ask the user before running `npm run seed:reset -- --yes`), U7.1 live check, C7.4 close, U7.2 video. F7.2 and F7.3 optional. Stretch cards skipped (Claude usage is limited).
+- Phase: 7 (Polish and ship). Done: C7.1 seed:reset, F7.1 README merged, C7.2 claims checked (2026-10-23). 466 vitest, 437 pytest, agent Actions runs green. Next: user pushes, runs `npm run seed:reset` themselves (terminal only, no UI button), U7.1 live check, then C7.4 close and U7.2 video. F7.2 and F7.3 optional.
 - Blockers: none. Gemini's daily quota runs out quickly on the free tier (follow-ups fall back to templates, labelled). Google's quota resets at midnight Pacific.
 
 ## Notes for a new Claude session
