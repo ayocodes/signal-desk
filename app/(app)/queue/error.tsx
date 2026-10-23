@@ -6,10 +6,10 @@ import { Button } from "@/components/ui";
 
 export default function QueueError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   React.useEffect(() => {
     // Log error for diagnostics
@@ -37,7 +37,7 @@ export default function QueueError({
       )}
 
       <div className="flex items-center gap-3">
-        <Button variant="primary" onClick={() => reset()} className="gap-2">
+        <Button variant="primary" onClick={() => retry()} className="gap-2">
           <RefreshCw className="h-4 w-4" />
           <span>Try again</span>
         </Button>

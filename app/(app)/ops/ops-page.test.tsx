@@ -252,9 +252,9 @@ describe("OpsLoading", () => {
 
 describe("OpsError", () => {
   it("renders error state with short message and Try again button", () => {
-    const reset = vi.fn();
+    const retry = vi.fn();
     const html = renderToStaticMarkup(
-      <OpsError error={new Error("Database connection lost")} reset={reset} />
+      <OpsError error={new Error("Database connection lost")} retry={retry} />
     );
 
     expect(html).toContain("Failed to load ops telemetry");

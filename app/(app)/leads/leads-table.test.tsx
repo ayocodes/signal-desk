@@ -164,7 +164,7 @@ describe("Table UI components", () => {
   describe("LeadsError", () => {
     it("renders error state with description and retry button", () => {
       const html = renderToStaticMarkup(
-        <LeadsError error={new Error("Network timeout")} reset={() => {}} />
+        <LeadsError error={new Error("Network timeout")} retry={() => {}} />
       );
       expect(html).toContain("Failed to load leads table");
       expect(html).toContain("Network timeout");

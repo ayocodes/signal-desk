@@ -170,7 +170,7 @@ describe("LeadDetail component", () => {
   describe("QueueError", () => {
     it("renders error state with description and retry button", () => {
       const html = renderToStaticMarkup(
-        <QueueError error={new Error("Database connection failed")} reset={() => {}} />
+        <QueueError error={new Error("Database connection failed")} retry={() => {}} />
       );
       expect(html).toContain("Failed to load outbound queue");
       expect(html).toContain("Database connection failed");
