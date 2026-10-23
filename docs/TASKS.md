@@ -1106,7 +1106,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 
 ### Phase gate
 
-- [ ] **C6.3** Automated checks:
+- [x] **C6.3** (done 2026-10-23: 466 tests, 34 RLS checks) Automated checks:
   - `npm run check`.
   - Tests that every `lib/data/ops.ts` function refuses a rep (server check), and that RLS returns nothing to a rep querying `agent_runs`, `audit_log` and `mailboxes`.
   - Give the user the SQL behind two KPIs so they can spot-check them.
@@ -1115,7 +1115,7 @@ Rules move into the database per org, versioned, edited by admins in the app and
 - [ ] **U6.2** In the browser, check PLAN.md Phase 6 "Done when":
   - As admin: Ops shows the KPI strip, reply rate by signal, mailbox health, the engine panel and the audit log. Numbers derived from simulated events carry a "Simulated" label.
   - Run the two SQL queries from C6.3 in the Supabase SQL editor; the numbers match Ops.
-  - The "Run agent now" button starts a workflow run if it's set up, and is hidden if the GitHub variables aren't set.
+  - ~~The "Run agent now" button~~ (skipped with C6.2).
   - As rep: Ops isn't in the nav, and `/ops` shows the 403 page.
   - Tell Claude what passed and what didn't.
 - [ ] **C6.4** After U6.2 passes: tick PLAN.md Phase 6, add a PROGRESS.md entry, commit.
