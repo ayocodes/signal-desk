@@ -40,6 +40,8 @@ vi.mock("@/lib/data/ops", () => ({
 const mockLlmBudgetToday = vi.fn();
 const mockLlmPacing = vi.fn();
 
+vi.mock("@/lib/request-time", () => ({ requestTime: async () => Date.parse("2026-10-23T12:00:00Z") }));
+
 vi.mock("@/lib/data/llm", () => ({
   llmBudgetToday: () => mockLlmBudgetToday(),
   llmPacing: () => mockLlmPacing(),

@@ -8,6 +8,7 @@ import {
   ReplyRateBySignal,
 } from "@/components/ops";
 import { llmBudgetToday, llmPacing } from "@/lib/data/llm";
+import { requestTime } from "@/lib/request-time";
 import {
   auditActionGroups,
   getBoardCoverage,
@@ -28,6 +29,8 @@ interface OpsPageProps {
 
 export default async function OpsPage({ searchParams }: OpsPageProps) {
   const params = searchParams ? await searchParams : {};
+  // One clock reading for the whole page, taken at request time (see lib/request-time.ts).
+  const now = await requestTime();
   const rawActor = typeof params.actor === "string" ? params.actor : undefined;
   const actor = rawActor === "agent" || rawActor === "user" ? rawActor : undefined;
 
@@ -54,9 +57,9 @@ export default async function OpsPage({ searchParams }: OpsPageProps) {
     budget,
     pacing,
   ] = await Promise.all([
-    getKpis(),
+    getKpis(now),
     getReplyRateBySignal(),
-    getMailboxHealth(),
+    getMailboxHealth(now),
     getEngineStats(),
     getBoardCoverage(),
     groupsPromise,
@@ -79,7 +82,7 @@ export default async function OpsPage({ searchParams }: OpsPageProps) {
 
       {/* 4. Engine section: Engine stats, board coverage, AI budget, LLM pacing */}
       <div className="flex flex-col gap-4">
-        <EnginePanel stats={stats} coverage={coverage} />
+        <EnginePanel stats={stats} coverage={coverage} now={now} />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <LlmBudgetTile budget={budget} />
           <LlmPacingTile pacing={pacing} />
