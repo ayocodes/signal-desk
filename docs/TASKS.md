@@ -1210,7 +1210,7 @@ Only if everything before it works. Needs Phase 4.5.
   git commit -m "flash(p7): README and design decisions"  # commits to the card's branch, not main
   git switch main  # step off the branch; the commit stays on it for Claude to review
   ```
-- [ ] Built (Flash) · [ ] Reviewed and merged (Claude)
+- [x] Built (Flash) · [x] Reviewed and merged (Claude)
 - **Review notes:** `docs/reviews/F7.1.md`, on the card's branch (only exists if Claude asked for changes)
 
 #### F7.2 Accessibility, keyboard, mobile, theme pass
@@ -1255,7 +1255,7 @@ Only if everything before it works. Needs Phase 4.5.
 ### Claude
 
 - [x] **C7.1** `npm run seed:reset` for a clean demo state. It is destructive, so it asks for confirmation and only targets the demo org.
-- [ ] **C7.2** Check every claim in the README against the code (part of the F7.1 review).
+- [x] **C7.2** Check every claim in the README against the code (part of the F7.1 review).
 ### Phase gate
 
 - [ ] **C7.3** Automated checks:

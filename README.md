@@ -6,7 +6,7 @@ Signal Desk is a precision outbound platform that monitors public buying signals
 
 Signal Desk automates outbound lead generation for B2B software companies targeting early-stage startups (Seed to Series A, roughly 5 to 60 employees).
 
-- **Signal discovery**: Continuously monitors public sources for hiring announcements across Greenhouse, Lever, and Ashby, product launches on Hacker News, and recent YC funding batches.
+- **Signal discovery**: Every 30 minutes, checks public sources for hiring announcements across Greenhouse, Lever, and Ashby, product launches on Hacker News, and recent YC funding batches.
 - **Explainable scoring**: Evaluates companies against an Ideal Customer Profile (ICP) using an additive points formula. Every score shows its exact breakdown across ICP fit, signal type, freshness, and multi-signal stacking.
 - **Grounded AI drafting**: Uses Gemini to generate three outreach angles (`signal`, `peer`, `short`) per qualified lead. Locked guardrails enforce that every specific claim links directly to a verifiable phrase in the underlying signal.
 - **Sequence engine**: Executes multi-step email sequences with branch evaluation, mailbox rotation, deliverability monitoring, and human review before enrollment.
@@ -44,12 +44,12 @@ The background agent runs as an idempotent tick (`agent/main.py`). Running a tic
    - **Hiring signals**: Fetches open jobs from discovered ATS boards. Classifies roles using keyword definitions, awards bonuses for founding sales roles, and extracts concise description excerpts.
    - **Launch signals**: Searches the Hacker News Algolia API for recent "Show HN" and "Launch HN" posts that strictly match the company domain or verified YC batch.
    - **Funding signals**: Converts recent YC batch participation into a low-weight funding signal.
-   - **Fingerprinting**: Assigns each signal a unique SHA-256 fingerprint (combining signal type, company, and source identifier) to guarantee deduplication.
+   - **Fingerprinting**: Gives each signal a readable fingerprint (signal type, company and source id, for example `funding:<company>:yc:w24`) with a unique constraint, so a signal is never stored twice.
 4. **Score leads**: Computes score parts based on ICP criteria, signal weights, signal freshness, and multi-signal stacking. Leads meeting the threshold (default 50 points) with at least one non-weak signal enter `ready` status. Unqualified leads are marked `filtered` with plain-text reasons.
 5. **Contacts and buyer check**: Identifies founder or sales leadership contacts and flags non-buyer titles. Routes outbound email addresses to safe Resend test destinations (`delivered+{lead_id}@resend.dev`), assigning fixed shares to bounce and complaint test inboxes to exercise deliverability paths.
 6. **Draft outreach**: For top qualified leads, requests three email angles (`signal`, `peer`, `short`) from Gemini. Verifies all drafts against locked guardrails (phrase grounding, word counts, banned marketing buzzwords, and dash bans). Tracks token counts against the daily budget (`LLM_DAILY_BUDGET`), reserving 20% of quota for on-demand web user regeneration.
 7. **Advance sequences**: Evaluates active enrolled sequences for due steps and branching rules. Selects healthy mailboxes by rotation and sends messages via Resend using unique idempotency keys.
-8. **Enforce deliverability**: Calculates bounce and complaint percentages from incoming events. Auto-pauses mailboxes that exceed safety limits (4% bounce rate or 0.3% complaint rate).
+8. **Enforce deliverability**: Calculates bounce and complaint percentages from incoming events. Auto-pauses mailboxes that exceed safety limits (4% bounce rate or 0.3% complaint rate, once a mailbox has at least 20 sends). A paused mailbox stays paused until an admin resumes it from Ops.
 9. **Finish run**: Records completed step durations, counts, error logs, and audit log entries.
 
 ## Real versus simulated data
@@ -85,7 +85,7 @@ Signal Desk operates with real live data across its ingestion, scoring, AI draft
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/signal-desk.git
+git clone https://github.com/ayocodes/signal-desk.git
 cd signal-desk
 
 # Install web dependencies
@@ -127,7 +127,7 @@ npm run agent:local:dry
 npm run check
 
 # Run Python agent tests
-pytest agent/tests
+.venv/bin/python -m pytest agent/tests
 ```
 
 ## Resetting demo data
@@ -159,7 +159,7 @@ Use the "Use demo admin" and "Use demo rep" buttons on the login page (`/login`)
 - **Test inboxes**: All outbound emails are addressed strictly to Resend test inboxes (`delivered@resend.dev`, `bounced@resend.dev`, `complained@resend.dev` with `+label` suffixes). Real prospect names and company data are researched, but real people are never emailed during development or demonstration.
 - **The grounding check**: Before an LLM draft can be approved, code verifies that phrases cited by the model appear verbatim in the source signal excerpt or title. This prevents hallucinations where an LLM invents fake company milestones or fabricated hiring needs.
 - **GitHub Actions scheduling**: The background agent runs on a scheduled workflow (`7,37 * * * *`) every 30 minutes. This avoids Vercel Hobby's once-per-day cron restriction, runs within free tier limits on public repositories, and keeps the Supabase project active without requiring dedicated server infrastructure.
-- **Row Level Security (RLS) multi-tenancy**: Every business table includes an `org_id` foreign key. Supabase RLS policies enforce tenant isolation and role restrictions directly in Postgres. Even if an API route omits a filter, unauthorized users and sales reps cannot access other workspaces, view unassigned leads, inspect mailbox secrets, or read operational audit logs.
+- **Row Level Security (RLS) multi-tenancy**: Every business table includes an `org_id` foreign key. Supabase RLS policies enforce tenant isolation and role restrictions directly in Postgres. Even if an API route omits a filter, unauthorized users and sales reps cannot access other workspaces, view leads assigned to someone else, or read mailboxes, agent runs and the audit log.
 
 ## Sales glossary
 
