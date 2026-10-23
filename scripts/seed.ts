@@ -7,10 +7,7 @@ import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import rules from "../shared/defaults/rules.json" with { type: "json" };
 import guardrails from "../shared/guardrails.json" with { type: "json" };
-import { env, serviceClient } from "./supabase-script-client";
-
-// Fixed id so re-runs update the same organization instead of creating another.
-const DEMO_ORG_ID = "00000000-0000-4000-8000-000000000001";
+import { DEMO_ORG_ID, env, serviceClient } from "./supabase-script-client";
 
 const MAILBOX_LABELS = ["outbound-1", "outbound-2", "outbound-3", "outbound-4"];
 

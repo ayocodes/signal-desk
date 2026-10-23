@@ -1112,13 +1112,13 @@ Rules move into the database per org, versioned, edited by admins in the app and
   - Give the user the SQL behind two KPIs so they can spot-check them.
 
   Report the results to the user.
-- [ ] **U6.2** In the browser, check PLAN.md Phase 6 "Done when":
+- [x] **U6.2** (passed 2026-10-23) In the browser, check PLAN.md Phase 6 "Done when":
   - As admin: Ops shows the KPI strip, reply rate by signal, mailbox health, the engine panel and the audit log. Numbers derived from simulated events carry a "Simulated" label.
   - Run the two SQL queries from C6.3 in the Supabase SQL editor; the numbers match Ops.
   - ~~The "Run agent now" button~~ (skipped with C6.2).
   - As rep: Ops isn't in the nav, and `/ops` shows the 403 page.
   - Tell Claude what passed and what didn't.
-- [ ] **C6.4** After U6.2 passes: tick PLAN.md Phase 6, add a PROGRESS.md entry, commit.
+- [x] **C6.4** After U6.2 passes: tick PLAN.md Phase 6, add a PROGRESS.md entry, commit.
 
 ---
 
@@ -1193,6 +1193,9 @@ Only if everything before it works. Needs Phase 4.5.
   - demo logins (emails only, never passwords)
   - a "Design decisions" section: no LinkedIn, test inboxes, the grounding check, GitHub Actions scheduling, RLS multi-tenancy
 
+  - a short glossary in plain words for readers who don't know sales: lead, ICP, buying signal, sequence, enrolled, open, reply, bounce, complaint, mailbox cap, deliverability (SPF, DMARC, DKIM)
+  - `npm run seed:reset` (clears demo sequences, events and mailbox counters; asks first)
+
   Take facts from `docs/` and the code only. Write "TODO(verify)" next to anything you are unsure of.
 - **Touch only:** `README.md`
 - **Start:**
@@ -1251,7 +1254,7 @@ Only if everything before it works. Needs Phase 4.5.
 
 ### Claude
 
-- [ ] **C7.1** `npm run seed:reset` for a clean demo state. It is destructive, so it asks for confirmation and only targets the demo org.
+- [x] **C7.1** `npm run seed:reset` for a clean demo state. It is destructive, so it asks for confirmation and only targets the demo org.
 - [ ] **C7.2** Check every claim in the README against the code (part of the F7.1 review).
 ### Phase gate
 

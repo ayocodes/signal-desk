@@ -165,12 +165,12 @@ The agent's rules (ICP, signal types and weights, keyword lists, threshold, fres
 
 ## Phase 6: Ops (admin)
 
-- [ ] KPI strip from real data (leads scored today, enrolled, edited-before-send %, bounces recovered, reply rate) with simulated-derived numbers labeled
-- [ ] Reply rate by signal type (from events, simulated replies labeled)
-- [ ] Mailbox health table: auth, sent/cap bar, bounce %, complaint %, status with every pause reason
-- [ ] Engine panel from `agent_runs`: last run, p50/p95 duration, leads per run, LLM tokens per lead, error rate, drafts blocked by guardrails
-- [ ] Audit log stream with filters (agent / user, action type)
-- [ ] Optional: "Run agent now" button via GitHub `repository_dispatch`
+- [x] KPI strip from real data (leads scored today, enrolled, edited-before-send %, bounces recovered, reply rate) with simulated-derived numbers labeled
+- [x] Reply rate by signal type (from events, simulated replies labeled)
+- [x] Mailbox health table: auth, sent/cap bar, bounce %, complaint %, status with every pause reason
+- [x] Engine panel from `agent_runs`: last run, p50/p95 duration, leads per run, LLM tokens per lead, error rate, drafts blocked by guardrails
+- [x] Audit log stream with filters (agent / user, action type)
+- [ ] Optional: "Run agent now" button via GitHub `repository_dispatch` (skipped)
 
 **Who builds what:** see this phase in `docs/TASKS.md` (Claude, Flash and you, card by card).
 
